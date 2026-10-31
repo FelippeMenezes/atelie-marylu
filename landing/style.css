@@ -1,0 +1,174 @@
+/* Cores tiradas do logo */
+:root {
+  --magenta: #ce4797;
+  --magenta-escuro: #a8357a;
+  --rosa: #eb92ab;
+  --lilas: #efcfe3;
+  --creme: #fdf7fa;
+  --texto: #4a2a3d;
+  --branco: #ffffff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: "Quicksand", system-ui, sans-serif;
+  color: var(--texto);
+  background: var(--creme);
+  line-height: 1.6;
+}
+
+h1, h2, h3, .marca span {
+  font-family: "Fredoka", "Quicksand", sans-serif;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+section {
+  padding: 72px 20px;
+  max-width: 1080px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+section h2 {
+  color: var(--magenta);
+  font-size: 2rem;
+  margin-bottom: 16px;
+}
+
+section > p { max-width: 620px; margin: 0 auto; }
+
+/* Topo */
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--magenta);
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--branco);
+  text-decoration: none;
+  font-size: 1.25rem;
+}
+
+.topo nav { display: flex; gap: 20px; }
+
+.topo nav a {
+  color: var(--lilas);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.topo nav a:hover { color: var(--branco); }
+
+/* Botões */
+.botao {
+  display: inline-block;
+  padding: 12px 28px;
+  border-radius: 999px;
+  background: var(--magenta);
+  color: var(--branco);
+  font-weight: 600;
+  text-decoration: none;
+  border: 2px solid var(--magenta);
+  transition: background .2s, color .2s;
+}
+
+.botao:hover { background: var(--magenta-escuro); border-color: var(--magenta-escuro); }
+
+.botao-contorno { background: transparent; color: var(--magenta); }
+.botao-contorno:hover { background: var(--magenta); color: var(--branco); }
+
+/* Hero */
+.hero {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  align-items: center;
+  gap: 40px;
+  text-align: left;
+  padding-top: 56px;
+}
+
+.etiqueta {
+  color: var(--magenta);
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  font-size: .85rem;
+  margin-bottom: 12px;
+}
+
+.hero h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin-bottom: 16px; }
+.hero h1 span { color: var(--magenta); }
+.hero-texto > p:not(.etiqueta) { font-size: 1.1rem; margin-bottom: 28px; }
+
+.acoes { display: flex; flex-wrap: wrap; gap: 12px; }
+
+.hero-logo { width: 100%; max-width: 420px; height: auto; justify-self: center; }
+
+/* Sobre */
+.sobre {
+  background: var(--branco);
+  border-radius: 24px;
+  border: 3px dashed var(--rosa);
+}
+
+/* Cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 32px;
+}
+
+.card {
+  background: var(--lilas);
+  border-radius: 20px;
+  padding: 28px 20px;
+}
+
+.card h3 { color: var(--magenta-escuro); font-size: 1.3rem; margin-bottom: 8px; }
+
+/* Em breve */
+.em-breve {
+  background: var(--magenta);
+  color: var(--branco);
+  border-radius: 24px;
+  outline: 3px dashed var(--rosa);
+  outline-offset: -14px;
+}
+
+.em-breve h2 { color: var(--branco); }
+
+/* Contato */
+.contato p { margin-bottom: 24px; }
+
+/* Rodapé */
+.rodape {
+  text-align: center;
+  padding: 24px 20px;
+  background: var(--magenta);
+  color: var(--lilas);
+  font-size: .9rem;
+}
+
+/* Celular */
+@media (max-width: 760px) {
+  .topo nav { display: none; }
+  .hero { grid-template-columns: 1fr; text-align: center; }
+  .hero-logo { order: -1; max-width: 240px; }
+  .acoes { justify-content: center; }
+  .cards { grid-template-columns: 1fr; }
+  section { padding: 56px 16px; }
+}
