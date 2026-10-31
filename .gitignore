@@ -1,0 +1,16 @@
+# .NET
+[Bb]in/
+[Oo]bj/
+*.suo
+*.user
+.vs/
+
+# React / Node
+node_modules/
+build/
+dist/
+.env
+
+# Sistema
+.DS_Store
+Thumbs.db
