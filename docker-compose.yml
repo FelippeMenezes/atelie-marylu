@@ -1,7 +1,7 @@
 # Banco de dados para desenvolvimento. Uso: cp .env.example .env (troque a senha) && docker compose up -d
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-atelie_marylu}
