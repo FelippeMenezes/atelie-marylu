@@ -42,14 +42,14 @@ public class ImagemService(IWebHostEnvironment env, ILogger<ImagemService> logge
             ?? throw new InvalidOperationException("Não foi possível ler a imagem.");
         using var orientada = Orientar(decodificada, codec.EncodedOrigin);
 
-        var pasta = Path.Combine(env.WebRootPath, "uploads", "produtos");
+        var pasta = Path.Join(env.WebRootPath, "uploads", "produtos");
         Directory.CreateDirectory(pasta);
         var nome = Guid.NewGuid().ToString("N");
 
         using (var grande = Redimensionar(orientada, LadoMaximo))
-            Gravar(grande, Path.Combine(pasta, $"{nome}.webp"));
+            Gravar(grande, Path.Join(pasta, $"{nome}.webp"));
         using (var mini = RecortarQuadrado(orientada, LadoMiniatura))
-            Gravar(mini, Path.Combine(pasta, $"{nome}-mini.webp"));
+            Gravar(mini, Path.Join(pasta, $"{nome}-mini.webp"));
 
         return new ImagemSalva($"/uploads/produtos/{nome}.webp", $"/uploads/produtos/{nome}-mini.webp");
     }
@@ -57,11 +57,10 @@ public class ImagemService(IWebHostEnvironment env, ILogger<ImagemService> logge
     // Remove os arquivos de uma foto excluída. Só apaga dentro da pasta de uploads.
     public void Excluir(params string?[] urls)
     {
-        var pasta = Path.GetFullPath(Path.Combine(env.WebRootPath, "uploads", "produtos"));
-        foreach (var url in urls)
+        var pasta = Path.GetFullPath(Path.Join(env.WebRootPath, "uploads", "produtos"));
+        foreach (var url in urls.Where(u => !string.IsNullOrEmpty(u)))
         {
-            if (string.IsNullOrEmpty(url)) continue;
-            var caminho = Path.GetFullPath(Path.Combine(env.WebRootPath, url.TrimStart('/')));
+            var caminho = Path.GetFullPath(Path.Join(env.WebRootPath, url!.TrimStart('/')));
             if (caminho.StartsWith(pasta + Path.DirectorySeparatorChar) && File.Exists(caminho))
                 File.Delete(caminho);
         }

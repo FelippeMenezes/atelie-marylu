@@ -30,7 +30,8 @@ public class Turnstile(HttpClient http, IOptions<TurnstileOptions> opcoes, ILogg
         {
             var dados = new Dictionary<string, string> { ["secret"] = opcoes.Value.SecretKey, ["response"] = token };
             if (ip is not null) dados["remoteip"] = ip;
-            using var resposta = await http.PostAsync("turnstile/v0/siteverify", new FormUrlEncodedContent(dados), ct);
+            using var conteudo = new FormUrlEncodedContent(dados);
+            using var resposta = await http.PostAsync("turnstile/v0/siteverify", conteudo, ct);
             var resultado = await resposta.Content.ReadFromJsonAsync<Resultado>(ct);
             return resultado?.Success == true;
         }

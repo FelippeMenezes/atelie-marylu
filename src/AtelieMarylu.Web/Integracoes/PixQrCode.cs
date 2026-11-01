@@ -9,7 +9,8 @@ public static class PixQrCode
     {
         using var gerador = new QRCodeGenerator();
         using var dados = gerador.CreateQrCode(pixCopiaECola, QRCodeGenerator.ECCLevel.M);
-        var png = new PngByteQRCode(dados).GetGraphic(8);
+        using var geradorPng = new PngByteQRCode(dados);
+        var png = geradorPng.GetGraphic(8);
         return $"data:image/png;base64,{Convert.ToBase64String(png)}";
     }
 }

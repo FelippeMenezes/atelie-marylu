@@ -21,7 +21,7 @@ public sealed class ImagemServiceTests : IDisposable
         var falso = new ArquivoFalso(Encoding.UTF8.GetBytes("<script>alert(1)</script>"), "image/png");
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => servico.SalvarAsync(falso));
-        Assert.False(Directory.Exists(Path.Combine(pasta, "uploads")) && Directory.EnumerateFiles(Path.Combine(pasta, "uploads"), "*", SearchOption.AllDirectories).Any());
+        Assert.False(Directory.Exists(Path.Join(pasta, "uploads")) && Directory.EnumerateFiles(Path.Join(pasta, "uploads"), "*", SearchOption.AllDirectories).Any());
     }
 
     [Fact]
@@ -31,8 +31,8 @@ public sealed class ImagemServiceTests : IDisposable
 
         var salva = await servico.SalvarAsync(new ArquivoFalso(png, "image/png"));
 
-        using var grande = SKBitmap.Decode(Path.Combine(pasta, salva.Url.TrimStart('/')));
-        using var mini = SKBitmap.Decode(Path.Combine(pasta, salva.UrlMiniatura.TrimStart('/')));
+        using var grande = SKBitmap.Decode(Path.Join(pasta, salva.Url.TrimStart('/')));
+        using var mini = SKBitmap.Decode(Path.Join(pasta, salva.UrlMiniatura.TrimStart('/')));
         Assert.EndsWith(".webp", salva.Url);
         Assert.Equal((1600, 800), (grande.Width, grande.Height));
         Assert.Equal((480, 480), (mini.Width, mini.Height));
@@ -41,7 +41,7 @@ public sealed class ImagemServiceTests : IDisposable
     [Fact]
     public async Task Excluir_nao_sai_da_pasta_de_uploads()
     {
-        var foraDaPasta = Path.Combine(pasta, "importante.txt");
+        var foraDaPasta = Path.Join(pasta, "importante.txt");
         await File.WriteAllTextAsync(foraDaPasta, "não apagar");
 
         servico.Excluir("/uploads/produtos/../../importante.txt");

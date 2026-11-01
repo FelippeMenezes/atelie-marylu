@@ -31,6 +31,14 @@
     public async ValueTask DisposeAsync()
     {
         if (modulo is null) return;
-        try { await modulo.DisposeAsync(); } catch (JSDisconnectedException) { }
+        try
+        {
+            await modulo.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // O navegador já fechou a conexão; não há o que liberar do lado dele
+            modulo = null;
+        }
     }
 }
