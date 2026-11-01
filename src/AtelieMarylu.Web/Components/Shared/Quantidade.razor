@@ -1,0 +1,16 @@
+@* Seletor − / + (mais fácil de tocar no celular do que um campo numérico) *@
+<span class="quantidade" role="group" aria-label="Quantidade">
+    <button type="button" @onclick="() => Mudar(Valor - 1)" disabled="@(Desabilitado || Valor <= Minimo)" aria-label="Diminuir">−</button>
+    <span aria-live="polite">@Valor</span>
+    <button type="button" @onclick="() => Mudar(Valor + 1)" disabled="@(Desabilitado || Valor >= Maximo)" aria-label="Aumentar">+</button>
+</span>
+
+@code {
+    [Parameter] public int Valor { get; set; } = 1;
+    [Parameter] public int Minimo { get; set; } = 1;
+    [Parameter] public int Maximo { get; set; } = AtelieMarylu.Domain.Carrinho.Carrinho.QuantidadeMaximaPorItem;
+    [Parameter] public bool Desabilitado { get; set; }
+    [Parameter] public EventCallback<int> ValorChanged { get; set; }
+
+    private Task Mudar(int novo) => ValorChanged.InvokeAsync(Math.Clamp(novo, Minimo, Maximo));
+}

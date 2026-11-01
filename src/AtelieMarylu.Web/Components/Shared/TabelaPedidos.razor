@@ -1,0 +1,44 @@
+@using AtelieMarylu.Web.Configuracao
+<div class="table-responsive caixa p-0">
+    <table class="table align-middle m-0">
+        <thead>
+            <tr>
+                <th>Pedido</th>
+                <th>Data</th>
+                @if (NomesClientes is not null)
+                {
+                    <th>Cliente</th>
+                }
+                <th>Status</th>
+                <th class="text-end">Total</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in Pedidos)
+            {
+                <tr>
+                    <td>@p.Codigo</td>
+                    <td>@p.CriadoEm.Formatar()</td>
+                    @if (NomesClientes is not null)
+                    {
+                        <td>@NomesClientes.GetValueOrDefault(p.ClienteId)</td>
+                    }
+                    <td><StatusPedidoBadge Status="p.Status" /></td>
+                    <td class="text-end">@p.Total.ToString("C")</td>
+                    <td class="text-end"><a href="@Link/@(PorCodigo ? p.Codigo : p.Id.ToString())">Ver</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    // Os pedidos precisam vir com Itens carregados (o Total depende deles)
+    [Parameter, EditorRequired] public IReadOnlyList<Pedido> Pedidos { get; set; } = [];
+    [Parameter, EditorRequired] public string Link { get; set; } = "";
+    [Parameter] public IReadOnlyDictionary<string, string>? NomesClientes { get; set; }
+
+    // Cliente usa o código público na URL; o painel usa o Id interno
+    [Parameter] public bool PorCodigo { get; set; }
+}

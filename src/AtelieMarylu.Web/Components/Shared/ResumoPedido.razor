@@ -1,0 +1,52 @@
+@* Itens, totais e entrega de um pedido. Usado na tela do cliente e no painel. *@
+@using AtelieMarylu.Web.Configuracao
+<section class="caixa mb-3">
+    <h2 class="h5">Itens</h2>
+    @foreach (var item in Pedido.Itens)
+    {
+        <div class="d-flex justify-content-between py-1">
+            <span>@item.Quantidade× @item.NomeProduto <span class="text-secondary small">(@item.PrecoUnitario.ToString("C") cada)</span></span>
+            <span>@item.Subtotal.ToString("C")</span>
+        </div>
+    }
+    <hr />
+    <div class="d-flex justify-content-between"><span>Subtotal</span><span>@Pedido.Subtotal.ToString("C")</span></div>
+    <div class="d-flex justify-content-between"><span>Frete (@Pedido.FreteNome)</span><span>@Pedido.FreteValor.ToString("C")</span></div>
+    <div class="d-flex justify-content-between fs-5"><strong>Total</strong><strong>@Pedido.Total.ToString("C")</strong></div>
+    @if (Pedido.DescontoPix > 0)
+    {
+        <div class="d-flex justify-content-between small text-secondary">
+            <span>No PIX (@Pedido.PercentualDescontoPix.ToString("0.#")% off nos produtos)</span>
+            <span>@Pedido.ValorPara(MetodoPagamento.Pix).ToString("C")</span>
+        </div>
+    }
+</section>
+
+<section class="caixa mb-3">
+    <h2 class="h5">Entrega</h2>
+    @{ var e = Pedido.Endereco; }
+    <p class="m-0">
+        @e.Logradouro, @e.Numero @(e.Complemento is null ? "" : $"- {e.Complemento}")<br />
+        @e.Bairro · @e.Cidade/@e.Uf · CEP @(e.Cep.Length == 8 ? $"{e.Cep[..5]}-{e.Cep[5..]}" : e.Cep)
+    </p>
+    @if (Pedido.FretePrazoDias is int dias)
+    {
+        <p class="small text-secondary m-0">Prazo de entrega: até @dias dias úteis após o envio.</p>
+    }
+    @if (Pedido.CodigoRastreio is not null)
+    {
+        <p class="mt-2 mb-0">Código de rastreio: <strong>@Pedido.CodigoRastreio</strong></p>
+    }
+    @if (Pedido.Observacao is not null)
+    {
+        <p class="mt-2 mb-0">Observação: @Pedido.Observacao</p>
+    }
+    @if (Pedido.MotivoCancelamento is not null)
+    {
+        <p class="mt-2 mb-0">Motivo do cancelamento: @Pedido.MotivoCancelamento</p>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public Pedido Pedido { get; set; } = default!;
+}

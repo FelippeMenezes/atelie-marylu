@@ -1,0 +1,14 @@
+@if (string.IsNullOrEmpty(Url))
+{
+    <div class="produto-foto @Class"><img src="img/logo.png" alt="" /></div>
+}
+else
+{
+    <img class="produto-foto @Class" src="@Url" alt="@Nome" loading="lazy" decoding="async" />
+}
+
+@code {
+    [Parameter] public string? Url { get; set; }
+    [Parameter] public string Nome { get; set; } = "";
+    [Parameter] public string? Class { get; set; }
+}
