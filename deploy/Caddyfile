@@ -1,0 +1,12 @@
+# Caddy: recebe os acessos da internet, emite e renova o certificado HTTPS (Let's Encrypt)
+# sozinho e repassa para a aplicação. Também redireciona http:// para https://.
+
+{$DOMINIO} {
+	encode zstd gzip
+
+	# Não anuncia qual servidor está rodando
+	header -Server
+
+	# O Blazor usa WebSocket; o Caddy repassa sem configuração extra
+	reverse_proxy app:8080
+}

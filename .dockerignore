@@ -1,0 +1,15 @@
+# Só o código-fonte entra na imagem. Segredos, builds locais e fotos enviadas ficam de fora.
+**/bin/
+**/obj/
+.git/
+.github/
+.vs/
+.env
+.env.*
+!.env.example
+!.env.producao.example
+backups/
+docs/
+landing/
+tests/
+src/AtelieMarylu.Web/wwwroot/uploads/
