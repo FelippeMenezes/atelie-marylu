@@ -1,0 +1,53 @@
+# Build, testes (com Postgres de verdade) e checagem de pacotes vulneráveis em todo PR e push na main
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-e-testes:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: atelie
+          POSTGRES_PASSWORD: senha-so-do-ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U atelie"
+          --health-interval 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restaurar
+        run: dotnet restore
+
+      - name: Build (avisos viram erro)
+        run: dotnet build --no-restore -c Release -warnaserror
+
+      - name: Testes
+        run: dotnet test --no-build -c Release --logger "console;verbosity=normal"
+        env:
+          ATELIE_TESTE_DB: "Host=localhost;Port=5432;Username=atelie;Password=senha-so-do-ci"
+
+      - name: Pacotes com vulnerabilidade conhecida
+        run: |
+          dotnet list package --vulnerable --include-transitive | tee vulneraveis.txt
+          if grep -q "has the following vulnerable packages" vulneraveis.txt; then
+            echo "::error::Há pacotes com vulnerabilidade conhecida. Atualize antes de fazer merge."
+            exit 1
+          fi
