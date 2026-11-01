@@ -1,0 +1,39 @@
+@using AtelieMarylu.Web.Configuracao
+@using Microsoft.Extensions.Options
+@inject IOptions<LojaOptions> Opcoes
+
+@{ var loja = Opcoes.Value; }
+<footer class="rodape">
+    <div class="container">
+        <div class="row g-3">
+            <div class="col-md-5">
+                <strong>@loja.Nome</strong> · Costura criativa<br />
+                @if (loja.TemDadosLegais)
+                {
+                    <span>@(string.IsNullOrEmpty(loja.RazaoSocial) ? loja.Nome : loja.RazaoSocial) · @loja.Documento</span><br />
+                }
+                @if (!string.IsNullOrEmpty(loja.Endereco))
+                {
+                    <span>@loja.Endereco</span><br />
+                }
+                @if (!string.IsNullOrEmpty(loja.EmailContato))
+                {
+                    <a href="mailto:@loja.EmailContato">@loja.EmailContato</a><br />
+                }
+                @if (!string.IsNullOrEmpty(loja.Telefone))
+                {
+                    <span>@loja.Telefone</span>
+                }
+            </div>
+            <div class="col-md-4">
+                <a href="trocas-e-devolucoes">Trocas e devoluções</a><br />
+                <a href="politica-de-privacidade">Política de privacidade</a><br />
+                <a href="termos-de-uso">Termos de uso</a>
+            </div>
+            <div class="col-md-3">
+                <a href="https://www.instagram.com/@loja.Instagram/" target="_blank" rel="noopener">Instagram @@@loja.Instagram</a>
+            </div>
+        </div>
+        <p class="small mt-3 mb-0">© @DateTime.UtcNow.Year @loja.Nome. Pagamentos processados em ambiente seguro do provedor.</p>
+    </div>
+</footer>

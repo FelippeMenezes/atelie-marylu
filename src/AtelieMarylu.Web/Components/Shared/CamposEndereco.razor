@@ -1,0 +1,69 @@
+@* Campos de endereço; precisa estar dentro de um EditForm cujo modelo seja o FormularioEndereco.
+   Ao digitar o CEP, rua/bairro/cidade/UF são preenchidos pelo ViaCEP. *@
+@using AtelieMarylu.Web.Integracoes
+@inject ConsultaCep ConsultaCep
+
+<div class="row g-2">
+    <div class="col-sm-4">
+        <label class="form-label" for="cep">CEP</label>
+        <InputText id="cep" class="form-control" @bind-Value="Endereco.Cep" @bind-Value:after="CepAlterado" autocomplete="postal-code" inputmode="numeric" placeholder="00000-000" />
+        <ValidationMessage For="() => Endereco.Cep" />
+        @if (buscando)
+        {
+            <div class="small text-secondary">Buscando endereço...</div>
+        }
+    </div>
+    <div class="col-sm-8">
+        <label class="form-label" for="logradouro">Rua</label>
+        <InputText id="logradouro" class="form-control" @bind-Value="Endereco.Logradouro" autocomplete="address-line1" />
+        <ValidationMessage For="() => Endereco.Logradouro" />
+    </div>
+    <div class="col-sm-3">
+        <label class="form-label" for="numero">Número</label>
+        <InputText id="numero" class="form-control" @bind-Value="Endereco.Numero" @ref="campoNumero" />
+        <ValidationMessage For="() => Endereco.Numero" />
+    </div>
+    <div class="col-sm-9">
+        <label class="form-label" for="complemento">Complemento</label>
+        <InputText id="complemento" class="form-control" @bind-Value="Endereco.Complemento" autocomplete="address-line2" />
+    </div>
+    <div class="col-sm-5">
+        <label class="form-label" for="bairro">Bairro</label>
+        <InputText id="bairro" class="form-control" @bind-Value="Endereco.Bairro" />
+        <ValidationMessage For="() => Endereco.Bairro" />
+    </div>
+    <div class="col-sm-5">
+        <label class="form-label" for="cidade">Cidade</label>
+        <InputText id="cidade" class="form-control" @bind-Value="Endereco.Cidade" autocomplete="address-level2" />
+        <ValidationMessage For="() => Endereco.Cidade" />
+    </div>
+    <div class="col-sm-2">
+        <label class="form-label" for="uf">UF</label>
+        <InputText id="uf" class="form-control" maxlength="2" @bind-Value="Endereco.Uf" autocomplete="address-level1" />
+        <ValidationMessage For="() => Endereco.Uf" />
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public FormularioEndereco Endereco { get; set; } = default!;
+    [Parameter] public EventCallback AoMudarCep { get; set; }
+
+    private bool buscando;
+    private InputText? campoNumero;
+
+    private async Task CepAlterado()
+    {
+        await AoMudarCep.InvokeAsync();
+        buscando = true;
+        var encontrado = await ConsultaCep.BuscarAsync(Endereco.Cep);
+        buscando = false;
+        if (encontrado is null) return;
+
+        Endereco.Logradouro = encontrado.Logradouro;
+        Endereco.Bairro = encontrado.Bairro;
+        Endereco.Cidade = encontrado.Cidade;
+        Endereco.Uf = encontrado.Uf;
+        if (campoNumero?.Element is { } numero)
+            await numero.FocusAsync();
+    }
+}

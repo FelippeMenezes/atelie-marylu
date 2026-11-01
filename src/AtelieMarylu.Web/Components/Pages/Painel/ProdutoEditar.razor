@@ -1,0 +1,285 @@
+@page "/painel/produtos/novo"
+@page "/painel/produtos/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Permissoes.ProdutosGerenciar)]
+@using System.ComponentModel.DataAnnotations
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject ImagemService Imagens
+@inject AuditoriaService Auditoria
+@inject NavigationManager Navigation
+@inject ILogger<ProdutoEditar> Logger
+
+<PageTitle>@(Id is null ? "Novo produto" : "Editar produto") · Painel</PageTitle>
+
+<h1>@(Id is null ? "Novo produto" : "Editar produto")</h1>
+
+@if (Id is not null && !encontrado)
+{
+    <p>Produto não encontrado.</p>
+}
+else
+{
+    <EditForm Model="form" OnValidSubmit="Salvar" FormName="produto">
+        <DataAnnotationsValidator />
+        <div class="caixa mb-3">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label" for="nome">Nome</label>
+                    <InputText id="nome" class="form-control" @bind-Value="form.Nome" />
+                    <ValidationMessage For="() => form.Nome" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="preco">Preço (R$)</label>
+                    <InputNumber id="preco" class="form-control" @bind-Value="form.Preco" step="0.01" />
+                    <ValidationMessage For="() => form.Preco" />
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="descricao">Descrição (inclua medidas e materiais)</label>
+                    <InputTextArea id="descricao" class="form-control" rows="5" @bind-Value="form.Descricao" />
+                    <ValidationMessage For="() => form.Descricao" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="estoque">Estoque</label>
+                    <InputNumber id="estoque" class="form-control" @bind-Value="form.Estoque" />
+                    <ValidationMessage For="() => form.Estoque" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="prazo">Prazo de produção (dias úteis)</label>
+                    <InputNumber id="prazo" class="form-control" @bind-Value="form.PrazoProducaoDias" placeholder="Vazio = pronta entrega" />
+                    <ValidationMessage For="() => form.PrazoProducaoDias" />
+                </div>
+                <div class="col-md-5 d-flex align-items-end">
+                    <div class="form-check">
+                        <InputCheckbox id="ativo" class="form-check-input" @bind-Value="form.Ativo" />
+                        <label class="form-check-label" for="ativo">Ativo (aparece na loja)</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="caixa mb-3">
+            <h2 class="h5">Fotos</h2>
+            <p class="small text-secondary">A primeira foto é a capa. As fotos são reduzidas, convertidas para WEBP e têm os dados de localização (GPS) removidos.</p>
+            <div class="d-flex gap-3 flex-wrap mb-3">
+                @for (var i = 0; i < fotos.Count; i++)
+                {
+                    var indice = i;
+                    var foto = fotos[i];
+                    <div style="width: 130px">
+                        <FotoProduto Url="@foto.UrlMiniatura" Nome="@form.Nome" Class="rounded-3" />
+                        <div class="d-flex justify-content-between mt-1">
+                            <button type="button" class="btn btn-link btn-sm p-0" disabled="@(indice == 0)" @onclick="() => Mover(indice, -1)" aria-label="Mover para a esquerda">◀</button>
+                            <button type="button" class="btn btn-link btn-sm p-0 text-danger" @onclick="() => Remover(indice)">Remover</button>
+                            <button type="button" class="btn btn-link btn-sm p-0" disabled="@(indice == fotos.Count - 1)" @onclick="() => Mover(indice, 1)" aria-label="Mover para a direita">▶</button>
+                        </div>
+                        @if (indice == 0) { <div class="small text-center selo d-block">Capa</div> }
+                    </div>
+                }
+            </div>
+            <InputFile OnChange="EnviarFotos" multiple accept="image/jpeg,image/png,image/webp" class="form-control" disabled="@enviando" />
+            <div class="small text-secondary mt-1">@(enviando ? "Processando fotos..." : $"JPG, PNG ou WEBP, até 8 MB cada, no máximo {MaximoFotos} fotos.")</div>
+        </div>
+
+        <div class="caixa mb-3">
+            <h2 class="h5">Embalagem (para cálculo de frete)</h2>
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="peso">Peso (g)</label>
+                    <InputNumber id="peso" class="form-control" @bind-Value="form.PesoGramas" />
+                    <ValidationMessage For="() => form.PesoGramas" />
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="altura">Altura (cm)</label>
+                    <InputNumber id="altura" class="form-control" @bind-Value="form.AlturaCm" />
+                    <ValidationMessage For="() => form.AlturaCm" />
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="largura">Largura (cm)</label>
+                    <InputNumber id="largura" class="form-control" @bind-Value="form.LarguraCm" />
+                    <ValidationMessage For="() => form.LarguraCm" />
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="comprimento">Comprimento (cm)</label>
+                    <InputNumber id="comprimento" class="form-control" @bind-Value="form.ComprimentoCm" />
+                    <ValidationMessage For="() => form.ComprimentoCm" />
+                </div>
+            </div>
+        </div>
+
+        <Aviso Mensagem="@mensagem" Erro="@erro" />
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" disabled="@(salvando || enviando)">Salvar</button>
+            <a href="painel/produtos" class="btn btn-outline-primary">Voltar</a>
+            @if (Id is not null && form.Ativo)
+            {
+                <a href="@($"produto/{Id}")" target="_blank" class="btn btn-link ms-auto">Ver na loja</a>
+            }
+        </div>
+    </EditForm>
+}
+
+@code {
+    private const int MaximoFotos = 8;
+
+    [Parameter] public int? Id { get; set; }
+
+    private FormProduto form = new();
+    private List<ImagemSalva> fotos = [];
+    // Fotos removidas só têm o arquivo apagado depois de salvar (se cancelar, nada se perde)
+    private readonly List<ImagemSalva> removidas = [];
+    private readonly List<ImagemSalva> novas = [];
+    private bool encontrado, salvando, enviando, erro;
+    private string? mensagem;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id is null) return;
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var p = await db.Produtos.AsNoTracking().Include(x => x.Imagens).FirstOrDefaultAsync(x => x.Id == Id);
+        encontrado = p is not null;
+        if (p is null) return;
+
+        form = new FormProduto
+        {
+            Nome = p.Nome, Descricao = p.Descricao, Preco = p.Preco, Estoque = p.Estoque, Ativo = p.Ativo, PrazoProducaoDias = p.PrazoProducaoDias,
+            PesoGramas = p.PesoGramas, AlturaCm = p.AlturaCm, LarguraCm = p.LarguraCm, ComprimentoCm = p.ComprimentoCm,
+        };
+        fotos = p.Imagens.OrderBy(i => i.Ordem).Select(i => new ImagemSalva(i.Url, i.UrlMiniatura)).ToList();
+    }
+
+    private async Task EnviarFotos(InputFileChangeEventArgs e)
+    {
+        enviando = true;
+        mensagem = null;
+        try
+        {
+            foreach (var arquivo in e.GetMultipleFiles(MaximoFotos))
+            {
+                if (fotos.Count >= MaximoFotos)
+                {
+                    (mensagem, erro) = ($"Limite de {MaximoFotos} fotos.", true);
+                    break;
+                }
+                var salva = await Imagens.SalvarAsync(arquivo);
+                fotos.Add(salva);
+                novas.Add(salva);
+            }
+            if (!erro) (mensagem, erro) = ("Fotos adicionadas. Clique em Salvar para confirmar.", false);
+        }
+        catch (InvalidOperationException ex)
+        {
+            (mensagem, erro) = (ex.Message, true);
+        }
+        catch (IOException ex)
+        {
+            Logger.LogWarning(ex, "Falha no upload de imagem");
+            (mensagem, erro) = ("Não foi possível enviar a foto (máximo 8 MB).", true);
+        }
+        finally
+        {
+            enviando = false;
+        }
+    }
+
+    private void Mover(int indice, int direcao)
+    {
+        var destino = indice + direcao;
+        if (destino < 0 || destino >= fotos.Count) return;
+        (fotos[indice], fotos[destino]) = (fotos[destino], fotos[indice]);
+    }
+
+    private void Remover(int indice)
+    {
+        removidas.Add(fotos[indice]);
+        fotos.RemoveAt(indice);
+    }
+
+    private async Task Salvar()
+    {
+        salvando = true;
+        try
+        {
+            await using var db = await DbFactory.CreateDbContextAsync();
+            Produto? produto;
+            if (Id is null)
+            {
+                produto = new Produto();
+                db.Produtos.Add(produto);
+            }
+            else
+            {
+                produto = await db.Produtos.Include(x => x.Imagens).FirstOrDefaultAsync(x => x.Id == Id);
+                if (produto is null) { (mensagem, erro) = ("Produto não encontrado.", true); return; }
+            }
+
+            var estoqueAntes = produto.Estoque;
+            produto.Nome = form.Nome.Trim();
+            produto.Descricao = form.Descricao.Trim();
+            produto.Preco = form.Preco;
+            produto.Estoque = form.Estoque;
+            produto.Ativo = form.Ativo;
+            produto.PrazoProducaoDias = form.PrazoProducaoDias;
+            produto.PesoGramas = form.PesoGramas;
+            produto.AlturaCm = form.AlturaCm;
+            produto.LarguraCm = form.LarguraCm;
+            produto.ComprimentoCm = form.ComprimentoCm;
+
+            produto.Imagens.Clear();
+            for (var i = 0; i < fotos.Count; i++)
+                produto.Imagens.Add(new ProdutoImagem { Url = fotos[i].Url, UrlMiniatura = fotos[i].UrlMiniatura, Ordem = i });
+
+            await db.SaveChangesAsync();
+            await Auditoria.RegistrarAsync(db, Id is null ? "produto.criado" : "produto.editado", "Produto", produto.Id,
+                $"{produto.Nome} · {produto.Preco:C} · estoque {estoqueAntes}→{produto.Estoque}");
+            await db.SaveChangesAsync();
+
+            Imagens.Excluir(removidas.SelectMany(f => new[] { f.Url, f.UrlMiniatura }).ToArray());
+            removidas.Clear();
+            novas.Clear();
+
+            if (Id is null)
+            {
+                Navigation.NavigateTo($"painel/produtos/{produto.Id}");
+                return;
+            }
+            (mensagem, erro) = ("Produto salvo.", false);
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+
+    private sealed class FormProduto
+    {
+        [Required(ErrorMessage = "Informe o nome."), StringLength(120)]
+        public string Nome { get; set; } = "";
+
+        [StringLength(2000)]
+        public string Descricao { get; set; } = "";
+
+        [Range(typeof(decimal), "0.01", "99999", ErrorMessage = "Preço inválido.")]
+        public decimal Preco { get; set; }
+
+        [Range(0, 100000, ErrorMessage = "Estoque inválido.")]
+        public int Estoque { get; set; }
+
+        [Range(1, 120, ErrorMessage = "Entre 1 e 120 dias.")]
+        public int? PrazoProducaoDias { get; set; }
+
+        public bool Ativo { get; set; } = true;
+
+        [Range(1, 30000, ErrorMessage = "Entre 1 g e 30 kg.")]
+        public int PesoGramas { get; set; } = 300;
+
+        [Range(1, 100, ErrorMessage = "Entre 1 e 100 cm.")]
+        public int AlturaCm { get; set; } = 5;
+
+        [Range(1, 100, ErrorMessage = "Entre 1 e 100 cm.")]
+        public int LarguraCm { get; set; } = 20;
+
+        [Range(1, 100, ErrorMessage = "Entre 1 e 100 cm.")]
+        public int ComprimentoCm { get; set; } = 25;
+    }
+}

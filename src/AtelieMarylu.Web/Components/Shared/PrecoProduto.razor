@@ -1,0 +1,22 @@
+@using AtelieMarylu.Web.Configuracao
+@using Microsoft.Extensions.Options
+@inject IOptions<LojaOptions> Opcoes
+
+@{
+    var loja = Opcoes.Value;
+    var pix = Math.Round(Preco * (1 - loja.DescontoPixPercentual / 100m), 2, MidpointRounding.AwayFromZero);
+}
+<span class="preco @(Grande ? "fs-3" : "")">@Preco.ToString("C")</span>
+@if (loja.DescontoPixPercentual > 0)
+{
+    <span class="preco-extra d-block"><strong>@pix.ToString("C")</strong> no PIX (@loja.DescontoPixPercentual.ToString("0.#")% off)</span>
+}
+@if (loja.ParcelasSemJuros > 1)
+{
+    <span class="preco-extra d-block text-secondary">ou @(loja.ParcelasSemJuros)x de @((Preco / loja.ParcelasSemJuros).ToString("C")) sem juros</span>
+}
+
+@code {
+    [Parameter, EditorRequired] public decimal Preco { get; set; }
+    [Parameter] public bool Grande { get; set; }
+}

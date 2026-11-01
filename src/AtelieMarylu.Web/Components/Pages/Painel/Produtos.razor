@@ -1,0 +1,41 @@
+@page "/painel/produtos"
+@attribute [Authorize(Policy = Permissoes.ProdutosGerenciar)]
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+
+<PageTitle>Produtos · Painel</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="m-0">Produtos</h1>
+    <a href="painel/produtos/novo" class="btn btn-primary">Novo produto</a>
+</div>
+
+<div class="table-responsive caixa p-0">
+    <table class="table align-middle m-0">
+        <thead>
+            <tr><th></th><th>Nome</th><th class="text-end">Preço</th><th class="text-end">Estoque</th><th>Situação</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var p in produtos)
+            {
+                <tr>
+                    <td style="width: 56px"><FotoProduto Url="@p.Capa?.UrlMiniatura" Nome="@p.Nome" Class="rounded-2" /></td>
+                    <td>@p.Nome @if (p.PrazoProducaoDias is not null) { <span class="selo">sob encomenda</span> }</td>
+                    <td class="text-end">@p.Preco.ToString("C")</td>
+                    <td class="text-end @(p.Estoque == 0 ? "text-danger fw-bold" : "")">@p.Estoque</td>
+                    <td>@(p.Ativo ? "Ativo" : "Inativo")</td>
+                    <td class="text-end"><a href="painel/produtos/@p.Id">Editar</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private List<Produto> produtos = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        produtos = await db.Produtos.AsNoTracking().Include(p => p.Imagens).OrderByDescending(p => p.Ativo).ThenBy(p => p.Nome).ToListAsync();
+    }
+}

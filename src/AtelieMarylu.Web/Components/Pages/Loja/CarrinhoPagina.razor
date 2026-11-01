@@ -1,0 +1,113 @@
+@page "/carrinho"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject CarrinhoService Carrinho
+
+<PageTitle>Carrinho · Ateliê Marylu</PageTitle>
+
+<h1>Carrinho</h1>
+
+@if (!pronto)
+{
+    @* Esqueleto enquanto o carrinho é lido do navegador *@
+    <div class="caixa mb-3">
+        <div class="esqueleto mb-3" style="height: 70px"></div>
+        <div class="esqueleto" style="height: 70px"></div>
+    </div>
+}
+else if (Carrinho.Atual.Vazio)
+{
+    <p>Seu carrinho está vazio.</p>
+    <a href="" class="btn btn-primary">Ver produtos</a>
+}
+else
+{
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="caixa">
+                @foreach (var item in Carrinho.Atual.Itens)
+                {
+                    var p = produtos.GetValueOrDefault(item.ProdutoId);
+                    var disponivel = p is { Ativo: true } && p.Estoque > 0;
+                    <div class="d-flex align-items-center gap-3 py-2 border-bottom flex-wrap">
+                        <div style="width: 70px"><FotoProduto Url="@p?.Capa?.UrlMiniatura" Nome="@(p?.Nome ?? "")" Class="rounded-3" /></div>
+                        <div class="flex-grow-1">
+                            @if (p is not null)
+                            {
+                                <a href="@p.Url" class="fw-bold text-decoration-none">@p.Nome</a>
+                            }
+                            else
+                            {
+                                <strong>Produto indisponível</strong>
+                            }
+                            @if (!disponivel)
+                            {
+                                <div class="text-danger small">Indisponível: remova do carrinho.</div>
+                            }
+                            else if (p!.Estoque < item.Quantidade)
+                            {
+                                <div class="text-danger small">Só restam @p.Estoque unidade(s).</div>
+                            }
+                            else
+                            {
+                                <div class="small">@p.Preco.ToString("C") cada</div>
+                            }
+                        </div>
+                        <Quantidade Valor="item.Quantidade" Maximo="@Math.Max(1, Math.Min(p?.Estoque ?? 1, AtelieMarylu.Domain.Carrinho.Carrinho.QuantidadeMaximaPorItem))"
+                                    Desabilitado="!disponivel" ValorChanged="q => Carrinho.AlterarQuantidadeAsync(item.ProdutoId, q)" />
+                        <strong style="min-width: 90px" class="text-end">@(((p?.Preco ?? 0) * item.Quantidade).ToString("C"))</strong>
+                        <button class="btn btn-link text-danger btn-sm" @onclick="() => Carrinho.RemoverAsync(item.ProdutoId)">Remover</button>
+                    </div>
+                }
+                <div class="d-flex justify-content-end pt-3 fs-5">
+                    Subtotal:&nbsp;<strong>@Subtotal.ToString("C")</strong>
+                </div>
+            </div>
+            <a href="" class="btn btn-outline-primary mt-3">Continuar comprando</a>
+        </div>
+
+        <div class="col-lg-4">
+            <CalculoFrete Itens="Carrinho.Atual.Itens" />
+            <div class="caixa mt-3">
+                @if (TemProblema)
+                {
+                    <button class="btn btn-primary btn-lg w-100" disabled>Ajuste o carrinho para continuar</button>
+                }
+                else
+                {
+                    @* Se não estiver logado, /checkout leva ao login/cadastro e volta para cá depois *@
+                    <a href="checkout" class="btn btn-primary btn-lg w-100">Finalizar compra</a>
+                    <p class="small text-secondary mt-2 mb-0">Para finalizar, você entra ou cria sua conta (leva menos de 1 minuto).</p>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private Dictionary<int, Produto> produtos = [];
+    private bool pronto;
+
+    private decimal Subtotal => Carrinho.Atual.Itens.Sum(i => (produtos.GetValueOrDefault(i.ProdutoId)?.Preco ?? 0) * i.Quantidade);
+
+    private bool TemProblema => Carrinho.Atual.Itens.Any(i =>
+        !produtos.TryGetValue(i.ProdutoId, out var p) || !p.Ativo || p.Estoque < i.Quantidade);
+
+    protected override void OnInitialized() => Carrinho.Mudou += AoMudar;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Carrinho.CarregarAsync();
+        var ids = Carrinho.Atual.Itens.Select(i => i.ProdutoId).ToList();
+        await using var db = await DbFactory.CreateDbContextAsync();
+        produtos = await db.Produtos.AsNoTracking().Include(p => p.Imagens).Where(p => ids.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
+        pronto = true;
+        StateHasChanged();
+    }
+
+    private void AoMudar() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Carrinho.Mudou -= AoMudar;
+}

@@ -1,0 +1,38 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <ResourcePreloader />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["AtelieMarylu.Web.styles.css"]" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <meta name="theme-color" content="#b8408a" />
+    <HeadOutlet />
+</head>
+
+<body>
+    @* Sem render mode global: as páginas são SSR estático (rápidas, boas para SEO e sem conexão aberta).
+       Só carrinho, checkout, página do pedido e painel (e pequenas "ilhas") são interativos. *@
+    <Routes />
+    <ReconnectModal />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="@Assets["Components/Account/Shared/PasskeySubmit.razor.js"]" type="module"></script>
+    @if (Turnstile.Ativo)
+    {
+        <script src="@Assets["js/turnstile.js"]"></script>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=atelieTurnstile" async defer></script>
+    }
+</body>
+
+</html>
+
+@code {
+    [Inject] private AtelieMarylu.Web.Integracoes.Turnstile Turnstile { get; set; } = default!;
+}

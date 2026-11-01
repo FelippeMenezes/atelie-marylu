@@ -1,0 +1,246 @@
+@page "/checkout"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@using System.Security.Claims
+@using AtelieMarylu.Domain.Frete
+@using AtelieMarylu.Web.Configuracao
+@using Microsoft.Extensions.Options
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject CarrinhoService Carrinho
+@inject PedidoService Pedidos
+@inject NavigationManager Navigation
+@inject IOptions<LojaOptions> Loja
+@inject ILogger<Checkout> Logger
+
+<PageTitle>Finalizar compra · Ateliê Marylu</PageTitle>
+
+<h1>Finalizar compra</h1>
+
+@if (!pronto)
+{
+    <div class="esqueleto" style="height: 300px"></div>
+}
+else if (Carrinho.Atual.Vazio)
+{
+    <p>Seu carrinho está vazio.</p>
+    <a href="" class="btn btn-primary">Ver produtos</a>
+}
+else
+{
+    <EditForm Model="endereco" OnValidSubmit="Finalizar" FormName="checkout">
+        <DataAnnotationsValidator />
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <section class="caixa mb-3">
+                    <h2 class="h4">1. Endereço de entrega</h2>
+                    <CamposEndereco Endereco="endereco" AoMudarCep="LimparFrete" />
+                </section>
+
+                <section class="caixa mb-3">
+                    <h2 class="h4">2. Frete</h2>
+                    @if (opcoesFrete is null)
+                    {
+                        <button type="button" class="btn btn-outline-primary" @onclick="CalcularFrete" disabled="@processando">Calcular frete</button>
+                    }
+                    else
+                    {
+                        <InputRadioGroup @bind-Value="codigoFrete">
+                            @foreach (var o in opcoesFrete)
+                            {
+                                <div class="form-check">
+                                    <InputRadio class="form-check-input" id="@($"frete-{o.Codigo}")" Value="o.Codigo" />
+                                    <label class="form-check-label" for="@($"frete-{o.Codigo}")">
+                                        @o.Nome: <strong>@(o.Valor == 0 ? "Grátis" : o.Valor.ToString("C"))</strong>
+                                        @if (o.PrazoDias is int dias) { <span class="text-secondary"> (até @dias dias úteis)</span> }
+                                    </label>
+                                </div>
+                            }
+                        </InputRadioGroup>
+                    }
+                </section>
+
+                <section class="caixa">
+                    <h2 class="h4">3. Pagamento</h2>
+                    <InputRadioGroup @bind-Value="metodo">
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" id="pg-pix" Value="MetodoPagamento.Pix" />
+                            <label class="form-check-label" for="pg-pix">
+                                PIX @if (Loja.Value.DescontoPixPercentual > 0) { <span class="selo">@Loja.Value.DescontoPixPercentual.ToString("0.#")% off</span> }
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" id="pg-cartao" Value="MetodoPagamento.CartaoCredito" />
+                            <label class="form-check-label" for="pg-cartao">Cartão de crédito (até @(Loja.Value.ParcelasSemJuros)x sem juros)</label>
+                        </div>
+                    </InputRadioGroup>
+                    <p class="small text-secondary mt-2 mb-0">Os dados do cartão nunca passam pelo nosso site: o pagamento é feito no ambiente seguro do provedor.</p>
+                </section>
+            </div>
+
+            <div class="col-lg-5">
+                <section class="caixa position-sticky" style="top: 80px">
+                    <h2 class="h4">Resumo do pedido</h2>
+                    @foreach (var item in Carrinho.Atual.Itens)
+                    {
+                        var p = produtos.GetValueOrDefault(item.ProdutoId);
+                        <div class="d-flex justify-content-between small py-1">
+                            <span>@item.Quantidade× @(p?.Nome ?? "Produto indisponível")</span>
+                            <span>@(((p?.Preco ?? 0) * item.Quantidade).ToString("C"))</span>
+                        </div>
+                    }
+                    <hr />
+                    <div class="d-flex justify-content-between"><span>Subtotal</span><span>@Subtotal.ToString("C")</span></div>
+                    @if (Desconto > 0)
+                    {
+                        <div class="d-flex justify-content-between text-success"><span>Desconto PIX</span><span>− @Desconto.ToString("C")</span></div>
+                    }
+                    <div class="d-flex justify-content-between"><span>Frete</span><span>@(FreteEscolhido?.Valor.ToString("C") ?? "—")</span></div>
+                    <div class="d-flex justify-content-between fs-5 mt-2"><strong>Total</strong><strong>@Total.ToString("C")</strong></div>
+                    @if (metodo == MetodoPagamento.CartaoCredito && Loja.Value.ParcelasSemJuros > 1)
+                    {
+                        <div class="text-end small text-secondary">ou @(Loja.Value.ParcelasSemJuros)x de @((Total / Loja.Value.ParcelasSemJuros).ToString("C"))</div>
+                    }
+
+                    <p class="small text-secondary mt-3 mb-2">
+                        Após confirmar, você tem @PrazoTexto para pagar. Depois disso o pedido é cancelado e as peças voltam para a loja.
+                    </p>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="aceite" @bind="aceitouTermos" />
+                        <label class="form-check-label small" for="aceite">
+                            Li e aceito os <a href="termos-de-uso" target="_blank">termos de uso</a> e a
+                            <a href="trocas-e-devolucoes" target="_blank">política de trocas</a>.
+                        </label>
+                    </div>
+
+                    <Aviso Mensagem="@erro" Erro="true" />
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@(processando || FreteEscolhido is null || !aceitouTermos)">
+                        @(processando ? "Processando..." : "Confirmar pedido")
+                    </button>
+                    @if (FreteEscolhido is null)
+                    {
+                        <p class="small text-secondary text-center mt-2 mb-0">Calcule o frete para continuar.</p>
+                    }
+                </section>
+            </div>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private FormularioEndereco endereco = new();
+    private string? codigoFrete;
+    private MetodoPagamento metodo = MetodoPagamento.Pix;
+    private Dictionary<int, Produto> produtos = [];
+    private IReadOnlyList<OpcaoFrete>? opcoesFrete;
+    private string? erro;
+    private bool processando, pronto, aceitouTermos;
+    private string clienteId = "";
+
+    private decimal Subtotal => Carrinho.Atual.Itens.Sum(i => (produtos.GetValueOrDefault(i.ProdutoId)?.Preco ?? 0) * i.Quantidade);
+    private decimal Desconto => metodo == MetodoPagamento.Pix
+        ? Math.Round(Subtotal * Loja.Value.DescontoPixPercentual / 100m, 2, MidpointRounding.AwayFromZero) : 0;
+    private OpcaoFrete? FreteEscolhido => opcoesFrete?.FirstOrDefault(o => o.Codigo == codigoFrete);
+    private decimal Total => Subtotal - Desconto + (FreteEscolhido?.Valor ?? 0);
+
+    private string PrazoTexto
+    {
+        get
+        {
+            var minutos = Loja.Value.PrazoPagamentoMinutos;
+            return minutos % 60 == 0 ? $"{minutos / 60} hora(s)" : $"{minutos} minutos";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        clienteId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+
+        // Sugere o endereço do último pedido
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var ultimo = await db.Pedidos.AsNoTracking()
+            .Where(p => p.ClienteId == clienteId)
+            .OrderByDescending(p => p.CriadoEm)
+            .Select(p => p.Endereco)
+            .FirstOrDefaultAsync();
+        if (ultimo is not null) endereco = FormularioEndereco.De(ultimo);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Carrinho.CarregarAsync();
+        var ids = Carrinho.Atual.Itens.Select(i => i.ProdutoId).ToList();
+        await using var db = await DbFactory.CreateDbContextAsync();
+        produtos = await db.Produtos.AsNoTracking().Where(p => ids.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
+        pronto = true;
+        StateHasChanged();
+    }
+
+    private void LimparFrete()
+    {
+        opcoesFrete = null;
+        codigoFrete = null;
+    }
+
+    private async Task CalcularFrete()
+    {
+        erro = null;
+        if (Cep.Normalizar(endereco.Cep) is not { } cep)
+        {
+            erro = "Informe um CEP válido para calcular o frete.";
+            return;
+        }
+        processando = true;
+        try
+        {
+            opcoesFrete = await Pedidos.CotarFreteAsync(cep, Carrinho.Atual.Itens);
+            codigoFrete = opcoesFrete.FirstOrDefault(o => o.Valor > 0)?.Codigo ?? opcoesFrete.FirstOrDefault()?.Codigo;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Falha ao cotar frete");
+            erro = "Não foi possível calcular o frete agora. Tente novamente.";
+        }
+        finally
+        {
+            processando = false;
+        }
+    }
+
+    private async Task Finalizar()
+    {
+        if (processando || codigoFrete is null || !aceitouTermos) return;
+        processando = true;
+        erro = null;
+        string? codigoPedido = null;
+        try
+        {
+            var pedido = await Pedidos.CriarAsync(clienteId, Carrinho.Atual.Itens, endereco.ParaEndereco(), codigoFrete);
+            codigoPedido = pedido.Codigo;
+            await Pedidos.IniciarPagamentoAsync(pedido.Id, metodo);
+            await Carrinho.LimparAsync();
+        }
+        catch (RegraDePedidoException ex)
+        {
+            erro = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Falha ao finalizar pedido");
+            erro = codigoPedido is null
+                ? "Não foi possível concluir o pedido. Tente novamente."
+                : "O pedido foi criado, mas houve um problema ao iniciar o pagamento. Tente pagar pela página do pedido.";
+        }
+        finally
+        {
+            processando = false;
+        }
+
+        if (codigoPedido is not null)
+            Navigation.NavigateTo($"meus-pedidos/{codigoPedido}?novo=1");
+    }
+}

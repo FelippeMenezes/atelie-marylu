@@ -1,0 +1,48 @@
+@page "/painel/clientes/{Id}"
+@attribute [Authorize(Policy = Permissoes.ClientesVer)]
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+
+<PageTitle>Cliente · Painel</PageTitle>
+
+@if (carregado && cliente is null)
+{
+    <h1>Cliente não encontrado</h1>
+}
+else if (cliente is not null)
+{
+    <h1>@(string.IsNullOrEmpty(cliente.NomeCompleto) ? cliente.Email : cliente.NomeCompleto)</h1>
+
+    <section class="caixa mb-3">
+        <p class="m-0">E-mail: @cliente.Email</p>
+        <p class="m-0">Telefone: @(cliente.PhoneNumber ?? "—")</p>
+        <p class="m-0">Cliente desde: @cliente.CriadoEm.Formatar("dd/MM/yyyy")</p>
+    </section>
+
+    <h2 class="h4">Pedidos</h2>
+    @if (pedidos.Count == 0)
+    {
+        <p>Nenhum pedido.</p>
+    }
+    else
+    {
+        <TabelaPedidos Pedidos="pedidos" Link="painel/pedidos" />
+    }
+    <p class="mt-3"><a href="painel/clientes">← Voltar para clientes</a></p>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+
+    private ApplicationUser? cliente;
+    private List<Pedido> pedidos = [];
+    private bool carregado;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        cliente = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == Id);
+        pedidos = await db.Pedidos.AsNoTracking().Include(p => p.Itens)
+            .Where(p => p.ClienteId == Id).OrderByDescending(p => p.CriadoEm).ToListAsync();
+        carregado = true;
+    }
+}

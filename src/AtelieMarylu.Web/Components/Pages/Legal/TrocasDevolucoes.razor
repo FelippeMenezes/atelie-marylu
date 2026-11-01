@@ -1,0 +1,42 @@
+@page "/trocas-e-devolucoes"
+@using AtelieMarylu.Web.Configuracao
+@using Microsoft.Extensions.Options
+@inject IOptions<LojaOptions> Opcoes
+
+@{ var loja = Opcoes.Value; }
+<PageTitle>Trocas e devoluções · @loja.Nome</PageTitle>
+
+<article class="caixa" style="max-width: 820px">
+    <h1>Trocas e devoluções</h1>
+    <p class="small text-secondary">Modelo inicial. Revise com a loja antes de publicar.</p>
+
+    <h2 class="h5">Direito de arrependimento (7 dias)</h2>
+    <p>
+        Pelo Código de Defesa do Consumidor (art. 49), você pode desistir da compra em até <strong>7 dias corridos</strong>
+        a partir do recebimento, sem precisar justificar. Devolvemos o valor integral, incluindo o frete de envio.
+        A peça deve voltar sem sinais de uso e, se possível, na embalagem original.
+    </p>
+
+    <h2 class="h5">Defeito de fabricação (90 dias)</h2>
+    <p>
+        Se a peça apresentar defeito de costura ou de material em até 90 dias, consertamos, trocamos por uma igual (se houver)
+        ou devolvemos o valor. Pequenas variações de corte e estampa são características do trabalho artesanal e não são defeito.
+    </p>
+
+    <h2 class="h5">Peças sob encomenda</h2>
+    <p>
+        Peças feitas sob medida ou personalizadas também têm o direito de arrependimento de 7 dias após o recebimento.
+        Se quiser desistir antes da produção começar, avise o quanto antes.
+    </p>
+
+    <h2 class="h5">Como solicitar</h2>
+    <p>
+        Entre em contato informando o código do pedido (ex.: AML-7K3F9Q)
+        @if (!string.IsNullOrEmpty(loja.EmailContato)) { <text>pelo e-mail <a href="mailto:@loja.EmailContato">@loja.EmailContato</a>,</text> }
+        pelo WhatsApp ou pelo Instagram <a href="https://www.instagram.com/@loja.Instagram/" target="_blank" rel="noopener">@@@loja.Instagram</a>.
+        Combinamos a forma de devolução sem custo para você.
+    </p>
+
+    <h2 class="h5">Reembolso</h2>
+    <p>O reembolso é feito pelo mesmo meio de pagamento: PIX em até 7 dias úteis após recebermos a peça; no cartão, o estorno segue o prazo da operadora.</p>
+</article>

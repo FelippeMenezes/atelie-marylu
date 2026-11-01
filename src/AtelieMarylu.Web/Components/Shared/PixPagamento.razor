@@ -1,0 +1,44 @@
+@using AtelieMarylu.Web.Integracoes
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="d-flex gap-4 flex-wrap align-items-start">
+    <img class="pix-qr" src="@qrCode" alt="QR code do PIX" />
+    <div class="flex-grow-1" style="min-width: 220px">
+        <p class="mb-1">Abra o app do seu banco, escolha <strong>PIX → Ler QR code</strong> ou use o código copia e cola:</p>
+        <p class="pix small">@Codigo</p>
+        <button type="button" class="btn btn-primary btn-sm" @onclick="Copiar">@(copiado ? "Código copiado!" : "Copiar código PIX")</button>
+        <p class="small text-secondary mt-2 mb-0">Valor: <strong>@Valor.ToString("C")</strong>. A confirmação aparece aqui automaticamente.</p>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Codigo { get; set; } = "";
+    [Parameter, EditorRequired] public decimal Valor { get; set; }
+
+    private string qrCode = "";
+    private bool copiado;
+    private IJSObjectReference? modulo;
+
+    protected override void OnParametersSet() => qrCode = PixQrCode.GerarDataUri(Codigo);
+
+    private async Task Copiar()
+    {
+        modulo ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/loja.js");
+        copiado = await modulo.InvokeAsync<bool>("copiarTexto", Codigo);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (modulo is null) return;
+        try
+        {
+            await modulo.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // O navegador já fechou a conexão; não há o que liberar do lado dele
+            modulo = null;
+        }
+    }
+}

@@ -1,0 +1,118 @@
+@page "/painel/usuarios/{Id}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Papeis.Admin)]
+@using System.Security.Claims
+@inject AcessoService Acesso
+@inject UserManager<ApplicationUser> UserManager
+@using Microsoft.AspNetCore.Identity
+
+<PageTitle>Acessos · Painel</PageTitle>
+
+@if (usuario is null)
+{
+    <p>@(carregado ? "Usuário não encontrado." : "Carregando...")</p>
+}
+else
+{
+    <h1>@(string.IsNullOrEmpty(usuario.NomeCompleto) ? usuario.Email : usuario.NomeCompleto)</h1>
+    <p class="text-secondary">@usuario.Email</p>
+
+    <section class="caixa mb-3">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="admin" @bind="ehAdmin" disabled="@(Id == meuId)" />
+            <label class="form-check-label" for="admin"><strong>Admin</strong>: acesso total, inclusive a usuários e grupos</label>
+        </div>
+        @if (Id == meuId)
+        {
+            <div class="small text-secondary">Você não pode remover o seu próprio acesso de Admin.</div>
+        }
+    </section>
+
+    <section class="caixa mb-3">
+        <h2 class="h5">Grupos</h2>
+        @if (grupos.Count == 0)
+        {
+            <p class="m-0">Nenhum grupo criado. <a href="painel/grupos">Criar grupos</a></p>
+        }
+        @foreach (var g in grupos)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="g-@g.Nome" checked="@gruposMarcados.Contains(g.Nome)"
+                       @onchange="e => Alternar(gruposMarcados, g.Nome, e)" />
+                <label class="form-check-label" for="g-@g.Nome">
+                    @g.Nome <span class="small text-secondary">(@string.Join(", ", g.Permissoes.Select(p => Permissoes.Todas.GetValueOrDefault(p, p))))</span>
+                </label>
+            </div>
+        }
+    </section>
+
+    <section class="caixa mb-3">
+        <h2 class="h5">Permissões individuais</h2>
+        <p class="small text-secondary">Somam-se às permissões dos grupos.</p>
+        @foreach (var (codigo, descricao) in Permissoes.Todas)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="p-@codigo" checked="@permissoesMarcadas.Contains(codigo)"
+                       @onchange="e => Alternar(permissoesMarcadas, codigo, e)" />
+                <label class="form-check-label" for="p-@codigo">@descricao</label>
+            </div>
+        }
+    </section>
+
+    <Aviso Mensagem="@mensagem" Erro="@erro" />
+
+    <button class="btn btn-primary" @onclick="Salvar" disabled="@salvando">Salvar acessos</button>
+    <a href="painel/usuarios" class="btn btn-outline-primary">Voltar</a>
+    <p class="small text-secondary mt-2">A pessoa precisará entrar novamente para as mudanças valerem.</p>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private ApplicationUser? usuario;
+    private IReadOnlyList<ResumoGrupo> grupos = [];
+    private HashSet<string> gruposMarcados = [];
+    private HashSet<string> permissoesMarcadas = [];
+    private bool ehAdmin, carregado, salvando, erro;
+    private string? mensagem;
+    private string meuId = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        meuId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+        usuario = await UserManager.FindByIdAsync(Id);
+        carregado = true;
+        if (usuario is null) return;
+
+        grupos = await Acesso.ListarGruposAsync();
+        var acesso = await Acesso.ObterAcessoAsync(Id);
+        ehAdmin = acesso.EhAdmin;
+        gruposMarcados = acesso.Grupos.ToHashSet();
+        permissoesMarcadas = acesso.PermissoesIndividuais.ToHashSet();
+    }
+
+    private static void Alternar(HashSet<string> conjunto, string valor, ChangeEventArgs e)
+    {
+        if (e.Value is true) conjunto.Add(valor);
+        else conjunto.Remove(valor);
+    }
+
+    private async Task Salvar()
+    {
+        salvando = true;
+        try
+        {
+            await Acesso.SalvarAcessoAsync(Id, meuId, new AcessoUsuario(ehAdmin, gruposMarcados.ToList(), permissoesMarcadas.ToList()));
+            (mensagem, erro) = ("Acessos salvos.", false);
+        }
+        catch (AcessoException ex)
+        {
+            (mensagem, erro) = (ex.Message, true);
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+}

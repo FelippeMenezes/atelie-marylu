@@ -1,0 +1,67 @@
+@page "/painel/clientes"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Permissoes.ClientesVer)]
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+
+<PageTitle>Clientes · Painel</PageTitle>
+
+<h1>Clientes</h1>
+
+<input class="form-control mb-3" style="max-width: 320px" placeholder="Buscar por nome ou e-mail"
+       @bind="busca" @bind:event="oninput" @bind:after="CarregarAsync" />
+
+@if (clientes is null)
+{
+    <p>Carregando...</p>
+}
+else if (clientes.Count == 0)
+{
+    <p>Nenhum cliente encontrado.</p>
+}
+else
+{
+    <div class="table-responsive caixa p-0">
+        <table class="table align-middle m-0">
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Cadastro</th><th class="text-end">Pedidos</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var c in clientes)
+                {
+                    <tr>
+                        <td>@c.Nome</td>
+                        <td>@c.Email</td>
+                        <td>@c.Telefone</td>
+                        <td>@c.CriadoEm.Formatar("dd/MM/yyyy")</td>
+                        <td class="text-end">@c.Pedidos</td>
+                        <td class="text-end"><a href="painel/clientes/@c.Id">Ver</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private record LinhaCliente(string Id, string Nome, string? Email, string? Telefone, DateTime CriadoEm, int Pedidos);
+
+    private List<LinhaCliente>? clientes;
+    private string? busca;
+
+    protected override Task OnInitializedAsync() => CarregarAsync();
+
+    private async Task CarregarAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var papelCliente = await db.Roles.Where(r => r.Name == Papeis.Cliente).Select(r => r.Id).FirstOrDefaultAsync();
+        var consulta = db.Users.AsNoTracking().Where(u => db.UserRoles.Any(ur => ur.UserId == u.Id && ur.RoleId == papelCliente));
+        if (!string.IsNullOrWhiteSpace(busca))
+        {
+            var termo = $"%{busca.Trim()}%";
+            consulta = consulta.Where(u => EF.Functions.ILike(u.Email!, termo) || EF.Functions.ILike(u.NomeCompleto, termo));
+        }
+        clientes = await consulta
+            .OrderBy(u => u.NomeCompleto)
+            .Take(200)
+            .Select(u => new LinhaCliente(u.Id, u.NomeCompleto, u.Email, u.PhoneNumber, u.CriadoEm, db.Pedidos.Count(p => p.ClienteId == u.Id)))
+            .ToListAsync();
+    }
+}

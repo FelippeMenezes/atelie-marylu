@@ -1,0 +1,63 @@
+@* Simulação de frete antes do checkout (frete surpresa é a maior causa de abandono de carrinho) *@
+@using AtelieMarylu.Domain.Carrinho
+@using AtelieMarylu.Domain.Frete
+@inject PedidoService Pedidos
+@inject ILogger<CalculoFrete> Logger
+
+<div class="caixa">
+    <label class="form-label fw-bold" for="cep-frete">Calcular frete e prazo</label>
+    <div class="d-flex gap-2">
+        <input id="cep-frete" class="form-control" style="max-width: 160px" placeholder="00000-000" inputmode="numeric" autocomplete="postal-code"
+               @bind="cep" @onkeydown="AoTeclar" />
+        <button type="button" class="btn btn-outline-primary" @onclick="Calcular" disabled="@(calculando || !RendererInfo.IsInteractive)">Calcular</button>
+    </div>
+    @if (erro is not null)
+    {
+        <div class="text-danger small mt-2">@erro</div>
+    }
+    @if (opcoes is not null)
+    {
+        <ul class="list-unstyled small mt-2 mb-0">
+            @foreach (var o in opcoes)
+            {
+                <li>@o.Nome: <strong>@(o.Valor == 0 ? "Grátis" : o.Valor.ToString("C"))</strong>@(o.PrazoDias is int d ? $" · até {d} dias úteis" : "")</li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    // Um produto (página de produto) ou os itens do carrinho
+    [Parameter] public int? ProdutoId { get; set; }
+    [Parameter] public IReadOnlyList<ItemCarrinho>? Itens { get; set; }
+
+    private string? cep, erro;
+    private IReadOnlyList<OpcaoFrete>? opcoes;
+    private bool calculando;
+
+    private Task AoTeclar(KeyboardEventArgs e) => e.Key == "Enter" ? Calcular() : Task.CompletedTask;
+
+    private async Task Calcular()
+    {
+        erro = null;
+        opcoes = null;
+        if (Cep.Normalizar(cep) is not { } normalizado) { erro = "Digite um CEP válido."; return; }
+        var itens = Itens ?? (ProdutoId is int id ? [new ItemCarrinho(id, 1)] : []);
+        if (itens.Count == 0) return;
+
+        calculando = true;
+        try
+        {
+            opcoes = await Pedidos.CotarFreteAsync(normalizado, itens);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Falha ao simular frete");
+            erro = "Não foi possível calcular agora. Tente de novo.";
+        }
+        finally
+        {
+            calculando = false;
+        }
+    }
+}

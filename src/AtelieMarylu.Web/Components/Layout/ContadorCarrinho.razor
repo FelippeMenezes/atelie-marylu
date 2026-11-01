@@ -1,0 +1,20 @@
+@implements IDisposable
+@inject CarrinhoService Carrinho
+
+@if (Carrinho.Carregado && !Carrinho.Atual.Vazio)
+{
+    <span class="badge" aria-label="@($"{Carrinho.Atual.TotalDeUnidades} itens")">@Carrinho.Atual.TotalDeUnidades</span>
+}
+
+@code {
+    protected override void OnInitialized() => Carrinho.Mudou += AoMudar;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await Carrinho.CarregarAsync();
+    }
+
+    private void AoMudar() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Carrinho.Mudou -= AoMudar;
+}

@@ -1,0 +1,12 @@
+@* Menu lateral do painel: cada link só aparece para quem tem a permissão *@
+<nav class="painel-menu caixa p-2 mb-3" aria-label="Painel">
+    <NavLink href="painel" Match="NavLinkMatch.All">Resumo</NavLink>
+    <AuthorizeView Policy="@Permissoes.PedidosVer"><NavLink href="painel/pedidos">Pedidos</NavLink></AuthorizeView>
+    <AuthorizeView Policy="@Permissoes.ProdutosGerenciar"><NavLink href="painel/produtos">Produtos</NavLink></AuthorizeView>
+    <AuthorizeView Policy="@Permissoes.ClientesVer"><NavLink href="painel/clientes">Clientes</NavLink></AuthorizeView>
+    <AuthorizeView Policy="@Papeis.Admin">
+        <NavLink href="painel/usuarios">Usuários e acessos</NavLink>
+        <NavLink href="painel/grupos">Grupos de funcionários</NavLink>
+        <NavLink href="painel/auditoria">Auditoria</NavLink>
+    </AuthorizeView>
+</nav>

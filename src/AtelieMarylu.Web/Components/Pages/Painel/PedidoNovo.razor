@@ -1,0 +1,197 @@
+@page "/painel/pedidos/novo"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Permissoes.PedidosCriar)]
+@using System.Security.Claims
+@using AtelieMarylu.Domain.Carrinho
+@using AtelieMarylu.Domain.Frete
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject PedidoService Pedidos
+@inject NavigationManager Navigation
+@inject ILogger<PedidoNovo> Logger
+
+<PageTitle>Novo pedido · Painel</PageTitle>
+
+<h1>Novo pedido</h1>
+<p class="text-secondary">Para vendas feitas pelo Instagram, WhatsApp ou pessoalmente. O cliente precisa ter cadastro.</p>
+
+<EditForm Model="endereco" OnValidSubmit="Criar" FormName="novo-pedido">
+    <DataAnnotationsValidator />
+
+    <section class="caixa mb-3">
+        <h2 class="h5">Cliente</h2>
+        <select class="form-select" @bind="clienteId" @bind:after="ClienteEscolhido" aria-label="Cliente">
+            <option value="">Escolha o cliente...</option>
+            @foreach (var c in clientes)
+            {
+                <option value="@c.Id">@c.NomeCompleto (@c.Email)</option>
+            }
+        </select>
+    </section>
+
+    <section class="caixa mb-3">
+        <h2 class="h5">Itens</h2>
+        @foreach (var item in carrinho.Itens)
+        {
+            var p = produtos.First(x => x.Id == item.ProdutoId);
+            <div class="d-flex justify-content-between align-items-center py-1">
+                <span>@item.Quantidade× @p.Nome</span>
+                <span>
+                    @((p.Preco * item.Quantidade).ToString("C"))
+                    <button type="button" class="btn btn-link text-danger btn-sm" @onclick="() => { carrinho.Remover(item.ProdutoId); LimparFrete(); }">Remover</button>
+                </span>
+            </div>
+        }
+        <div class="d-flex gap-2 mt-2 flex-wrap">
+            <select class="form-select w-auto" @bind="produtoId" aria-label="Produto">
+                <option value="0">Escolha o produto...</option>
+                @foreach (var p in produtos.Where(p => p.Estoque > 0))
+                {
+                    <option value="@p.Id">@p.Nome · @p.Preco.ToString("C") (@p.Estoque em estoque)</option>
+                }
+            </select>
+            <input type="number" class="form-control" style="max-width: 90px" min="1" @bind="quantidade" aria-label="Quantidade" />
+            <button type="button" class="btn btn-outline-primary" disabled="@(produtoId == 0)" @onclick="AdicionarItem">Adicionar</button>
+        </div>
+    </section>
+
+    <section class="caixa mb-3">
+        <h2 class="h5">Entrega</h2>
+        <CamposEndereco Endereco="endereco" AoMudarCep="LimparFrete" />
+        <div class="mt-3">
+            @if (opcoesFrete is null)
+            {
+                <button type="button" class="btn btn-outline-primary" @onclick="CalcularFrete" disabled="@(carrinho.Vazio || processando)">Calcular frete</button>
+            }
+            else
+            {
+                <select class="form-select w-auto" @bind="codigoFrete" aria-label="Frete">
+                    @foreach (var o in opcoesFrete)
+                    {
+                        <option value="@o.Codigo">@o.Nome · @o.Valor.ToString("C")</option>
+                    }
+                </select>
+            }
+        </div>
+    </section>
+
+    <section class="caixa mb-3">
+        <h2 class="h5">Pagamento</h2>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="pago" @bind="jaPago" />
+            <label class="form-check-label" for="pago">O cliente já pagou (registrar pagamento manual)</label>
+        </div>
+        @if (jaPago)
+        {
+            <select class="form-select w-auto mt-2" @bind="metodo" aria-label="Forma de pagamento">
+                <option value="@MetodoPagamento.Pix">PIX</option>
+                <option value="@MetodoPagamento.CartaoCredito">Cartão</option>
+            </select>
+        }
+        else
+        {
+            <p class="small text-secondary mt-2 mb-0">O pedido fica "Aguardando pagamento" e o cliente pode pagar pela área "Meus pedidos".</p>
+        }
+    </section>
+
+    <Aviso Mensagem="@erro" Erro="true" />
+
+    <button type="submit" class="btn btn-primary" disabled="@(processando || codigoFrete is null || clienteId == "" || carrinho.Vazio)">Criar pedido</button>
+    <a href="painel/pedidos" class="btn btn-outline-primary">Voltar</a>
+</EditForm>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private List<ApplicationUser> clientes = [];
+    private List<Produto> produtos = [];
+    private readonly Carrinho carrinho = new();
+    private FormularioEndereco endereco = new();
+    private IReadOnlyList<OpcaoFrete>? opcoesFrete;
+    private string clienteId = "";
+    private string? codigoFrete, erro;
+    private int produtoId, quantidade = 1;
+    private bool jaPago, processando;
+    private MetodoPagamento metodo = MetodoPagamento.Pix;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var papelCliente = await db.Roles.Where(r => r.Name == Papeis.Cliente).Select(r => r.Id).FirstOrDefaultAsync();
+        clientes = await db.Users.AsNoTracking()
+            .Where(u => db.UserRoles.Any(ur => ur.UserId == u.Id && ur.RoleId == papelCliente))
+            .OrderBy(u => u.NomeCompleto).ToListAsync();
+        produtos = await db.Produtos.AsNoTracking().Where(p => p.Ativo).OrderBy(p => p.Nome).ToListAsync();
+    }
+
+    private async Task ClienteEscolhido()
+    {
+        if (clienteId == "") return;
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var ultimo = await db.Pedidos.AsNoTracking().Where(p => p.ClienteId == clienteId)
+            .OrderByDescending(p => p.CriadoEm).Select(p => p.Endereco).FirstOrDefaultAsync();
+        endereco = ultimo is null ? new() : FormularioEndereco.De(ultimo);
+        LimparFrete();
+    }
+
+    private void AdicionarItem()
+    {
+        var p = produtos.FirstOrDefault(x => x.Id == produtoId);
+        if (p is null) return;
+        carrinho.Adicionar(p.Id, Math.Clamp(quantidade, 1, p.Estoque));
+        produtoId = 0;
+        quantidade = 1;
+        LimparFrete();
+    }
+
+    private void LimparFrete()
+    {
+        opcoesFrete = null;
+        codigoFrete = null;
+    }
+
+    private async Task CalcularFrete()
+    {
+        erro = null;
+        if (Cep.Normalizar(endereco.Cep) is not { } cep) { erro = "Informe um CEP válido."; return; }
+        try
+        {
+            opcoesFrete = await Pedidos.CotarFreteAsync(cep, carrinho.Itens);
+            codigoFrete = opcoesFrete.FirstOrDefault()?.Codigo;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Falha ao cotar frete");
+            erro = "Não foi possível calcular o frete.";
+        }
+    }
+
+    private async Task Criar()
+    {
+        if (processando || codigoFrete is null || clienteId == "") return;
+        processando = true;
+        erro = null;
+        int? pedidoId = null;
+        try
+        {
+            var autorId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var pedido = await Pedidos.CriarAsync(clienteId, carrinho.Itens, endereco.ParaEndereco(), codigoFrete, autorId);
+            pedidoId = pedido.Id;
+            if (jaPago) await Pedidos.RegistrarPagamentoManualAsync(pedido.Id, metodo);
+        }
+        catch (RegraDePedidoException ex)
+        {
+            erro = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Falha ao criar pedido pelo painel");
+            erro = "Não foi possível criar o pedido.";
+        }
+        finally
+        {
+            processando = false;
+        }
+
+        if (pedidoId is not null) Navigation.NavigateTo($"painel/pedidos/{pedidoId}");
+    }
+}

@@ -1,0 +1,19 @@
+﻿@inherits LayoutComponentBase
+
+<div class="pagina">
+    <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
+    <Cabecalho />
+
+    <main id="conteudo" class="container py-4">
+        @Body
+    </main>
+
+    <Rodape />
+    <BotaoWhatsApp />
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    Ocorreu um erro inesperado.
+    <a href="." class="reload">Recarregar</a>
+    <span class="dismiss">🗙</span>
+</div>
