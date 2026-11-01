@@ -1,0 +1,60 @@
+@page "/painel/pedidos"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Permissoes.PedidosVer)]
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Pedidos · Painel</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="m-0">Pedidos</h1>
+    <AuthorizeView Policy="@Permissoes.PedidosCriar">
+        <a href="painel/pedidos/novo" class="btn btn-primary">Novo pedido</a>
+    </AuthorizeView>
+</div>
+
+<div class="mb-3" style="max-width: 260px">
+    <select class="form-select" value="@Status" @onchange="Filtrar" aria-label="Filtrar por status">
+        <option value="">Todos os status</option>
+        @foreach (var s in Enum.GetValues<StatusPedido>())
+        {
+            <option value="@s">@Pedido.Descrever(s)</option>
+        }
+    </select>
+</div>
+
+@if (pedidos is null)
+{
+    <p>Carregando...</p>
+}
+else if (pedidos.Count == 0)
+{
+    <p>Nenhum pedido encontrado.</p>
+}
+else
+{
+    <TabelaPedidos Pedidos="pedidos" Link="painel/pedidos" NomesClientes="nomes" />
+}
+
+@code {
+    [SupplyParameterFromQuery] public string? Status { get; set; }
+
+    private List<Pedido>? pedidos;
+    private Dictionary<string, string> nomes = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var consulta = db.Pedidos.AsNoTracking().Include(p => p.Itens).AsQueryable();
+        if (Enum.TryParse<StatusPedido>(Status, out var status))
+            consulta = consulta.Where(p => p.Status == status);
+        pedidos = await consulta.OrderByDescending(p => p.CriadoEm).Take(200).ToListAsync();
+
+        var ids = pedidos.Select(p => p.ClienteId).Distinct().ToList();
+        nomes = await db.Users.Where(u => ids.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => string.IsNullOrEmpty(u.NomeCompleto) ? u.Email ?? "" : u.NomeCompleto);
+    }
+
+    private void Filtrar(ChangeEventArgs e) =>
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameter("status", e.Value?.ToString() is { Length: > 0 } v ? v : null));
+}

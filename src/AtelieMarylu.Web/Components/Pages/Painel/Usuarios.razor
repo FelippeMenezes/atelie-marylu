@@ -1,0 +1,46 @@
+@page "/painel/usuarios"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Papeis.Admin)]
+@inject AcessoService Acesso
+
+<PageTitle>Usuários · Painel</PageTitle>
+
+<h1>Usuários e acessos</h1>
+<p class="text-secondary">Para tornar alguém funcionário, a pessoa primeiro cria a conta no site. Depois, aqui, dê permissões individuais ou coloque-a em um grupo.</p>
+
+<input class="form-control mb-3" style="max-width: 320px" placeholder="Buscar por nome ou e-mail"
+       @bind="busca" @bind:event="oninput" @bind:after="CarregarAsync" />
+
+@if (usuarios is null)
+{
+    <p>Carregando...</p>
+}
+else
+{
+    <div class="table-responsive caixa p-0">
+        <table class="table align-middle m-0">
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Grupos</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var u in usuarios)
+                {
+                    <tr>
+                        <td>@u.Nome</td>
+                        <td>@u.Email</td>
+                        <td>@(u.EhAdmin ? "Admin" : u.EhFuncionario ? "Funcionário" : "Cliente")</td>
+                        <td>@string.Join(", ", u.Grupos)</td>
+                        <td class="text-end"><a href="painel/usuarios/@u.Id">Acessos</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<ResumoUsuario>? usuarios;
+    private string? busca;
+
+    protected override Task OnInitializedAsync() => CarregarAsync();
+
+    private async Task CarregarAsync() => usuarios = await Acesso.ListarUsuariosAsync(busca);
+}

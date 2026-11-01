@@ -1,0 +1,88 @@
+@page "/painel/grupos"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Papeis.Admin)]
+@inject AcessoService Acesso
+
+<PageTitle>Grupos · Painel</PageTitle>
+
+<h1>Grupos de funcionários</h1>
+<p class="text-secondary">Um grupo reúne permissões. Ao colocar um funcionário no grupo, ele recebe todas de uma vez (ex.: "Expedição" com ver e editar pedidos).</p>
+
+<section class="caixa mb-3">
+    <div class="d-flex gap-2 flex-wrap">
+        <input class="form-control w-auto" placeholder="Nome do novo grupo" @bind="novoGrupo" maxlength="50" />
+        <button class="btn btn-primary" @onclick="Criar" disabled="@string.IsNullOrWhiteSpace(novoGrupo)">Criar grupo</button>
+    </div>
+</section>
+
+<Aviso Mensagem="@mensagem" Erro="@erro" />
+
+@foreach (var g in grupos)
+{
+    var marcadas = edicao[g.Nome];
+    <section class="caixa mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="h5 m-0">@g.Nome <span class="small text-secondary">(@g.Membros membro(s))</span></h2>
+            @if (excluindo == g.Nome)
+            {
+                <span>
+                    Excluir o grupo? Os membros perdem estas permissões.
+                    <button class="btn btn-danger btn-sm" @onclick="() => Excluir(g.Nome)">Sim</button>
+                    <button class="btn btn-link btn-sm" @onclick="() => excluindo = null">Não</button>
+                </span>
+            }
+            else
+            {
+                <button class="btn btn-outline-danger btn-sm" @onclick="() => excluindo = g.Nome">Excluir</button>
+            }
+        </div>
+        <div class="mt-2">
+            @foreach (var (codigo, descricao) in Permissoes.Todas)
+            {
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="@($"{g.Nome}-{codigo}")" checked="@marcadas.Contains(codigo)"
+                           @onchange="e => { if (e.Value is true) marcadas.Add(codigo); else marcadas.Remove(codigo); }" />
+                    <label class="form-check-label" for="@($"{g.Nome}-{codigo}")">@descricao</label>
+                </div>
+            }
+        </div>
+        <button class="btn btn-outline-primary btn-sm mt-2" @onclick="() => Salvar(g.Nome)">Salvar permissões</button>
+    </section>
+}
+
+@code {
+    private IReadOnlyList<ResumoGrupo> grupos = [];
+    private Dictionary<string, HashSet<string>> edicao = [];
+    private string? novoGrupo, mensagem, excluindo;
+    private bool erro;
+
+    protected override Task OnInitializedAsync() => CarregarAsync();
+
+    private async Task CarregarAsync()
+    {
+        grupos = await Acesso.ListarGruposAsync();
+        edicao = grupos.ToDictionary(g => g.Nome, g => g.Permissoes.ToHashSet());
+    }
+
+    private Task Criar() => Executar(() => Acesso.CriarGrupoAsync(novoGrupo ?? ""), "Grupo criado.", limparNome: true);
+
+    private Task Salvar(string nome) => Executar(() => Acesso.SalvarPermissoesGrupoAsync(nome, edicao[nome]), $"Permissões de \"{nome}\" salvas.");
+
+    private Task Excluir(string nome) => Executar(() => Acesso.ExcluirGrupoAsync(nome), "Grupo excluído.");
+
+    private async Task Executar(Func<Task> acao, string sucesso, bool limparNome = false)
+    {
+        excluindo = null;
+        try
+        {
+            await acao();
+            (mensagem, erro) = (sucesso, false);
+            if (limparNome) novoGrupo = null;
+        }
+        catch (AcessoException ex)
+        {
+            (mensagem, erro) = (ex.Message, true);
+        }
+        await CarregarAsync();
+    }
+}

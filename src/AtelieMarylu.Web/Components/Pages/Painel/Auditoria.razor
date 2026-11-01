@@ -1,0 +1,64 @@
+@page "/painel/auditoria"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Papeis.Admin)]
+@using AtelieMarylu.Domain.Auditoria
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+
+<PageTitle>Auditoria · Painel</PageTitle>
+
+<h1>Auditoria</h1>
+<p class="text-secondary">Registro de quem fez o quê no painel e dos eventos de pagamento. Não pode ser alterado.</p>
+
+<div class="d-flex gap-2 mb-3 flex-wrap">
+    <select class="form-select w-auto" @bind="entidade" @bind:after="CarregarAsync" aria-label="Filtrar por tipo">
+        <option value="">Tudo</option>
+        <option value="Pedido">Pedidos</option>
+        <option value="Produto">Produtos</option>
+        <option value="Usuario">Usuários</option>
+        <option value="Grupo">Grupos</option>
+    </select>
+    <input class="form-control w-auto" placeholder="Buscar autor ou detalhe" @bind="busca" @bind:event="oninput" @bind:after="CarregarAsync" />
+</div>
+
+<div class="table-responsive caixa p-0">
+    <table class="table table-sm align-middle m-0">
+        <thead><tr><th>Quando</th><th>Quem</th><th>Ação</th><th>Item</th><th>Detalhes</th></tr></thead>
+        <tbody>
+            @foreach (var r in registros)
+            {
+                <tr class="@(r.Acao == "pagamento.divergente" ? "table-danger" : "")">
+                    <td class="text-nowrap">@r.Quando.Formatar()</td>
+                    <td>@r.Autor</td>
+                    <td><code>@r.Acao</code></td>
+                    <td>
+                        @if (r.Entidade == "Pedido") { <a href="painel/pedidos/@r.EntidadeId">Pedido @r.EntidadeId</a> }
+                        else if (r.Entidade == "Produto") { <a href="painel/produtos/@r.EntidadeId">Produto @r.EntidadeId</a> }
+                        else { @($"{r.Entidade} {r.EntidadeId}") }
+                    </td>
+                    <td class="small">@r.Detalhes</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private List<RegistroAuditoria> registros = [];
+    private string entidade = "";
+    private string? busca;
+
+    protected override Task OnInitializedAsync() => CarregarAsync();
+
+    private async Task CarregarAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var consulta = db.Auditoria.AsNoTracking();
+        if (entidade != "") consulta = consulta.Where(a => a.Entidade == entidade);
+        if (!string.IsNullOrWhiteSpace(busca))
+        {
+            var termo = $"%{busca.Trim()}%";
+            consulta = consulta.Where(a => EF.Functions.ILike(a.Autor, termo) || EF.Functions.ILike(a.Detalhes!, termo));
+        }
+        registros = await consulta.OrderByDescending(a => a.Quando).Take(300).ToListAsync();
+    }
+}

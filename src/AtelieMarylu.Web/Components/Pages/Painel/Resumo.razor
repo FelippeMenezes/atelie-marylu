@@ -1,0 +1,67 @@
+@page "/painel"
+@using AtelieMarylu.Domain.Auditoria
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+
+<PageTitle>Painel · Ateliê Marylu</PageTitle>
+
+<h1>Painel</h1>
+
+<AuthorizeView Policy="@Permissoes.PedidosVer">
+    @if (alertas.Count > 0)
+    {
+        <section class="alert alert-danger">
+            <h2 class="h5">Pagamentos que precisam de atenção</h2>
+            <p class="small">Pagamentos aprovados em pedidos cancelados ou com valor diferente. Verifique e, se for o caso, estorne no provedor.</p>
+            <ul class="mb-0">
+                @foreach (var a in alertas)
+                {
+                    <li><a href="painel/pedidos/@a.EntidadeId">@a.Quando.Formatar()</a>: @a.Detalhes</li>
+                }
+            </ul>
+        </section>
+    }
+</AuthorizeView>
+
+<div class="row g-3">
+    <AuthorizeView Policy="@Permissoes.PedidosVer">
+        <div class="col-sm-6">
+            <a href="painel/pedidos?status=@StatusPedido.Pago" class="caixa d-block text-decoration-none">
+                <div class="fs-2 fw-bold">@pagos</div>
+                Pedidos pagos aguardando preparo
+            </a>
+        </div>
+        <div class="col-sm-6">
+            <a href="painel/pedidos?status=@StatusPedido.AguardandoPagamento" class="caixa d-block text-decoration-none">
+                <div class="fs-2 fw-bold">@aguardandoPagamento</div>
+                Pedidos aguardando pagamento
+            </a>
+        </div>
+    </AuthorizeView>
+    <AuthorizeView Policy="@Permissoes.ProdutosGerenciar">
+        <div class="col-sm-6">
+            <a href="painel/produtos" class="caixa d-block text-decoration-none">
+                <div class="fs-2 fw-bold">@esgotados</div>
+                Produtos ativos esgotados
+            </a>
+        </div>
+    </AuthorizeView>
+</div>
+
+@code {
+    private int pagos, aguardandoPagamento, esgotados;
+    private List<RegistroAuditoria> alertas = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        // São só contagens; cada tela de destino confere a permissão de novo
+        await using var db = await DbFactory.CreateDbContextAsync();
+        pagos = await db.Pedidos.CountAsync(p => p.Status == StatusPedido.Pago);
+        aguardandoPagamento = await db.Pedidos.CountAsync(p => p.Status == StatusPedido.AguardandoPagamento);
+        esgotados = await db.Produtos.CountAsync(p => p.Ativo && p.Estoque == 0);
+
+        var desde = DateTime.UtcNow.AddDays(-30);
+        alertas = await db.Auditoria.AsNoTracking()
+            .Where(a => a.Acao == "pagamento.divergente" && a.Quando >= desde)
+            .OrderByDescending(a => a.Quando).Take(20).ToListAsync();
+    }
+}
