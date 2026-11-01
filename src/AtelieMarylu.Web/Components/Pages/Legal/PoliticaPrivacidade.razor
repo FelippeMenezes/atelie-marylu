@@ -1,0 +1,42 @@
+@page "/politica-de-privacidade"
+@using AtelieMarylu.Web.Configuracao
+@using Microsoft.Extensions.Options
+@inject IOptions<LojaOptions> Opcoes
+
+@{ var loja = Opcoes.Value; }
+<PageTitle>Política de privacidade · @loja.Nome</PageTitle>
+
+<article class="caixa" style="max-width: 820px">
+    <h1>Política de privacidade</h1>
+    <p class="small text-secondary">Modelo inicial baseado na LGPD (Lei 13.709/2018). Revise antes de publicar.</p>
+
+    <h2 class="h5">Quem é o controlador</h2>
+    <p>
+        @(string.IsNullOrEmpty(loja.RazaoSocial) ? loja.Nome : loja.RazaoSocial)@(string.IsNullOrEmpty(loja.Documento) ? "" : $", {loja.Documento}").
+        @if (!string.IsNullOrEmpty(loja.EmailContato)) { <text>Contato para assuntos de privacidade: <a href="mailto:@loja.EmailContato">@loja.EmailContato</a>.</text> }
+    </p>
+
+    <h2 class="h5">Quais dados coletamos e por quê</h2>
+    <ul>
+        <li><strong>Cadastro</strong> (nome, e-mail, telefone, senha): para você acessar sua conta e acompanhar pedidos. A senha é guardada de forma irreversível (hash); nem a loja consegue lê-la.</li>
+        <li><strong>Endereço de entrega</strong>: para calcular o frete e enviar o pedido.</li>
+        <li><strong>Dados do pedido e do pagamento</strong>: para cumprir o contrato de compra e obrigações fiscais. Os dados do cartão são digitados no ambiente do provedor de pagamento e não passam pela loja.</li>
+        <li><strong>Registros de acesso</strong> (data, hora e IP): exigidos pelo Marco Civil da Internet e usados para segurança (ex.: bloquear tentativas de invasão).</li>
+    </ul>
+
+    <h2 class="h5">Com quem compartilhamos</h2>
+    <p>Somente com quem é necessário para concluir a compra: provedor de pagamento, transportadora/Correios e serviço de hospedagem do site. Não vendemos dados.</p>
+
+    <h2 class="h5">Cookies</h2>
+    <p>Usamos apenas cookies essenciais: login, proteção contra fraudes em formulários e o carrinho guardado no seu navegador. Não usamos cookies de publicidade.</p>
+
+    <h2 class="h5">Por quanto tempo guardamos</h2>
+    <p>Dados da conta: enquanto ela existir. Pedidos e notas: pelo prazo exigido pela legislação fiscal (5 anos). Registros de acesso: 6 meses.</p>
+
+    <h2 class="h5">Seus direitos</h2>
+    <p>
+        Em <a href="Account/Manage/PersonalData">Minha conta → Dados pessoais</a> você pode baixar seus dados ou excluir sua conta.
+        Se houver pedidos, os dados de identificação são anonimizados e o registro da venda é mantido apenas pelo prazo legal.
+        Para correções ou dúvidas, fale com a gente pelos canais acima.
+    </p>
+</article>

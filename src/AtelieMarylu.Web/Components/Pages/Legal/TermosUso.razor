@@ -1,0 +1,37 @@
+@page "/termos-de-uso"
+@using AtelieMarylu.Web.Configuracao
+@using Microsoft.Extensions.Options
+@inject IOptions<LojaOptions> Opcoes
+
+@{ var loja = Opcoes.Value; }
+<PageTitle>Termos de uso · @loja.Nome</PageTitle>
+
+<article class="caixa" style="max-width: 820px">
+    <h1>Termos de uso</h1>
+    <p class="small text-secondary">Modelo inicial. Revise antes de publicar.</p>
+
+    <h2 class="h5">Sobre a loja</h2>
+    <p>
+        Este site é operado por @(string.IsNullOrEmpty(loja.RazaoSocial) ? loja.Nome : loja.RazaoSocial)@(string.IsNullOrEmpty(loja.Documento) ? "" : $", {loja.Documento}")@(string.IsNullOrEmpty(loja.Endereco) ? "" : $", {loja.Endereco}").
+    </p>
+
+    <h2 class="h5">Pedidos e preços</h2>
+    <ul>
+        <li>O pedido só é confirmado após a aprovação do pagamento. Pedidos não pagos dentro do prazo informado são cancelados automaticamente.</li>
+        <li>Os preços valem no momento da confirmação do pedido. O desconto no PIX vale apenas para pagamento por PIX.</li>
+        <li>As fotos representam a peça, mas por ser trabalho artesanal pode haver pequenas variações de corte, cor e estampa.</li>
+        <li>Peças sob encomenda têm prazo de produção informado na página do produto, contado a partir da confirmação do pagamento.</li>
+    </ul>
+
+    <h2 class="h5">Entrega</h2>
+    <p>O prazo do frete é estimado pela transportadora e começa a contar após o envio. O código de rastreio fica disponível em "Meus pedidos".</p>
+
+    <h2 class="h5">Trocas, devoluções e cancelamento</h2>
+    <p>Veja a <a href="trocas-e-devolucoes">política de trocas e devoluções</a>, que inclui o direito de arrependimento de 7 dias.</p>
+
+    <h2 class="h5">Conta</h2>
+    <p>Você é responsável por manter sua senha em sigilo. Contas usadas para fraude podem ser bloqueadas.</p>
+
+    <h2 class="h5">Privacidade</h2>
+    <p>O uso dos seus dados segue a <a href="politica-de-privacidade">política de privacidade</a>.</p>
+</article>
