@@ -259,7 +259,9 @@ else
         [StringLength(2000)]
         public string Descricao { get; set; } = "";
 
-        [Range(typeof(decimal), "0.01", "99999", ErrorMessage = "Preço inválido.")]
+        // Os limites estão escritos com ponto: sem ParseLimitsInInvariantCulture, a cultura pt-BR
+        // (que usa vírgula) não consegue ler "0.01" e a validação derruba a página ao digitar o preço
+        [Range(typeof(decimal), "0.01", "99999", ErrorMessage = "Preço inválido.", ParseLimitsInInvariantCulture = true)]
         public decimal Preco { get; set; }
 
         [Range(0, 100000, ErrorMessage = "Estoque inválido.")]
