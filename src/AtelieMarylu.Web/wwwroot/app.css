@@ -1,0 +1,440 @@
+/* Cores do logo, ajustadas para contraste acessível (WCAG AA, mínimo 4,5:1 em texto normal):
+   texto branco sobre --marca = 5,07:1; --marca-escura sobre o fundo creme = 5,75:1 */
+:root {
+    --magenta: #ce4797;        /* cor original do logo: só em detalhes e títulos grandes */
+    --marca: #b8408a;          /* fundos com texto branco (topo, rodapé, botões) */
+    --marca-escura: #a8357a;   /* links e texto colorido */
+    --rosa: #eb92ab;
+    --lilas: #efcfe3;
+    --creme: #fdf7fa;
+    --texto: #4a2a3d;
+    --branco: #ffffff;
+    --whatsapp: #1f8f4e;
+}
+
+html, body {
+    font-family: "Quicksand", system-ui, sans-serif;
+    color: var(--texto);
+    background: var(--creme);
+}
+
+h1, h2, h3, h4, .marca span {
+    font-family: "Fredoka", "Quicksand", sans-serif;
+    font-weight: 600;
+}
+
+h1 {
+    color: var(--magenta);
+}
+
+h1:focus {
+    outline: none;
+}
+
+a, .btn-link {
+    color: var(--marca-escura);
+}
+
+.pular-conteudo {
+    position: absolute;
+    left: -9999px;
+}
+
+.pular-conteudo:focus {
+    left: 1rem;
+    top: 1rem;
+    z-index: 100;
+    background: var(--branco);
+    padding: .5rem 1rem;
+}
+
+/* Cabeçalho */
+.topo {
+    background: var(--marca);
+    padding: .6rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.topo a, .topo .btn-link {
+    color: var(--branco);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.topo a:hover, .topo .btn-link:hover {
+    text-decoration: underline;
+}
+
+.marca {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    font-size: 1.2rem;
+}
+
+.topo .links {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.carrinho .badge {
+    background: var(--branco);
+    color: var(--marca-escura);
+    border-radius: 999px;
+    margin-left: .15rem;
+}
+
+.menu-toggle {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.menu-botao {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.menu-botao span, .menu-botao span::before, .menu-botao span::after {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--branco);
+    position: relative;
+    content: "";
+}
+
+.menu-botao span::before { position: absolute; top: -7px; }
+.menu-botao span::after { position: absolute; top: 7px; }
+
+.menu-toggle:focus-visible + .menu-botao {
+    outline: 2px solid var(--branco);
+}
+
+@media (max-width: 991.98px) {
+    .topo .links {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .75rem;
+        padding: .75rem 0 .25rem;
+    }
+
+    .menu-toggle:checked ~ .links {
+        display: flex;
+    }
+}
+
+/* Rodapé */
+.rodape {
+    padding: 1.75rem 0;
+    background: var(--marca);
+    color: var(--branco);
+    font-size: .92rem;
+}
+
+.rodape a {
+    color: var(--branco);
+}
+
+/* WhatsApp flutuante */
+.whatsapp {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--whatsapp);
+    color: var(--branco);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
+    z-index: 20;
+}
+
+.whatsapp:hover {
+    color: var(--branco);
+    filter: brightness(1.1);
+}
+
+/* Botões */
+.btn-primary {
+    color: var(--branco);
+    background-color: var(--marca);
+    border-color: var(--marca);
+}
+
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+    background-color: var(--marca-escura) !important;
+    border-color: var(--marca-escura) !important;
+}
+
+.btn-primary:disabled {
+    background-color: var(--marca);
+    border-color: var(--marca);
+    opacity: .55;
+}
+
+.btn-outline-primary {
+    color: var(--marca-escura);
+    border-color: var(--marca-escura);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--marca-escura);
+    border-color: var(--marca-escura);
+    color: var(--branco);
+}
+
+.btn:focus-visible, .form-control:focus, .form-check-input:focus, .form-select:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem var(--rosa);
+}
+
+/* Vitrine */
+.vitrine {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
+}
+
+@media (max-width: 575.98px) {
+    .vitrine {
+        grid-template-columns: repeat(2, 1fr);
+        gap: .75rem;
+    }
+}
+
+.produto-card {
+    background: var(--branco);
+    border-radius: 18px;
+    overflow: hidden;
+    border: 2px dashed var(--rosa);
+    display: flex;
+    flex-direction: column;
+}
+
+.produto-card a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.produto-foto {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    object-fit: cover;
+    background: var(--lilas);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.produto-foto img {
+    width: 40%;
+    opacity: .6;
+}
+
+img.produto-foto {
+    display: block;
+}
+
+.produto-info {
+    padding: .9rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+    flex: 1;
+}
+
+.preco {
+    color: var(--marca-escura);
+    font-weight: 700;
+    font-size: 1.15rem;
+}
+
+.preco-extra {
+    font-size: .85rem;
+}
+
+.selo {
+    display: inline-block;
+    font-size: .78rem;
+    font-weight: 700;
+    padding: .1rem .5rem;
+    border-radius: 999px;
+    background: var(--lilas);
+    color: var(--marca-escura);
+}
+
+/* Galeria do produto: rolagem com "encaixe", funciona sem JavaScript */
+.galeria {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: .5rem;
+    border-radius: 18px;
+}
+
+.galeria > * {
+    flex: 0 0 100%;
+    scroll-snap-align: center;
+}
+
+.galeria-miniaturas {
+    display: flex;
+    gap: .5rem;
+    margin-top: .5rem;
+    flex-wrap: wrap;
+}
+
+.galeria-miniaturas a {
+    width: 64px;
+}
+
+.caixa {
+    background: var(--branco);
+    border-radius: 18px;
+    padding: 1.25rem;
+    border: 1px solid var(--lilas);
+}
+
+.status {
+    display: inline-block;
+    padding: .15rem .6rem;
+    border-radius: 999px;
+    font-size: .85rem;
+    font-weight: 600;
+    background: var(--lilas);
+    color: var(--marca-escura);
+}
+
+.status-Cancelado {
+    background: #eee;
+    color: #555;
+}
+
+.status-Pago, .status-Entregue {
+    background: #d9f2e3;
+    color: #1d6b3c;
+}
+
+/* Quantidade − / + */
+.quantidade {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #ced4da;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--branco);
+}
+
+.quantidade button {
+    border: 0;
+    background: transparent;
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+    color: var(--marca-escura);
+}
+
+.quantidade button:disabled {
+    color: #bbb;
+}
+
+.quantidade span {
+    min-width: 32px;
+    text-align: center;
+    font-weight: 700;
+}
+
+/* Esqueleto de carregamento (evita o "pisca" de conteúdo) */
+.esqueleto {
+    background: linear-gradient(90deg, var(--lilas) 25%, #f7e4ef 50%, var(--lilas) 75%);
+    background-size: 200% 100%;
+    animation: esqueleto 1.2s infinite;
+    border-radius: 12px;
+    min-height: 1rem;
+}
+
+@keyframes esqueleto {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .esqueleto { animation: none; }
+}
+
+.pix {
+    font-family: monospace;
+    word-break: break-all;
+    background: var(--creme);
+    padding: .5rem;
+    border-radius: 8px;
+}
+
+.pix-qr {
+    width: 220px;
+    max-width: 100%;
+    image-rendering: pixelated;
+}
+
+/* Painel */
+.painel-menu a {
+    display: block;
+    padding: .4rem .75rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.painel-menu a.active {
+    background: var(--marca);
+    color: var(--branco);
+}
+
+/* Formulários e validação (template) */
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+}
+
+.invalid {
+    outline: 1px solid #e50000;
+}
+
+.validation-message {
+    color: #c00000;
+}
+
+.blazor-error-boundary {
+    background: #b32121;
+    padding: 1rem;
+    color: white;
+}
+
+.blazor-error-boundary::after {
+    content: "Ocorreu um erro.";
+}
+
+.darker-border-checkbox.form-check-input {
+    border-color: #929292;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+    color: var(--bs-secondary-color);
+    text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+    text-align: start;
+}
