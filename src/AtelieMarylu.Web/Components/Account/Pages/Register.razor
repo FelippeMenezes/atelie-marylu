@@ -138,10 +138,15 @@
         {
             return Activator.CreateInstance<ApplicationUser>();
         }
-        catch
+        catch (MissingMethodException ex)
         {
             throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
-                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.");
+                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.", ex);
+        }
+        catch (MemberAccessException ex)
+        {
+            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
+                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.", ex);
         }
     }
 
