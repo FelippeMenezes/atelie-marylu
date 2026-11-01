@@ -14,7 +14,9 @@ COPY src/AtelieMarylu.Web/AtelieMarylu.Web.csproj src/AtelieMarylu.Web/
 RUN dotnet restore src/AtelieMarylu.Web/AtelieMarylu.Web.csproj -a $TARGETARCH
 
 COPY src/ src/
-RUN dotnet publish src/AtelieMarylu.Web/AtelieMarylu.Web.csproj -c Release -a $TARGETARCH --no-restore -o /app
+# Sem --no-restore: com ele, os arquivos do framework (_framework/blazor.web.js) ficavam fora da
+# publicação e o site perdia a interatividade. O restore aqui é rápido, pois reaproveita o de cima.
+RUN dotnet publish src/AtelieMarylu.Web/AtelieMarylu.Web.csproj -c Release -a $TARGETARCH -o /app
 
 # ---- Execução ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
