@@ -164,7 +164,8 @@ else if (pedido is not null)
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Falha na ação do pedido {Codigo}", Codigo);
+            // Registra o Id interno, não o código digitado na URL (evita "log injection")
+            Logger.LogError(ex, "Falha na ação do pedido {PedidoId}", pedido?.Id);
             (mensagem, erro) = ("Não foi possível concluir. Tente novamente.", true);
         }
         finally

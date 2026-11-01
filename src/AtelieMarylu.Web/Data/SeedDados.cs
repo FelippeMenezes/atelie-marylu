@@ -21,11 +21,9 @@ public static class SeedDados
             await db.Database.MigrateAsync();
 
         var roleManager = sp.GetRequiredService<RoleManager<IdentityRole>>();
-        foreach (var papel in new[] { Papeis.Admin, Papeis.Cliente })
-        {
-            if (!await roleManager.RoleExistsAsync(papel))
-                await roleManager.CreateAsync(new IdentityRole(papel));
-        }
+        var existentes = await roleManager.Roles.Select(r => r.Name).ToListAsync();
+        foreach (var papel in new[] { Papeis.Admin, Papeis.Cliente }.Where(p => !existentes.Contains(p)))
+            await roleManager.CreateAsync(new IdentityRole(papel));
 
         await CriarAdminInicialAsync(sp, config, logger);
 
@@ -69,6 +67,7 @@ public static class SeedDados
         }
 
         await userManager.AddToRoleAsync(usuario, Papeis.Admin);
-        logger.LogInformation("Admin inicial {Email} criado.", email);
+        // Não registra o e-mail: dado pessoal não deve ir para o log
+        logger.LogInformation("Admin inicial criado. Ele deve trocar a senha no primeiro acesso.");
     }
 }
