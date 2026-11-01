@@ -5,12 +5,12 @@
 *.user
 .vs/
 
-# React / Node
-node_modules/
-build/
-dist/
+# Segredos locais (o .env.example vai para o Git, o .env não)
 .env
 
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Fotos enviadas pelo painel (ficam no servidor, não no Git)
+src/AtelieMarylu.Web/wwwroot/uploads/
