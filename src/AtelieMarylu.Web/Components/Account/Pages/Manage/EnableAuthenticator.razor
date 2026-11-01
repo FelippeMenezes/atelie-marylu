@@ -130,19 +130,19 @@ else
         }
     }
 
-    private async ValueTask LoadSharedKeyAndQrCodeUriAsync(ApplicationUser user)
+    private async ValueTask LoadSharedKeyAndQrCodeUriAsync(ApplicationUser currentUser)
     {
         // Load the authenticator key & QR code URI to display on the form
-        var unformattedKey = await UserManager.GetAuthenticatorKeyAsync(user);
+        var unformattedKey = await UserManager.GetAuthenticatorKeyAsync(currentUser);
         if (string.IsNullOrEmpty(unformattedKey))
         {
-            await UserManager.ResetAuthenticatorKeyAsync(user);
-            unformattedKey = await UserManager.GetAuthenticatorKeyAsync(user);
+            await UserManager.ResetAuthenticatorKeyAsync(currentUser);
+            unformattedKey = await UserManager.GetAuthenticatorKeyAsync(currentUser);
         }
 
         sharedKey = FormatKey(unformattedKey!);
 
-        var email = await UserManager.GetEmailAsync(user);
+        var email = await UserManager.GetEmailAsync(currentUser);
         authenticatorUri = GenerateQrCodeUri(email!, unformattedKey!);
     }
 
