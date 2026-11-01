@@ -111,8 +111,15 @@ else
         await using var db = await DbFactory.CreateDbContextAsync();
         produto = await db.Produtos.AsNoTracking().Include(p => p.Imagens).FirstOrDefaultAsync(p => p.Id == Id && p.Ativo);
 
+        // Produto inexistente responde 404 (página "não encontrada"), para o Google não indexar páginas vazias
+        if (produto is null)
+        {
+            Navigation.NotFound();
+            return;
+        }
+
         // URL canônica com o nome do produto (melhor para SEO e para quem recebe o link)
-        if (produto is not null && Slug != produto.Slug)
+        if (Slug != produto.Slug)
             Navigation.NavigateTo(produto.Url, replace: true);
     }
 

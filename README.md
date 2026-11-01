@@ -2,8 +2,6 @@
 
 Loja online do Ateliê Marylu, de costura criativa. Feita em .NET 10 (Blazor) com PostgreSQL.
 
-O plano completo, com fases, perfis de acesso e checklist de segurança, está em [docs/PLANO.md](docs/PLANO.md).
-
 ## Pré-requisitos
 
 - .NET SDK 10
@@ -81,6 +79,10 @@ dotnet ef migrations add NomeDaMudanca -p src/AtelieMarylu.Web -o Data/Migration
 ## Pagamento simulado
 
 Até a integração com o Mercado Pago, o pagamento é simulado. Na página do pedido, em desenvolvimento, aparece o botão **Simular pagamento aprovado**. Ele usa o mesmo caminho que o webhook real vai usar.
+
+## Produção
+
+A loja roda num único servidor com Docker: Caddy (HTTPS automático), a aplicação e o Postgres, definidos em `docker-compose.prod.yml`. O passo a passo para publicar gratuitamente na Oracle Cloud está em [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## CI
 

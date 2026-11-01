@@ -1,0 +1,89 @@
+# Produção num único servidor (ex.: VM gratuita da Oracle Cloud).
+# Uso: cp .env.producao.example .env.producao (preencha) && docker compose -f docker-compose.prod.yml --env-file .env.producao up -d --build
+#
+# Internet ──443/80──> caddy (HTTPS automático) ──8080──> app (.NET) ──5432──> postgres
+# Só o Caddy fica exposto. App e banco são acessíveis apenas pela rede interna do Docker.
+
+name: atelie-marylu
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"   # HTTP/3
+    environment:
+      DOMINIO: ${DOMINIO:?Defina DOMINIO no .env.producao}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-dados:/data        # certificados HTTPS (não perder, senão pede de novo ao Let's Encrypt)
+      - caddy-config:/config
+    depends_on:
+      - app
+    networks:
+      - interna
+    logging: &logs
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "10"
+
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres;Database=${POSTGRES_DB:-atelie_marylu};Username=${POSTGRES_USER:-atelie};Password=${POSTGRES_PASSWORD};GSS Encryption Mode=Disable"
+      Banco__AplicarMigrations: "true"
+      AllowedHosts: ${DOMINIO}
+      # O Caddy fica nesta sub-rede; só dele aceitamos X-Forwarded-For/Proto (IP real e HTTPS)
+      Proxy__RedesConfiaveis__0: 172.30.0.0/24
+      AdminInicial__Email: ${ADMIN_EMAIL:-}
+      AdminInicial__Senha: ${ADMIN_SENHA:-}
+      Loja__RazaoSocial: ${LOJA_RAZAO_SOCIAL:-}
+      Loja__Documento: ${LOJA_DOCUMENTO:-}
+      Loja__Endereco: ${LOJA_ENDERECO:-}
+      Loja__EmailContato: ${LOJA_EMAIL:-}
+      Loja__Telefone: ${LOJA_TELEFONE:-}
+      Loja__WhatsApp: ${LOJA_WHATSAPP:-}
+      Turnstile__SiteKey: ${TURNSTILE_SITE_KEY:-}
+      Turnstile__SecretKey: ${TURNSTILE_SECRET_KEY:-}
+    volumes:
+      - fotos:/app/wwwroot/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - interna
+    logging: *logs
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-atelie_marylu}
+      POSTGRES_USER: ${POSTGRES_USER:-atelie}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env.producao}
+    volumes:
+      - banco:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+    networks:
+      - interna
+    logging: *logs
+
+networks:
+  interna:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+volumes:
+  banco:
+  fotos:
+  caddy-dados:
+  caddy-config:

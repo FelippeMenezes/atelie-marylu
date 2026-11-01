@@ -17,7 +17,9 @@ public static class SeedDados
         var config = sp.GetRequiredService<IConfiguration>();
         var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(SeedDados));
 
-        if (desenvolvimento)
+        // Em produção, só aplica migrations se Banco:AplicarMigrations=true (o docker-compose de produção liga).
+        // Serve para um único servidor; o EF trava a tabela de histórico, então duas instâncias não aplicam juntas.
+        if (desenvolvimento || config.GetValue<bool>("Banco:AplicarMigrations"))
             await db.Database.MigrateAsync();
 
         var roleManager = sp.GetRequiredService<RoleManager<IdentityRole>>();

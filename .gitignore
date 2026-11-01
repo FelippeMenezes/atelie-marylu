@@ -17,3 +17,7 @@ src/AtelieMarylu.Web/wwwroot/uploads/
 
 # Plano do projeto (documento pessoal, fica só na máquina local)
 docs/PLANO.md
+
+# Produção: variáveis e backups ficam só no servidor
+.env.producao
+backups/
