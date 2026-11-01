@@ -1,0 +1,34 @@
+@page "/meus-pedidos"
+@attribute [Authorize]
+@using System.Security.Claims
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+
+<PageTitle>Meus pedidos · Ateliê Marylu</PageTitle>
+
+<h1>Meus pedidos</h1>
+
+@if (pedidos.Count == 0)
+{
+    <p>Você ainda não fez nenhum pedido.</p>
+    <a href="" class="btn btn-primary">Ver produtos</a>
+}
+else
+{
+    <TabelaPedidos Pedidos="pedidos" Link="meus-pedidos" PorCodigo="true" />
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private List<Pedido> pedidos = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var clienteId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier);
+        await using var db = await DbFactory.CreateDbContextAsync();
+        pedidos = await db.Pedidos.AsNoTracking().Include(p => p.Itens)
+            .Where(p => p.ClienteId == clienteId)
+            .OrderByDescending(p => p.CriadoEm)
+            .ToListAsync();
+    }
+}

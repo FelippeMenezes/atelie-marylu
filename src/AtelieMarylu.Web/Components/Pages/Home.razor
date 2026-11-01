@@ -1,0 +1,63 @@
+﻿@page "/"
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Ateliê Marylu · Costura criativa</PageTitle>
+<HeadContent>
+    <meta name="description" content="Bolsas, necessaires e acessórios costurados à mão no Ateliê Marylu. Compre online com PIX ou cartão." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Ateliê Marylu · Costura criativa" />
+    <meta property="og:description" content="Peças feitas à mão, ponto a ponto, com carinho." />
+    <meta property="og:image" content="@(Navigation.BaseUri)img/logo.png" />
+    <link rel="canonical" href="@Navigation.BaseUri" />
+</HeadContent>
+
+<h1>Peças feitas à mão</h1>
+<p class="mb-4">Bolsas, necessaires e acessórios costurados um a um no ateliê. Cada peça é única. Você pode montar o carrinho sem cadastro.</p>
+
+@if (produtos.Count == 0)
+{
+    <p>Nenhum produto disponível no momento. Acompanhe as novidades no Instagram.</p>
+}
+else
+{
+    <div class="vitrine">
+        @foreach (var p in produtos)
+        {
+            <article class="produto-card">
+                <a href="@p.Url">
+                    <FotoProduto Url="@p.Capa?.UrlMiniatura" Nome="@p.Nome" />
+                </a>
+                <div class="produto-info">
+                    <a href="@p.Url"><h2 class="h6 m-0">@p.Nome</h2></a>
+                    @if (p.Estoque == 0)
+                    {
+                        <span class="selo align-self-start">Esgotado</span>
+                    }
+                    else if (p.Estoque <= 2)
+                    {
+                        <span class="selo align-self-start">Últimas unidades</span>
+                    }
+                    else if (p.PrazoProducaoDias is not null)
+                    {
+                        <span class="selo align-self-start">Sob encomenda</span>
+                    }
+                    <PrecoProduto Preco="p.Preco" />
+                </div>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    private List<Produto> produtos = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        produtos = await db.Produtos.AsNoTracking().Include(p => p.Imagens)
+            .Where(p => p.Ativo)
+            .OrderByDescending(p => p.Estoque > 0).ThenBy(p => p.Nome)
+            .ToListAsync();
+    }
+}

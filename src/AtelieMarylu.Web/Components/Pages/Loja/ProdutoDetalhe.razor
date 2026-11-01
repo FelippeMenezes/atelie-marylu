@@ -1,0 +1,140 @@
+@page "/produto/{Id:int}"
+@page "/produto/{Id:int}/{Slug}"
+@using System.Text.Json
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+
+@* Página estática (rápida e indexável). Só "adicionar ao carrinho" e "calcular frete" são ilhas interativas. *@
+@if (produto is null)
+{
+    <PageTitle>Produto não encontrado</PageTitle>
+    <h1>Produto não encontrado</h1>
+    <a href="">Voltar para a loja</a>
+}
+else
+{
+    var urlProduto = $"{Navigation.BaseUri}{produto.Url}";
+    var imagem = produto.Capa is { } capa ? $"{Navigation.BaseUri.TrimEnd('/')}{capa.Url}" : $"{Navigation.BaseUri}img/logo.png";
+    var resumo = produto.Descricao.Length > 160 ? produto.Descricao[..157] + "..." : produto.Descricao;
+
+    <PageTitle>@produto.Nome · Ateliê Marylu</PageTitle>
+    <HeadContent>
+        <meta name="description" content="@resumo" />
+        <link rel="canonical" href="@urlProduto" />
+        @* Open Graph: a prévia com foto quando o link é compartilhado no Instagram/WhatsApp *@
+        <meta property="og:type" content="product" />
+        <meta property="og:title" content="@produto.Nome" />
+        <meta property="og:description" content="@resumo" />
+        <meta property="og:image" content="@imagem" />
+        <meta property="og:url" content="@urlProduto" />
+        <meta property="product:price:amount" content="@produto.Preco.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+        <meta property="product:price:currency" content="BRL" />
+        @* Dados estruturados: o Google pode mostrar preço e disponibilidade na busca *@
+        @((MarkupString)$"<script type=\"application/ld+json\">{DadosEstruturados(urlProduto, imagem)}</script>")
+    </HeadContent>
+
+    <nav aria-label="Navegação" class="small mb-3"><a href="">Loja</a> › @produto.Nome</nav>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            @if (produto.Imagens.Count == 0)
+            {
+                <FotoProduto Nome="@produto.Nome" Class="rounded-4" />
+            }
+            else
+            {
+                var fotos = produto.Imagens.OrderBy(i => i.Ordem).ToList();
+                <div class="galeria" tabindex="0" aria-label="Fotos do produto">
+                    @for (var i = 0; i < fotos.Count; i++)
+                    {
+                        <img id="foto-@i" class="produto-foto" src="@fotos[i].Url" alt="@produto.Nome, foto @(i + 1) de @fotos.Count" loading="@(i == 0 ? "eager" : "lazy")" />
+                    }
+                </div>
+                @if (fotos.Count > 1)
+                {
+                    <div class="galeria-miniaturas">
+                        @for (var i = 0; i < fotos.Count; i++)
+                        {
+                            <a href="@($"{produto.Url}#foto-{i}")" aria-label="Ver foto @(i + 1)"><img class="produto-foto rounded-2" src="@fotos[i].UrlMiniatura" alt="" /></a>
+                        }
+                    </div>
+                }
+            }
+        </div>
+        <div class="col-md-6">
+            <h1>@produto.Nome</h1>
+            <PrecoProduto Preco="produto.Preco" Grande="true" />
+
+            <p class="mt-3" style="white-space: pre-line">@produto.Descricao</p>
+
+            <p class="small">
+                @if (produto.PrazoProducaoDias is int dias)
+                {
+                    <strong>Sob encomenda:</strong> <text>produzida em até @dias dias úteis após a confirmação do pagamento, mais o prazo do frete.</text>
+                }
+                else
+                {
+                    <strong>Pronta entrega:</strong> <text>enviamos em até 2 dias úteis após a confirmação do pagamento.</text>
+                }
+                <br /><span class="text-secondary">Peça feita à mão: pequenas variações de corte e estampa fazem parte do charme.</span>
+            </p>
+
+            @if (produto.DisponivelParaVenda)
+            {
+                @if (produto.Estoque <= 2)
+                {
+                    <p class="selo mb-2">Últimas @produto.Estoque unidade(s)</p>
+                }
+                <AdicionarAoCarrinho @rendermode="InteractiveServer" ProdutoId="produto.Id" Estoque="produto.Estoque" />
+            }
+            else
+            {
+                <div class="alert alert-secondary">Esgotado no momento. Chame no WhatsApp ou no Instagram para encomendar.</div>
+            }
+
+            <div class="mt-3">
+                <CalculoFrete @rendermode="InteractiveServer" ProdutoId="produto.Id" />
+            </div>
+            <p class="small mt-3"><a href="trocas-e-devolucoes">Trocas e devoluções</a> · 7 dias para desistir da compra.</p>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [Parameter] public string? Slug { get; set; }
+
+    private Produto? produto;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        produto = await db.Produtos.AsNoTracking().Include(p => p.Imagens).FirstOrDefaultAsync(p => p.Id == Id && p.Ativo);
+
+        // URL canônica com o nome do produto (melhor para SEO e para quem recebe o link)
+        if (produto is not null && Slug != produto.Slug)
+            Navigation.NavigateTo(produto.Url, replace: true);
+    }
+
+    private string DadosEstruturados(string url, string imagem)
+    {
+        var dados = new Dictionary<string, object>
+        {
+            ["@context"] = "https://schema.org",
+            ["@type"] = "Product",
+            ["name"] = produto!.Nome,
+            ["description"] = produto.Descricao,
+            ["image"] = imagem,
+            ["url"] = url,
+            ["offers"] = new Dictionary<string, object>
+            {
+                ["@type"] = "Offer",
+                ["price"] = produto.Preco,
+                ["priceCurrency"] = "BRL",
+                ["availability"] = produto.DisponivelParaVenda ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            },
+        };
+        // O encoder padrão escapa <, > e & — impede que um texto do produto feche a tag <script>
+        return JsonSerializer.Serialize(dados);
+    }
+}

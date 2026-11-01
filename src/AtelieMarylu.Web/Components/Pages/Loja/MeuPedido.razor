@@ -1,0 +1,178 @@
+@page "/meus-pedidos/{Codigo}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@implements IDisposable
+@using System.Security.Claims
+@using AtelieMarylu.Web.Configuracao
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject PedidoService Pedidos
+@inject PedidoEventos Eventos
+@inject IWebHostEnvironment Ambiente
+@inject ILogger<MeuPedido> Logger
+
+<PageTitle>Pedido @Codigo · Ateliê Marylu</PageTitle>
+
+@if (carregado && pedido is null)
+{
+    <h1>Pedido não encontrado</h1>
+    <a href="meus-pedidos">Voltar para meus pedidos</a>
+}
+else if (pedido is not null)
+{
+    @if (Novo == 1 && pedido.Status == StatusPedido.AguardandoPagamento)
+    {
+        <div class="alert alert-success">
+            <strong>Pedido recebido!</strong> Agora é só pagar para a gente começar a preparar sua encomenda.
+        </div>
+    }
+
+    <h1>Pedido @pedido.Codigo</h1>
+    <p>
+        <StatusPedidoBadge Status="pedido.Status" />
+        <span class="text-secondary ms-2">feito em @pedido.CriadoEm.Formatar()</span>
+    </p>
+
+    <Aviso Mensagem="@mensagem" Erro="@erro" />
+
+    @if (pedido.Status == StatusPedido.Pago)
+    {
+        <div class="alert alert-success">Pagamento confirmado! Vamos preparar seu pedido e avisar quando ele for enviado.</div>
+    }
+
+    @if (pedido.Status == StatusPedido.AguardandoPagamento)
+    {
+        <section class="caixa mb-3">
+            <h2 class="h5">Pagamento</h2>
+            <p class="small">Pague até <strong>@pedido.PagarAte.Formatar()</strong>. Depois disso o pedido é cancelado automaticamente.</p>
+
+            @if (PagamentoPendente is { } pg)
+            {
+                @if (pg.Metodo == MetodoPagamento.Pix && pg.PixCopiaECola is not null)
+                {
+                    <PixPagamento Codigo="@pg.PixCopiaECola" Valor="pg.Valor" />
+                }
+                else if (pg.UrlPagamento is not null)
+                {
+                    <a class="btn btn-primary" href="@pg.UrlPagamento" target="_blank" rel="noopener">Pagar com cartão (@pg.Valor.ToString("C"))</a>
+                }
+                else
+                {
+                    <p>Pagamento com cartão iniciado (@pg.Valor.ToString("C")). Assim que o provedor confirmar, esta página atualiza sozinha.</p>
+                }
+            }
+            else
+            {
+                <p>Escolha como pagar:</p>
+            }
+
+            <div class="d-flex gap-2 flex-wrap mt-3">
+                @if (PagamentoPendente?.Metodo != MetodoPagamento.Pix)
+                {
+                    <button class="btn btn-outline-primary btn-sm" @onclick="() => NovoPagamento(MetodoPagamento.Pix)" disabled="@processando">
+                        Pagar com PIX (@pedido.ValorPara(MetodoPagamento.Pix).ToString("C"))
+                    </button>
+                }
+                @if (PagamentoPendente?.Metodo != MetodoPagamento.CartaoCredito)
+                {
+                    <button class="btn btn-outline-primary btn-sm" @onclick="() => NovoPagamento(MetodoPagamento.CartaoCredito)" disabled="@processando">
+                        Pagar com cartão (@pedido.ValorPara(MetodoPagamento.CartaoCredito).ToString("C"))
+                    </button>
+                }
+            </div>
+
+            @if (Ambiente.IsDevelopment() && PagamentoPendente is { Provedor: "simulado" } simulado)
+            {
+                <div class="alert alert-warning mt-3 mb-0">
+                    <strong>Ambiente de desenvolvimento:</strong> o pagamento é simulado.
+                    <button class="btn btn-sm btn-warning ms-2" @onclick="() => SimularAprovacao(simulado)" disabled="@processando">Simular pagamento aprovado</button>
+                </div>
+            }
+        </section>
+    }
+
+    <ResumoPedido Pedido="pedido" />
+    <p class="small">Dúvidas sobre o pedido? Fale com a gente pelo WhatsApp ou Instagram informando o código <strong>@pedido.Codigo</strong>.</p>
+    <a href="meus-pedidos">← Voltar para meus pedidos</a>
+}
+
+@code {
+    [Parameter] public string Codigo { get; set; } = "";
+    [SupplyParameterFromQuery] public int? Novo { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private Pedido? pedido;
+    private bool carregado, processando, erro;
+    private string? mensagem;
+
+    private Pagamento? PagamentoPendente => pedido?.Pagamentos
+        .Where(p => p.Status == StatusPagamento.Pendente)
+        .OrderByDescending(p => p.CriadoEm)
+        .FirstOrDefault();
+
+    // Quando o webhook confirma o pagamento, a página se atualiza sem o cliente recarregar
+    protected override void OnInitialized() => Eventos.PedidoAlterado += AoAlterarPedido;
+
+    protected override Task OnParametersSetAsync() => CarregarAsync();
+
+    private async Task CarregarAsync()
+    {
+        var clienteId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier);
+        await using var db = await DbFactory.CreateDbContextAsync();
+        // O filtro por ClienteId garante que ninguém veja o pedido de outra pessoa trocando o código na URL
+        pedido = await db.Pedidos.AsNoTracking()
+            .Include(p => p.Itens).Include(p => p.Pagamentos)
+            .FirstOrDefaultAsync(p => p.Codigo == Codigo && p.ClienteId == clienteId);
+        carregado = true;
+    }
+
+    private void AoAlterarPedido(int pedidoId)
+    {
+        if (pedidoId != pedido?.Id) return;
+        _ = InvokeAsync(async () =>
+        {
+            await CarregarAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task NovoPagamento(MetodoPagamento metodo)
+    {
+        if (pedido is null || processando) return;
+        await Executar(() => Pedidos.IniciarPagamentoAsync(pedido.Id, metodo), null);
+    }
+
+    private async Task SimularAprovacao(Pagamento pagamento)
+    {
+        if (!Ambiente.IsDevelopment() || pagamento.IdExterno is null) return;
+        // Mesmo caminho que o webhook do provedor real vai usar
+        await Executar(() => Pedidos.ProcessarNotificacaoAsync(
+            new NotificacaoPagamento($"{pagamento.IdExterno}:Aprovado", pagamento.IdExterno, StatusPagamento.Aprovado, pagamento.Valor)), null);
+    }
+
+    private async Task Executar(Func<Task> acao, string? sucesso)
+    {
+        processando = true;
+        mensagem = null;
+        try
+        {
+            await acao();
+            if (sucesso is not null) (mensagem, erro) = (sucesso, false);
+        }
+        catch (RegraDePedidoException ex)
+        {
+            (mensagem, erro) = (ex.Message, true);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Falha na ação do pedido {Codigo}", Codigo);
+            (mensagem, erro) = ("Não foi possível concluir. Tente novamente.", true);
+        }
+        finally
+        {
+            processando = false;
+        }
+        await CarregarAsync();
+    }
+
+    public void Dispose() => Eventos.PedidoAlterado -= AoAlterarPedido;
+}
