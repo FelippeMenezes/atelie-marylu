@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -10,10 +11,10 @@ public static class Texto
     public static string Slug(string texto)
     {
         var semAcento = new StringBuilder();
-        foreach (var c in texto.Normalize(NormalizationForm.FormD))
+        foreach (var c in texto.Normalize(NormalizationForm.FormD)
+            .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark))
         {
-            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-                semAcento.Append(c);
+            semAcento.Append(c);
         }
 
         var slug = new StringBuilder();
