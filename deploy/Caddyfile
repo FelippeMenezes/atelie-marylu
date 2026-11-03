@@ -1,11 +1,20 @@
 # Caddy: recebe os acessos da internet, emite e renova o certificado HTTPS (Let's Encrypt)
 # sozinho e repassa para a aplicação. Também redireciona http:// para https://.
+#
+# DOMINIO é o endereço principal da loja. DOMINIOS_EXTRAS (opcional, separados por espaço) são
+# endereços que só redirecionam para o principal, ex.: o domínio sem "www" ou um endereço antigo.
+# Cada um ganha o próprio certificado, então todos precisam apontar para o IP do servidor.
 
-{$DOMINIO} {
+{$DOMINIO} {$DOMINIOS_EXTRAS} {
 	encode zstd gzip
 
 	# Não anuncia qual servidor está rodando
 	header -Server
+
+	# Endereços extras vão para o principal com redirecionamento permanente (bom para o Google:
+	# a loja fica com um único endereço oficial)
+	@extra not host {$DOMINIO}
+	redir @extra https://{$DOMINIO}{uri} permanent
 
 	# O Blazor usa WebSocket; o Caddy repassa sem configuração extra
 	reverse_proxy app:8080
