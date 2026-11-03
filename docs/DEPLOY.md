@@ -1,6 +1,6 @@
-# Publicar a loja na Oracle Cloud (gratuito)
+# Publicar a loja num VPS (Hostinger)
 
-Tudo roda numa única máquina virtual do plano **Always Free** da Oracle, com Docker:
+A loja está em **https://www.ateliemarylu.com.br**, num VPS **Hostinger KVM 1** (1 vCPU, 4 GB de RAM, 50 GB de disco, Ubuntu 24.04, data center no Brasil). Tudo roda com Docker:
 
 ```
 Internet ──443/80──> Caddy (HTTPS automático) ──> loja (.NET) ──> Postgres
@@ -8,79 +8,107 @@ Internet ──443/80──> Caddy (HTTPS automático) ──> loja (.NET) ─�
 
 Só o Caddy fica exposto à internet. A loja e o banco ficam numa rede interna do Docker.
 
+O guia serve para qualquer VPS com Ubuntu 24.04. Só o passo 1 é específico da Hostinger.
+
 Tempo estimado na primeira vez: 1 a 2 horas.
 
 ---
 
-## 1. Criar a conta
+## Atenção ao terminal
 
-1. Acesse oracle.com/br/cloud/free e clique em **Comece gratuitamente**.
-2. **Região principal (Home Region):** escolha **Brazil East (São Paulo)** ou **Brazil Southeast (Vinhedo)**. Essa escolha **não pode ser mudada depois**, e os recursos gratuitos só existem nela.
-3. O cartão de crédito é pedido só para verificação. Pode aparecer uma cobrança temporária pequena, que é estornada.
+Muitos passos têm comandos que rodam **no servidor**. Antes de colar, confira o prompt:
 
-Recomendado depois de criar:
-- Em **Billing → Upgrade and Manage Payment**, passe a conta para **Pay As You Go**. Os recursos "Always Free" continuam gratuitos, e a Oracle deixa de poder desligar a máquina por ficar ociosa (o que acontece com contas só gratuitas e lojas com pouco movimento).
-- Logo em seguida, em **Billing → Budgets**, crie um orçamento de **US$ 1** com alerta por e-mail. Se algo pago for criado por engano, você fica sabendo na hora.
+- `atelie@srv2118354:~$` é o servidor.
+- `➜ atelie-marylu git:(main)` (ou parecido) é o seu computador.
 
-> Regra de ouro: ao criar qualquer recurso, confira o selo **"Always Free-eligible"**. Sem o selo, não crie.
+Cole o `ssh` **sozinho**, espere o prompt do servidor aparecer e só depois cole o resto. Se colar tudo junto, os comandos rodam no seu computador.
 
-## 2. Criar a rede
+---
 
-1. Menu **Networking → Virtual Cloud Networks → Start VCN Wizard → Create VCN with Internet Connectivity**.
-2. Nome: `atelie-vcn`. Mantenha o resto e conclua.
-3. Abra a VCN → **Security Lists → Default Security List** → **Add Ingress Rules** e adicione:
+## 1. Contratar o VPS
 
-   - Origem `0.0.0.0/0`, TCP, porta **80** (HTTP, para o certificado e o redirecionamento)
-   - Origem `0.0.0.0/0`, TCP, porta **443** (HTTPS)
-   - Origem `0.0.0.0/0`, UDP, porta **443** (HTTP/3, opcional)
-
-4. Na regra que já existe para a porta **22** (SSH), troque a origem `0.0.0.0/0` pelo **seu IP** seguido de `/32` (descubra em `curl ifconfig.me`). Assim só você tenta acessar a máquina.
-
-## 3. Criar a máquina
-
-1. No seu computador, gere uma chave SSH (é a "senha" de acesso, muito mais segura):
+1. No seu computador, gere uma chave SSH. Ela substitui a senha e é muito mais segura. Defina uma *passphrase* quando for pedida:
 
    ```bash
-   ssh-keygen -t ed25519 -f ~/.ssh/oracle_atelie -C "atelie-marylu"
-   cat ~/.ssh/oracle_atelie.pub
+   ssh-keygen -t ed25519 -f ~/.ssh/atelie_servidor -C "atelie-marylu"
+   cat ~/.ssh/atelie_servidor.pub
    ```
 
-2. Menu **Compute → Instances → Create instance**:
-   - **Name:** `atelie-loja`
-   - **Image:** Canonical **Ubuntu 24.04** (a versão para aarch64/ARM)
-   - **Shape:** Ampere **VM.Standard.A1.Flex**, com **2 OCPUs e 12 GB** de memória (o gratuito vai até 4 e 24 GB no total)
-   - **Networking:** a `atelie-vcn`, subnet pública, **Assign a public IPv4 address** marcado
-   - **SSH keys:** cole o conteúdo do `oracle_atelie.pub`
-   - **Boot volume:** o padrão (cerca de 50 GB) basta
-3. Se aparecer **"Out of capacity"**, as máquinas ARM gratuitas estão esgotadas naquele momento. Tente outro *availability domain* ou outro horário.
-4. Anote o **IP público** da instância.
+   > O servidor atual usa a chave `~/.ssh/oracle_atelie`. O nome ficou da primeira tentativa, na Oracle Cloud. Nos comandos abaixo, troque o nome se usar outra chave.
 
-## 4. Preparar o servidor
+2. Na Hostinger, contrate o **VPS KVM 1** (o plano de 12 meses sai mais barato).
+3. Na configuração do VPS:
+   - **Sistema:** Ubuntu 24.04 puro, sem painel.
+   - **Localização:** Brasil.
+   - **Senha do root:** uma senha forte. Ela só é usada até o passo 2.
+   - **Chave SSH:** cole o conteúdo do `.pub` gerado acima.
+4. Anote o **IP** do VPS (hoje `187.41.111.127`) e o nome provisório (`srv2118354.hstgr.cloud`). Esse nome já aponta para o IP e serve para testar o HTTPS antes de ter domínio.
 
-Entre na máquina:
+A Hostinger faz um **backup semanal** do VPS sem custo extra (em hPanel → VPS → Backups). O backup diário pago não é necessário: o passo 7 cuida disso.
 
-```bash
-ssh -i ~/.ssh/oracle_atelie ubuntu@IP_PUBLICO
-```
+## 2. Preparar o servidor
 
-### Firewall do Ubuntu
+### Usuário próprio (sem usar o root)
 
-A imagem Ubuntu da Oracle já vem com regras de firewall (`iptables`) que bloqueiam tudo, menos SSH. Libere as portas da loja e salve as regras para continuarem valendo depois de reiniciar:
+Entre como root:
 
 ```bash
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
-sudo iptables -I INPUT 6 -m state --state NEW -p udp --dport 443 -j ACCEPT
-sudo netfilter-persistent save
+ssh -i ~/.ssh/oracle_atelie root@187.41.111.127
 ```
 
-Não use o `ufw` nessa imagem: ele conflita com as regras da Oracle.
+No servidor, crie o usuário `atelie` com permissão de administrador e copie a chave SSH para ele:
 
-### Atualizações de segurança automáticas
+```bash
+adduser atelie
+usermod -aG sudo atelie
+rsync --archive --chown=atelie:atelie ~/.ssh /home/atelie
+```
+
+**Abra outro terminal** e confira se o novo usuário entra. Não feche o terminal do root ainda:
+
+```bash
+ssh -i ~/.ssh/oracle_atelie atelie@187.41.111.127
+sudo whoami     # deve responder "root"
+```
+
+### SSH só com chave
+
+Ainda no servidor, como `atelie`, desligue o login do root e o login por senha:
+
+```bash
+printf 'PermitRootLogin no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\n' | sudo tee /etc/ssh/sshd_config.d/00-atelie.conf
+sudo sshd -t && sudo systemctl restart ssh
+sudo sshd -T | grep -E 'permitrootlogin|passwordauthentication|kbdinteractive'   # tudo "no"
+```
+
+O arquivo começa com `00` de propósito. O SSH usa o primeiro valor que encontrar, e o `50-cloud-init.conf` da imagem religaria o login por senha.
+
+### Firewall, proteção contra força bruta e atualizações
 
 ```bash
 sudo apt update && sudo apt -y upgrade
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 443/udp          # HTTP/3 (opcional)
+sudo ufw enable
+sudo apt -y install fail2ban unattended-upgrades
 sudo dpkg-reconfigure -plow unattended-upgrades   # responda "Sim"
+```
+
+O `fail2ban` bloqueia por um tempo os IPs que erram o SSH várias vezes. Confira com `sudo fail2ban-client status sshd`.
+
+### Memória de troca (swap)
+
+Com 4 GB de RAM, a swap evita que o build do Docker derrube o servidor por falta de memória:
+
+```bash
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+free -h      # a linha "Swap" deve mostrar 2,0Gi
 ```
 
 ### Docker (pelo repositório oficial)
@@ -93,73 +121,126 @@ sudo chmod a+r /etc/apt/keyrings/docker.asc
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt update
 sudo apt -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-sudo usermod -aG docker ubuntu
+sudo usermod -aG docker atelie
 exit
 ```
 
-Entre de novo pelo SSH (para o grupo `docker` valer) e confira com `docker run --rm hello-world`.
+Entre de novo pelo SSH, para o grupo `docker` valer, e confira com `docker ps` e `docker compose version`.
 
-## 5. Apontar o domínio
+## 3. Apontar o domínio
 
-O HTTPS automático precisa de um nome apontando para o IP da máquina **antes** de subir a loja.
+O domínio `ateliemarylu.com.br` foi registrado no **registro.br**, que custa cerca de R$ 40 por ano e é renovado em novembro. O HTTPS automático precisa que o domínio já aponte para o IP do servidor **antes** de a loja subir.
 
-- **Domínio próprio** (ex.: `ateliemarylu.com.br`, cerca de R$ 40 por ano no registro.br): no painel de DNS, crie um registro **A** com o nome vazio (ou `www`) apontando para o IP público.
-- **Gratuito, para começar:** crie um subdomínio em duckdns.org (ex.: `ateliemarylu.duckdns.org`) e aponte para o IP público.
+1. No registro.br, abra o domínio e mantenha **"Utilizar os servidores DNS do Registro.br"**.
+2. Clique em **Configurar zona DNS** e depois em **Modo avançado**. Logo depois do registro, aparece "Domínio em transição" por até cerca de 2 horas. Espere e tente de novo.
+3. Crie duas entradas e clique em **Salvar alterações**:
+   - Tipo **A**, nome **vazio** (o registro.br não aceita `@`), dados `187.41.111.127`
+   - Tipo **A**, nome **www**, dados `187.41.111.127`
 
-Confira se já propagou (pode levar de minutos a algumas horas):
+Confira se já propagou. Pode levar de minutos a algumas horas:
 
 ```bash
-dig +short ateliemarylu.com.br   # deve mostrar o IP público
+dig +short ateliemarylu.com.br       # deve mostrar 187.41.111.127
+dig +short www.ateliemarylu.com.br   # idem
 ```
 
-## 6. Publicar a loja
+Recomendado: ative a verificação em duas etapas na conta do registro.br. Quem invadir essa conta pode desviar o site.
+
+## 4. Publicar a loja
+
+No servidor, como `atelie`:
 
 ```bash
 git clone https://github.com/FelippeMenezes/atelie-marylu.git
 cd atelie-marylu
 cp .env.producao.example .env.producao
 chmod 600 .env.producao            # só o seu usuário lê
-openssl rand -hex 24               # use para POSTGRES_PASSWORD
-openssl rand -hex 12               # use (com uma letra maiúscula e um símbolo, ex.: "!") para ADMIN_SENHA
-nano .env.producao                 # preencha DOMINIO, senhas, e-mail do admin e dados da loja
 ```
 
-Suba tudo (o primeiro build leva alguns minutos):
+Gere as senhas direto no arquivo, sem que elas apareçam na tela:
+
+```bash
+sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 24)|" .env.producao
+sed -i "s|^ADMIN_SENHA=.*|ADMIN_SENHA=Aa1-$(openssl rand -hex 8)|" .env.producao
+```
+
+O `Aa1-` garante maiúscula, número e símbolo. Não use `!` dentro de aspas duplas no terminal: o bash troca `!$` pelo último comando digitado.
+
+Preencha o resto com `nano .env.producao`:
+
+- `DOMINIO=www.ateliemarylu.com.br`: o endereço oficial.
+- `DOMINIOS_EXTRAS="ateliemarylu.com.br srv2118354.hstgr.cloud"`: endereços que só redirecionam para o oficial. Use aspas, porque há espaço entre os endereços. Cada um ganha certificado próprio, então todos precisam apontar para o IP.
+- `ADMIN_EMAIL` e os dados da loja (`LOJA_...`).
+
+Para salvar no nano, use Ctrl+O e Enter; para sair, Ctrl+X. Para ver a senha temporária do Admin sem expor as outras, use `grep ^ADMIN_SENHA .env.producao`. Não cole senhas em chats nem em prints.
+
+Suba tudo. O primeiro build leva alguns minutos:
 
 ```bash
 docker compose -f docker-compose.prod.yml --env-file .env.producao up -d --build
 docker compose -f docker-compose.prod.yml --env-file .env.producao logs -f app    # Ctrl+C para sair
 ```
 
-Quando aparecer `Application started`, acesse `https://SEU_DOMINIO`. O Caddy emite o certificado no primeiro acesso; se demorar uns segundos, recarregue.
+Quando aparecer `Application started`, acesse `https://www.ateliemarylu.com.br`. O Caddy emite os certificados no primeiro acesso. Se a página demorar uns segundos, recarregue.
 
 ### Primeiro acesso
 
 1. Entre com `ADMIN_EMAIL` e `ADMIN_SENHA`. A loja pede uma **senha nova** antes de liberar o painel.
-2. Depois de trocar, **apague o valor de `ADMIN_SENHA`** no `.env.producao`. O Admin já existe, e a senha antiga não vale mais.
+2. Depois de trocar, apague a senha antiga do arquivo e recrie os containers:
+
+   ```bash
+   sed -i "s|^ADMIN_SENHA=.*|ADMIN_SENHA=|" .env.producao
+   docker compose -f docker-compose.prod.yml --env-file .env.producao up -d
+   ```
+
 3. Cadastre os produtos e as fotos em **Painel → Produtos**.
+
+O login vale por endereço. Quem entrou pelo `hstgr.cloud` precisa entrar de novo pelo domínio.
+
+## 5. Atualizar a loja
+
+O site **não** se atualiza sozinho quando uma PR entra na `main`. Depois do merge, rode no servidor:
+
+```bash
+cd ~/atelie-marylu && ./deploy/backup.sh && git pull && docker compose -f docker-compose.prod.yml --env-file .env.producao up -d --build
+```
+
+As migrations do banco são aplicadas automaticamente quando a loja reinicia. Mudanças só no `.env.producao` precisam apenas de `up -d`, sem `--build`.
+
+## 6. Monitoramento e logs
+
+- `https://www.ateliemarylu.com.br/health` responde `Healthy` quando a loja e o banco estão ok. Cadastre esse endereço num monitor gratuito, como o UptimeRobot, para ser avisado se a loja cair.
+- Os logs da loja estão em JSON (Serilog). Só os erros dos últimos 15 minutos:
+
+  ```bash
+  docker compose -f docker-compose.prod.yml --env-file .env.producao logs app --since 15m 2>&1 | grep -iE '"(Error|Fatal)"' | tail
+  ```
+
+- Tudo: `docker compose -f docker-compose.prod.yml --env-file .env.producao logs --tail 200 app` (ou `caddy`).
+- Situação dos containers: `docker compose -f docker-compose.prod.yml --env-file .env.producao ps`.
+- Espaço em disco: `df -h` e `docker system df`. Os logs dos containers são limitados a 200 MB por serviço. Imagens antigas de builds podem ser removidas com `docker image prune`.
 
 ## 7. Backup diário
 
 O script `deploy/backup.sh` salva o banco e as fotos em `backups/` e mantém os últimos 14 dias.
 
 ```bash
-mkdir -p backups
+cd ~/atelie-marylu
 ./deploy/backup.sh                 # teste manual
-crontab -e
+crontab -l                         # veja se o agendamento já existe
 ```
 
-Adicione a linha abaixo (backup todo dia às 3h):
+Se não existir, agende o backup para todo dia às 3h:
 
-```
-0 3 * * * cd /home/ubuntu/atelie-marylu && ./deploy/backup.sh >> backups/backup.log 2>&1
+```bash
+(crontab -l 2>/dev/null; echo "0 3 * * * cd /home/atelie/atelie-marylu && ./deploy/backup.sh >> /home/atelie/backup.log 2>&1") | crontab -
 ```
 
-**Cópia fora do servidor (recomendado).** Se a máquina se perder, o backup local vai junto. O Object Storage da Oracle tem 10 GB grátis:
-1. Crie um bucket `atelie-backups` em **Storage → Buckets**.
-2. Em **Perfil → Customer Secret Keys**, gere uma chave de acesso compatível com S3.
-3. No servidor, instale e configure o rclone (`sudo apt install rclone && rclone config`) com o provedor "S3 → Oracle Cloud Infrastructure Object Storage", usando o nome `oci`.
-4. Na linha do cron, antes do `./deploy/backup.sh`, acrescente `RCLONE_DESTINO=oci:atelie-backups`.
+**Cópia fora do servidor (recomendado).** Se o VPS se perder, o backup local vai junto, e o backup semanal da Hostinger fica no mesmo fornecedor. Para copiar para outro lugar:
+
+1. Crie um destino gratuito, por exemplo um bucket no Backblaze B2 (10 GB grátis) ou uma pasta no Google Drive.
+2. No servidor, instale e configure o rclone (`sudo apt install rclone && rclone config`), criando um "remote" com o nome `nuvem`.
+3. Na linha do cron, antes do `./deploy/backup.sh`, acrescente `RCLONE_DESTINO=nuvem:atelie-backups`.
 
 ### Restaurar um backup
 
@@ -172,37 +253,23 @@ $C run --rm --no-deps -T --entrypoint tar app -xzf - -C /app/wwwroot < backups/f
 $C start app
 ```
 
-## 8. Atualizar a loja
-
-Depois de mergear uma PR na `main`:
-
-```bash
-cd ~/atelie-marylu
-git pull
-docker compose -f docker-compose.prod.yml --env-file .env.producao up -d --build
-```
-
-As migrations do banco são aplicadas automaticamente quando a loja reinicia. Faça um `./deploy/backup.sh` antes de atualizações grandes.
-
-## 9. Monitoramento
-
-- `https://SEU_DOMINIO/health` responde `Healthy` quando a loja e o banco estão ok. Cadastre esse endereço num monitor gratuito (ex.: UptimeRobot) para ser avisado se a loja cair.
-- Logs: `docker compose -f docker-compose.prod.yml --env-file .env.producao logs --tail 200 app`
-- Espaço em disco: `df -h` e `docker system df`. Os logs dos containers são limitados a 200 MB por serviço.
-
 ## Problemas comuns
 
-- **O certificado HTTPS não sai:** o domínio ainda não aponta para o IP (`dig +short`), ou as portas 80/443 estão fechadas (passo 2 ou firewall do passo 4). Veja `... logs caddy`.
+- **Os comandos "não funcionaram" ou deram "arquivo inexistente":** provavelmente rodaram no seu computador. Veja [Atenção ao terminal](#atenção-ao-terminal).
+- **O terminal parece travado:** às vezes a saída termina sem quebra de linha (ex.: `Healthy`) e o prompt fica grudado nela. Aperte Enter. Se a conexão SSH congelou de verdade, digite Enter, `~` e `.` para encerrar.
+- **O certificado HTTPS não sai:** o domínio ainda não aponta para o IP (confira com `dig +short`), ou as portas 80/443 estão fechadas no `ufw`. Veja `... logs caddy`.
 - **Erro 502:** a loja não subiu. Veja `... logs app`. Muitas vezes é senha do banco com `$` ou `;` no `.env.producao`.
-- **"Out of capacity" ao criar a máquina:** tente outro horário ou availability domain.
 - **Mudei o `.env.producao` e nada mudou:** rode o `up -d` de novo para recriar os containers.
+- **Mudei o código e nada mudou:** faltou o `--build` no `up -d`.
 
 ## Checklist de segurança do servidor
 
-- [ ] SSH só com chave e porta 22 liberada apenas para o seu IP
+- [ ] SSH só com chave, sem login do root (`sshd -T` mostra tudo `no`)
+- [ ] `ufw` ativo, só com SSH, 80 e 443
+- [ ] `fail2ban` ativo
 - [ ] Atualizações automáticas ativas (`unattended-upgrades`)
-- [ ] `.env.producao` com `chmod 600` e sem `ADMIN_SENHA` depois do primeiro acesso
+- [ ] `.env.producao` com `chmod 600` e `ADMIN_SENHA` vazio depois do primeiro acesso
 - [ ] Postgres sem porta exposta (já é assim no `docker-compose.prod.yml`)
 - [ ] Backup diário no cron, com cópia fora do servidor
-- [ ] Alerta de orçamento de US$ 1 na Oracle
+- [ ] Verificação em duas etapas nas contas da Hostinger, do registro.br e do GitHub
 - [ ] Monitor de disponibilidade no `/health`
