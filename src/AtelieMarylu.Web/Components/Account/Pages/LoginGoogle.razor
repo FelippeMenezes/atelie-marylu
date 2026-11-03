@@ -1,0 +1,211 @@
+@page "/Account/LoginGoogle"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using AtelieMarylu.Web.Data
+@using AtelieMarylu.Domain.Seguranca
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserStore<ApplicationUser> UserStore
+@inject IdentityRedirectManager RedirectManager
+@inject ILogger<LoginGoogle> Logger
+
+@* Volta do Google. Quem já tem a conta Google conectada entra direto; quem é novo confirma
+   o nome e a conta é criada com o e-mail que o Google informou. *@
+
+<PageTitle>Criar conta · Ateliê Marylu</PageTitle>
+
+<h1>Falta pouco!</h1>
+<StatusMessage Message="@mensagem" />
+
+@if (infoGoogle is not null && email is not null)
+{
+    <div class="row">
+        <div class="col-lg-6">
+            <p>Você entrou com o <strong>Google</strong> como <strong>@email</strong>. Confira seus dados para criar a conta na loja.</p>
+            <EditForm Model="Input" OnValidSubmit="CriarContaAsync" FormName="confirmacao" method="post">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" role="alert" />
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="Input.NomeCompleto" id="Input.NomeCompleto" class="form-control" autocomplete="name" aria-required="true" placeholder="Seu nome" />
+                    <label for="Input.NomeCompleto">Nome completo</label>
+                    <ValidationMessage For="() => Input.NomeCompleto" class="text-danger" />
+                </div>
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="Input.Telefone" id="Input.Telefone" class="form-control" autocomplete="tel" placeholder="(21) 99999-9999" />
+                    <label for="Input.Telefone">Telefone / WhatsApp (opcional)</label>
+                    <ValidationMessage For="() => Input.Telefone" class="text-danger" />
+                </div>
+                <p class="small text-secondary">Ao criar a conta você concorda com os <a href="termos-de-uso" target="_blank">termos de uso</a> e a <a href="politica-de-privacidade" target="_blank">política de privacidade</a>.</p>
+                <button type="submit" class="w-100 btn btn-lg btn-primary">Criar conta</button>
+            </EditForm>
+        </div>
+    </div>
+}
+else
+{
+    <p><a href="Account/Login">Voltar para o login</a></p>
+}
+
+@code {
+    public const string LoginCallbackAction = "LoginCallback";
+
+    private ExternalLoginInfo? infoGoogle;
+    private string? email;
+    private string? mensagem;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? RemoteError { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Action { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+
+        if (RemoteError is not null)
+        {
+            // Ex.: a pessoa clicou em "Cancelar" na tela do Google
+            Logger.LogInformation("Login com Google cancelado ou recusado: {Erro}", RemoteError);
+            RedirectManager.RedirectToWithStatus("Account/Login", "Erro: o login com Google não foi concluído. Tente de novo.", HttpContext);
+            return;
+        }
+
+        var info = await SignInManager.GetExternalLoginInfoAsync();
+        if (info is null)
+        {
+            RedirectManager.RedirectToWithStatus("Account/Login", "Erro: não foi possível carregar os dados do Google. Tente de novo.", HttpContext);
+            return;
+        }
+
+        if (!EmailConfirmadoPeloGoogle(info, out var emailGoogle))
+        {
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+            RedirectManager.RedirectToWithStatus("Account/Login",
+                "Erro: a conta Google não informou um e-mail confirmado. Use outra conta ou crie um cadastro com e-mail e senha.", HttpContext);
+            return;
+        }
+
+        infoGoogle = info;
+        email = emailGoogle;
+
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            if (Action == LoginCallbackAction)
+            {
+                await AoVoltarDoGoogleAsync();
+                return;
+            }
+
+            // Ninguém deveria abrir esta página direto
+            RedirectManager.RedirectTo("Account/Login");
+        }
+    }
+
+    private async Task AoVoltarDoGoogleAsync()
+    {
+        var info = infoGoogle!;
+
+        // bypassTwoFactor: false → quem ativou a verificação em duas etapas na loja continua precisando dela
+        var result = await SignInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: false);
+        if (result.Succeeded)
+        {
+            Logger.LogInformation("Login com Google.");
+            RedirectManager.RedirectTo(ReturnUrl);
+            return;
+        }
+        if (result.RequiresTwoFactor)
+        {
+            RedirectManager.RedirectTo("Account/LoginWith2fa", new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = false });
+            return;
+        }
+        if (result.IsLockedOut)
+        {
+            RedirectManager.RedirectTo("Account/Lockout");
+            return;
+        }
+
+        // Não conecta sozinho a uma conta que já existe com o mesmo e-mail: a pessoa entra com a senha
+        // e conecta pelo "Minha conta". Assim, só quem sabe a senha decide quem mais pode entrar na conta.
+        if (await UserManager.FindByEmailAsync(email!) is not null)
+        {
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+            RedirectManager.RedirectToWithStatus("Account/Login",
+                $"Erro: já existe uma conta com o e-mail {email}. Entre com sua senha e conecte o Google em Minha conta → Conta Google.", HttpContext);
+            return;
+        }
+
+        // Pessoa nova: mostra o formulário já com o nome que veio do Google
+        Input.NomeCompleto = info.Principal.FindFirstValue(ClaimTypes.Name) ?? "";
+    }
+
+    private async Task CriarContaAsync()
+    {
+        var info = infoGoogle!;
+
+        var user = new ApplicationUser
+        {
+            NomeCompleto = Input.NomeCompleto.Trim(),
+            PhoneNumber = string.IsNullOrWhiteSpace(Input.Telefone) ? null : Input.Telefone.Trim(),
+            // O Google já confirmou que o e-mail é da pessoa (veja EmailConfirmadoPeloGoogle)
+            EmailConfirmed = true,
+        };
+        await UserStore.SetUserNameAsync(user, email, CancellationToken.None);
+        await ((IUserEmailStore<ApplicationUser>)UserStore).SetEmailAsync(user, email, CancellationToken.None);
+
+        var result = await UserManager.CreateAsync(user);
+        if (result.Succeeded)
+        {
+            result = await UserManager.AddLoginAsync(user, info);
+            if (!result.Succeeded)
+                await UserManager.DeleteAsync(user);   // não deixa uma conta sem forma de entrar
+        }
+        if (!result.Succeeded)
+        {
+            mensagem = $"Erro: {string.Join(" ", result.Errors.Select(e => e.Description))}";
+            return;
+        }
+
+        await UserManager.AddToRoleAsync(user, Papeis.Cliente);
+        Logger.LogInformation("Conta criada com Google.");
+
+        await SignInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
+        await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        RedirectManager.RedirectTo(ReturnUrl);
+    }
+
+    // O Google informa se confirmou o e-mail (email_verified); e-mail não confirmado é recusado
+    private static bool EmailConfirmadoPeloGoogle(ExternalLoginInfo info, out string? email)
+    {
+        email = info.Principal.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrWhiteSpace(email) || !new EmailAddressAttribute().IsValid(email))
+            return false;
+        return info.Principal.FindFirstValue("email_verified") is not "false" and not "False";
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Informe o nome.")]
+        [StringLength(150)]
+        [Display(Name = "Nome completo")]
+        public string NomeCompleto { get; set; } = "";
+
+        [Phone(ErrorMessage = "Telefone inválido.")]
+        [StringLength(20)]
+        [Display(Name = "Telefone")]
+        public string? Telefone { get; set; }
+    }
+}

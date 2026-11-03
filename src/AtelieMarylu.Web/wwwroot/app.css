@@ -186,6 +186,40 @@ a, .btn-link {
     opacity: .55;
 }
 
+/* Continuar com Google: botão branco com o logotipo, no padrão visual do Google */
+.btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .75rem;
+    background-color: #fff;
+    color: #3c4043;
+    border: 1px solid #dadce0;
+    font-weight: 500;
+    padding: .6rem 1rem;
+}
+
+.btn-google:hover, .btn-google:focus {
+    background-color: #f8f9fa;
+    border-color: #c6c9cc;
+    color: #202124;
+}
+
+/* Linha com texto no meio ("ou entre com e-mail e senha") */
+.separador-ou {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    color: var(--bs-secondary-color);
+    font-size: .875rem;
+}
+
+.separador-ou::before, .separador-ou::after {
+    content: "";
+    flex: 1;
+    border-top: 1px solid var(--bs-border-color);
+}
+
 .btn-outline-primary {
     color: var(--marca-escura);
     border-color: var(--marca-escura);

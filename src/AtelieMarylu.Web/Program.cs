@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -40,12 +41,27 @@ builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddAuthentication(options =>
+var autenticacao = builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = IdentityConstants.ApplicationScheme;
         options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-    })
-    .AddIdentityCookies();
+    });
+autenticacao.AddIdentityCookies();
+
+// Entrar com Google: só é ligado se tiver as chaves na configuração
+var secaoGoogle = builder.Configuration.GetSection(LoginGoogleOptions.Secao);
+builder.Services.Configure<LoginGoogleOptions>(secaoGoogle);
+var loginGoogle = secaoGoogle.Get<LoginGoogleOptions>() ?? new();
+if (loginGoogle.Ativo)
+{
+    autenticacao.AddGoogle(options =>
+    {
+        options.ClientId = loginGoogle.ClientId;
+        options.ClientSecret = loginGoogle.ClientSecret;
+        // Usado para recusar e-mails que o Google não confirmou (veja ExternalLogin.razor)
+        options.ClaimActions.MapJsonKey("email_verified", "email_verified");
+    });
+}
 
 // Cada permissão vira uma policy: passa quem é Admin ou tem o claim "permissao" correspondente
 // (direto no usuário ou herdado de um grupo).
@@ -197,7 +213,8 @@ else
 app.UseRequestLocalization("pt-BR");
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
-app.UseCabecalhosSeguranca(app.Environment.IsDevelopment(), app.Services.GetRequiredService<IOptions<TurnstileOptions>>().Value.Ativo);
+app.UseCabecalhosSeguranca(app.Environment.IsDevelopment(), app.Services.GetRequiredService<IOptions<TurnstileOptions>>().Value.Ativo,
+    loginGoogle.Ativo);
 app.UseRateLimiter();
 
 // Arquivos enviados em tempo de execução (fotos de produtos)

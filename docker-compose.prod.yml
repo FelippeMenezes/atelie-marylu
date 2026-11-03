@@ -49,6 +49,8 @@ services:
       Loja__EmailContato: ${LOJA_EMAIL:-}
       Loja__Telefone: ${LOJA_TELEFONE:-}
       Loja__WhatsApp: ${LOJA_WHATSAPP:-}
+      LoginGoogle__ClientId: ${GOOGLE_CLIENT_ID:-}
+      LoginGoogle__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
       Turnstile__SiteKey: ${TURNSTILE_SITE_KEY:-}
       Turnstile__SecretKey: ${TURNSTILE_SECRET_KEY:-}
     volumes:
