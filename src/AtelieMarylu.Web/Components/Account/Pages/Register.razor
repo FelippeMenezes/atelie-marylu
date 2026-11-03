@@ -24,6 +24,7 @@
 <div class="row">
     <div class="col-lg-6">
         <StatusMessage Message="@Message" />
+        <BotaoGoogle ReturnUrl="@ReturnUrl" Separador="ou cadastre-se com e-mail e senha" />
         <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
             <DataAnnotationsValidator />
             <p>Falta pouco! Crie sua conta para finalizar a compra e acompanhar seus pedidos.</p>

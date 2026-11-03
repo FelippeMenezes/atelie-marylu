@@ -19,6 +19,7 @@
     <div class="col-lg-6">
         <section>
             <StatusMessage Message="@errorMessage" />
+            <BotaoGoogle ReturnUrl="@ReturnUrl" Separador="ou entre com e-mail e senha" />
             <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
                 <DataAnnotationsValidator />
                 <p>Entre com seu e-mail e senha. Ainda não tem conta? É rapidinho, veja o link abaixo.</p>

@@ -1,11 +1,14 @@
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using AtelieMarylu.Web.Configuracao;
 using AtelieMarylu.Web.Components.Account.Pages;
 using AtelieMarylu.Web.Components.Account.Pages.Manage;
 using AtelieMarylu.Web.Data;
@@ -22,8 +25,29 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
 
         var accountGroup = endpoints.MapGroup("/Account");
 
-        // Login social (Google, Facebook...) foi removido do template: a loja não usa,
-        // e menos código exposto significa menos superfície de ataque.
+        // Botão "Continuar com Google": leva o navegador à tela de login do Google,
+        // que depois volta para /Account/LoginGoogle
+        accountGroup.MapPost("/EntrarComGoogle", (
+            HttpContext context,
+            [FromServices] SignInManager<ApplicationUser> signInManager,
+            [FromServices] IOptions<LoginGoogleOptions> opcoesGoogle,
+            [FromForm] string? returnUrl) =>
+        {
+            if (!opcoesGoogle.Value.Ativo)
+                return Results.NotFound();
+
+            IEnumerable<KeyValuePair<string, StringValues>> query = [
+                new("ReturnUrl", returnUrl),
+                new("Action", LoginGoogle.LoginCallbackAction)];
+
+            var redirectUrl = UriHelper.BuildRelative(
+                context.Request.PathBase,
+                "/Account/LoginGoogle",
+                QueryString.Create(query));
+
+            var properties = signInManager.ConfigureExternalAuthenticationProperties(GoogleDefaults.AuthenticationScheme, redirectUrl);
+            return TypedResults.Challenge(properties, [GoogleDefaults.AuthenticationScheme]);
+        });
 
         accountGroup.MapPost("/Logout", async (
             ClaimsPrincipal user,
@@ -35,6 +59,29 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
         });
 
         var manageGroup = accountGroup.MapGroup("/Manage").RequireAuthorization();
+
+        // "Conectar conta Google" em Minha conta → Conta Google: mesma ida ao Google, mas a volta
+        // acrescenta o login à conta de quem já está logado
+        manageGroup.MapPost("/ConectarGoogle", async (
+            HttpContext context,
+            [FromServices] SignInManager<ApplicationUser> signInManager,
+            [FromServices] IOptions<LoginGoogleOptions> opcoesGoogle) =>
+        {
+            if (!opcoesGoogle.Value.Ativo)
+                return Results.NotFound();
+
+            // Limpa um login com Google anterior que tenha ficado pela metade
+            await context.SignOutAsync(IdentityConstants.ExternalScheme);
+
+            var redirectUrl = UriHelper.BuildRelative(
+                context.Request.PathBase,
+                "/Account/Manage/Google",
+                QueryString.Create("Action", ContaGoogle.ConectarCallbackAction));
+
+            var properties = signInManager.ConfigureExternalAuthenticationProperties(
+                GoogleDefaults.AuthenticationScheme, redirectUrl, signInManager.UserManager.GetUserId(context.User));
+            return TypedResults.Challenge(properties, [GoogleDefaults.AuthenticationScheme]);
+        });
 
         var loggerFactory = endpoints.ServiceProvider.GetRequiredService<ILoggerFactory>();
         var downloadLogger = loggerFactory.CreateLogger("DownloadPersonalData");
