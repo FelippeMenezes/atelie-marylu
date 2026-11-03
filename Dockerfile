@@ -1,5 +1,5 @@
 # Imagem da loja. O build roda na arquitetura da máquina que compila e gera a imagem para a
-# arquitetura de destino (ex.: compilar num PC x64 para o servidor ARM da Oracle):
+# arquitetura de destino (ex.: compilar num PC x64 para um servidor ARM):
 #   docker buildx build --platform linux/arm64 -t atelie-marylu .
 # No próprio servidor, o docker compose de produção já faz o build: docker compose -f docker-compose.prod.yml up -d --build
 

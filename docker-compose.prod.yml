@@ -1,4 +1,4 @@
-# Produção num único servidor (ex.: VM gratuita da Oracle Cloud).
+# Produção num único servidor (hoje um VPS Hostinger; o passo a passo está em docs/DEPLOY.md).
 # Uso: cp .env.producao.example .env.producao (preencha) && docker compose -f docker-compose.prod.yml --env-file .env.producao up -d --build
 #
 # Internet ──443/80──> caddy (HTTPS automático) ──8080──> app (.NET) ──5432──> postgres

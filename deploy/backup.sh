@@ -4,7 +4,7 @@
 # Agendado pelo cron: veja docs/DEPLOY.md.
 #
 # Guarda os últimos 14 dias em ./backups. Se a variável RCLONE_DESTINO estiver definida
-# (ex.: "oci:atelie-backups"), copia também para fora do servidor com o rclone:
+# (ex.: "nuvem:atelie-backups"), copia também para fora do servidor com o rclone:
 # backup que fica só na mesma máquina não protege contra perder a máquina.
 set -euo pipefail
 umask 077   # arquivos de backup legíveis só pelo dono (têm dados pessoais de clientes)

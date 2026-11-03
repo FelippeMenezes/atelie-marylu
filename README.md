@@ -82,7 +82,7 @@ Até a integração com o Mercado Pago, o pagamento é simulado. Na página do p
 
 ## Produção
 
-A loja roda num único servidor com Docker: Caddy (HTTPS automático), a aplicação e o Postgres, definidos em `docker-compose.prod.yml`. O passo a passo para publicar gratuitamente na Oracle Cloud está em [docs/DEPLOY.md](docs/DEPLOY.md).
+A loja roda num único servidor com Docker: Caddy (HTTPS automático), a aplicação e o Postgres, definidos em `docker-compose.prod.yml`. O passo a passo para publicar num VPS (hoje na Hostinger, em https://www.ateliemarylu.com.br) está em [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## CI
 
