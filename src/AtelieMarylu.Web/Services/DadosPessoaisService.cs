@@ -21,8 +21,6 @@ public class DadosPessoaisService(UserManager<ApplicationUser> userManager, IDbC
             await userManager.RemoveLoginAsync(usuario, login.LoginProvider, login.ProviderKey);
         await userManager.RemoveClaimsAsync(usuario, await userManager.GetClaimsAsync(usuario));
         await userManager.RemoveFromRolesAsync(usuario, await userManager.GetRolesAsync(usuario));
-        foreach (var passkey in await userManager.GetPasskeysAsync(usuario))
-            await userManager.RemovePasskeyAsync(usuario, passkey.CredentialId);
         await userManager.RemovePasswordAsync(usuario);
         await userManager.SetTwoFactorEnabledAsync(usuario, false);
 
