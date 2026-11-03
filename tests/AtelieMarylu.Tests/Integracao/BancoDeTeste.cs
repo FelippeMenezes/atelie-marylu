@@ -36,7 +36,7 @@ public sealed class BancoDeTeste : IAsyncLifetime, IDbContextFactory<Application
         // Mesma configuração do Program.cs: o modelo do Identity depende da SchemaVersion
         var servicos = new ServiceCollection();
         servicos.AddDbContextFactory<ApplicationDbContext>(o => o.UseNpgsql(conexao));
-        servicos.AddIdentityCore<ApplicationUser>(o => o.Stores.SchemaVersion = IdentitySchemaVersions.Version3)
+        servicos.AddIdentityCore<ApplicationUser>(o => o.Stores.SchemaVersion = IdentitySchemaVersions.Version2)
             .AddEntityFrameworkStores<ApplicationDbContext>();
         _servicos = servicos.BuildServiceProvider();
         await using var db = CreateDbContext();

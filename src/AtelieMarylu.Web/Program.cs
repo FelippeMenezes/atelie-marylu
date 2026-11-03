@@ -77,7 +77,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
         options.Password.RequiredLength = 8;
         options.Lockout.MaxFailedAccessAttempts = 5;
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
-        options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
+        // Version2: sem a tabela de passkeys (login sem senha), que a loja não usa
+        options.Stores.SchemaVersion = IdentitySchemaVersions.Version2;
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
