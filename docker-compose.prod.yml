@@ -16,6 +16,7 @@ services:
       - "${HTTPS_PORT:-443}:443/udp"   # HTTP/3
     environment:
       DOMINIO: ${DOMINIO:?Defina DOMINIO no .env.producao}
+      DOMINIOS_EXTRAS: ${DOMINIOS_EXTRAS:-}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-dados:/data        # certificados HTTPS (não perder, senão pede de novo ao Let's Encrypt)
