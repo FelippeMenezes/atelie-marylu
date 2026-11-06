@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Permissoes.ProdutosGerenciar)]
 @using System.ComponentModel.DataAnnotations
+@using System.IO
 @inject ProdutoService ProdutoService
 @inject ImagemService Imagens
 @inject NavigationManager Navigation
@@ -224,7 +225,12 @@ else
         {
             (mensagem, erro) = (ex.Message, true);
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
+        {
+            Logger.LogError(ex, "Falha ao salvar o produto {ProdutoId}", Id);
+            (mensagem, erro) = ("Não foi possível salvar. Tente novamente.", true);
+        }
+        catch (IOException ex)
         {
             Logger.LogError(ex, "Falha ao salvar o produto {ProdutoId}", Id);
             (mensagem, erro) = ("Não foi possível salvar. Tente novamente.", true);
