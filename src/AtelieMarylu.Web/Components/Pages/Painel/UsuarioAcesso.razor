@@ -3,6 +3,7 @@
 @attribute [Authorize(Policy = Papeis.Admin)]
 @using System.Security.Claims
 @inject AcessoService Acesso
+@inject ClienteService ClienteService
 @using Microsoft.AspNetCore.Identity
 
 <PageTitle>Acessos · Painel</PageTitle>
@@ -13,7 +14,7 @@
 }
 else
 {
-    <h1>@(string.IsNullOrEmpty(usuario.NomeCompleto) ? usuario.Email : usuario.NomeCompleto)</h1>
+    <h1>@usuario.NomeParaExibir</h1>
     <p class="text-secondary">@usuario.Email</p>
 
     <section class="caixa mb-3">
@@ -69,7 +70,7 @@ else
     [Parameter] public string Id { get; set; } = "";
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
 
-    private ApplicationUser? usuario;
+    private DadosCliente? usuario;
     private IReadOnlyList<ResumoGrupo> grupos = [];
     private HashSet<string> gruposMarcados = [];
     private HashSet<string> permissoesMarcadas = [];
@@ -80,7 +81,7 @@ else
     protected override async Task OnParametersSetAsync()
     {
         meuId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
-        usuario = await Acesso.ObterUsuarioAsync(Id);
+        usuario = await ClienteService.ObterAsync(Id);
         carregado = true;
         if (usuario is null) return;
 

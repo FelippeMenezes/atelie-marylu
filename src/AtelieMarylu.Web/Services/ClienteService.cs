@@ -15,8 +15,9 @@ public class ClienteService(IDbContextFactory<ApplicationDbContext> dbFactory)
         var consulta = ConsultarClientes(db);
         if (!string.IsNullOrWhiteSpace(busca))
         {
-            var termo = $"%{busca.Trim()}%";
-            consulta = consulta.Where(u => EF.Functions.ILike(u.Email!, termo) || EF.Functions.ILike(u.NomeCompleto, termo));
+            var padrao = PadraoBusca.Contem(busca);
+            consulta = consulta.Where(u => EF.Functions.ILike(u.Email!, padrao, PadraoBusca.CaractereDeEscape)
+                || EF.Functions.ILike(u.NomeCompleto, padrao, PadraoBusca.CaractereDeEscape));
         }
         return await consulta
             .OrderBy(u => u.NomeCompleto)
@@ -26,16 +27,22 @@ public class ClienteService(IDbContextFactory<ApplicationDbContext> dbFactory)
     }
 
     // Para escolher o cliente ao criar um pedido pelo painel
-    public async Task<List<ApplicationUser>> ListarTodosAsync(CancellationToken ct = default)
+    public async Task<List<DadosCliente>> ListarParaSelecaoAsync(CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await ConsultarClientes(db).OrderBy(u => u.NomeCompleto).ToListAsync(ct);
+        return await ConsultarClientes(db)
+            .OrderBy(u => u.NomeCompleto)
+            .Select(u => new DadosCliente(u.Id, u.NomeCompleto, u.Email, u.PhoneNumber, u.CriadoEm))
+            .ToListAsync(ct);
     }
 
-    public async Task<ApplicationUser?> ObterAsync(string id, CancellationToken ct = default)
+    public async Task<DadosCliente?> ObterAsync(string id, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, ct);
+        return await db.Users.AsNoTracking()
+            .Where(u => u.Id == id)
+            .Select(u => new DadosCliente(u.Id, u.NomeCompleto, u.Email, u.PhoneNumber, u.CriadoEm))
+            .FirstOrDefaultAsync(ct);
     }
 
     // Nome de cada cliente, para mostrar na lista de pedidos

@@ -7,7 +7,7 @@ namespace AtelieMarylu.Web.Services;
 // Direito de exclusão (LGPD, art. 18). Sem pedidos, a conta é apagada.
 // Com pedidos, o registro da venda precisa ficar (obrigação fiscal), então a conta é anonimizada:
 // some nome, e-mail, telefone, CPF, senha e acessos, e ninguém mais consegue entrar nela.
-public class DadosPessoaisService(UserManager<ApplicationUser> userManager, IDbContextFactory<ApplicationDbContext> dbFactory)
+public class DadosPessoaisService(UserManager<ApplicationUser> userManager, IDbContextFactory<ApplicationDbContext> dbFactory, AuditoriaService auditoria)
 {
     // LGPD: a pessoa tem direito a todos os seus dados, inclusive pedidos e endereços
     public async Task<IReadOnlyList<object>> ExportarPedidosAsync(string userId, CancellationToken ct = default)
@@ -27,6 +27,8 @@ public class DadosPessoaisService(UserManager<ApplicationUser> userManager, IDbC
 
     public async Task<IdentityResult> ExcluirContaAsync(ApplicationUser usuario)
     {
+        await auditoria.AnonimizarUsuarioAsync(usuario.Id, usuario.Email);
+
         await using (var db = await dbFactory.CreateDbContextAsync())
         {
             if (!await db.Pedidos.AnyAsync(p => p.ClienteId == usuario.Id))

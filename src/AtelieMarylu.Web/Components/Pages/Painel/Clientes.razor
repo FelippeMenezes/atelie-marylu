@@ -43,8 +43,15 @@ else
 @code {
     private List<ResumoCliente>? clientes;
     private string? busca;
+    private int ultimaBusca;
 
     protected override Task OnInitializedAsync() => CarregarAsync();
 
-    private async Task CarregarAsync() => clientes = await ClienteService.ListarAsync(busca);
+    // Com a busca a cada tecla, uma resposta antiga pode chegar depois da nova: só vale a última
+    private async Task CarregarAsync()
+    {
+        var numero = ++ultimaBusca;
+        var resultado = await ClienteService.ListarAsync(busca);
+        if (numero == ultimaBusca) clientes = resultado;
+    }
 }
