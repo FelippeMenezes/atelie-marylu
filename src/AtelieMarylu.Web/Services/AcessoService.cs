@@ -1,18 +1,11 @@
 using System.Security.Claims;
+using AtelieMarylu.Domain.Auditoria;
 using AtelieMarylu.Domain.Seguranca;
-using AtelieMarylu.Web.Data;
+using AtelieMarylu.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace AtelieMarylu.Web.Services;
-
-public record ResumoUsuario(string Id, string Email, string Nome, bool EhAdmin, bool EhFuncionario, IReadOnlyList<string> Grupos);
-
-public record AcessoUsuario(bool EhAdmin, IReadOnlyList<string> Grupos, IReadOnlyList<string> PermissoesIndividuais);
-
-public record ResumoGrupo(string Nome, IReadOnlyList<string> Permissoes, int Membros);
-
-public class AcessoException(string mensagem) : Exception(mensagem);
 
 // Administração de acesso (só o Admin usa):
 // - grupo de funcionários = Role do Identity com claims "permissao"
@@ -53,6 +46,8 @@ public class AcessoService(
         }).ToList();
     }
 
+    public Task<ApplicationUser?> ObterUsuarioAsync(string userId) => userManager.FindByIdAsync(userId);
+
     public async Task<AcessoUsuario> ObterAcessoAsync(string userId)
     {
         var usuario = await BuscarAsync(userId);
@@ -89,7 +84,7 @@ public class AcessoService(
             .Select(p => new Claim(Permissoes.TipoClaim, p))));
 
         await userManager.UpdateSecurityStampAsync(usuario);
-        await RegistrarAsync("acesso.alterado", "Usuario", usuario.Email ?? userId,
+        await RegistrarAsync(AcoesAuditoria.AcessoAlterado, EntidadesAuditoria.Usuario, usuario.Email ?? userId,
             $"Admin: {(acesso.EhAdmin ? "sim" : "não")} · Grupos: {string.Join(", ", desejados.Where(d => d != Papeis.Admin))} · Individuais: {string.Join(", ", permissoesDesejadas)}");
     }
 
@@ -112,7 +107,7 @@ public class AcessoService(
         if (Papeis.EhPapelDoSistema(nome) || await roleManager.RoleExistsAsync(nome))
             throw new AcessoException("Já existe um grupo com esse nome.");
         Verificar(await roleManager.CreateAsync(new IdentityRole(nome)));
-        await RegistrarAsync("grupo.criado", "Grupo", nome);
+        await RegistrarAsync(AcoesAuditoria.GrupoCriado, EntidadesAuditoria.Grupo, nome);
     }
 
     public async Task SalvarPermissoesGrupoAsync(string nome, IEnumerable<string> permissoes)
@@ -127,7 +122,7 @@ public class AcessoService(
             Verificar(await roleManager.AddClaimAsync(role, new Claim(Permissoes.TipoClaim, p)));
 
         await RenovarMembrosAsync(nome);
-        await RegistrarAsync("grupo.permissoes", "Grupo", nome, string.Join(", ", desejadas));
+        await RegistrarAsync(AcoesAuditoria.GrupoPermissoes, EntidadesAuditoria.Grupo, nome, string.Join(", ", desejadas));
     }
 
     public async Task ExcluirGrupoAsync(string nome)
@@ -137,7 +132,7 @@ public class AcessoService(
         Verificar(await roleManager.DeleteAsync(role));
         foreach (var membro in membros)
             await userManager.UpdateSecurityStampAsync(membro);
-        await RegistrarAsync("grupo.excluido", "Grupo", nome, $"{membros.Count} membro(s)");
+        await RegistrarAsync(AcoesAuditoria.GrupoExcluido, EntidadesAuditoria.Grupo, nome, $"{membros.Count} membro(s)");
     }
 
     private async Task RegistrarAsync(string acao, string entidade, string id, string? detalhes = null)

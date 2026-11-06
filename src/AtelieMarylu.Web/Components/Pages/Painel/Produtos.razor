@@ -1,6 +1,6 @@
 @page "/painel/produtos"
 @attribute [Authorize(Policy = Permissoes.ProdutosGerenciar)]
-@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject ProdutoService ProdutoService
 
 <PageTitle>Produtos · Painel</PageTitle>
 
@@ -35,7 +35,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await using var db = await DbFactory.CreateDbContextAsync();
-        produtos = await db.Produtos.AsNoTracking().Include(p => p.Imagens).OrderByDescending(p => p.Ativo).ThenBy(p => p.Nome).ToListAsync();
+        produtos = await ProdutoService.ListarTodosAsync();
     }
 }

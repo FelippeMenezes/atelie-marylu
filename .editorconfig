@@ -1,0 +1,59 @@
+# Regras de estilo do projeto. O Visual Studio, o VS Code e o "dotnet format" leem este arquivo.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,xml,csproj,props,slnx,razor.css,css,js}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+# Namespace em uma linha só, sem chaves em volta do arquivo inteiro
+csharp_style_namespace_declarations = file_scoped:warning
+
+# "var" quando o tipo está claro
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_for_built_in_types = true:suggestion
+
+# Campos privados começam com sublinhado: _itens
+dotnet_naming_rule.campos_privados.severity = warning
+dotnet_naming_rule.campos_privados.symbols = simbolos_campos_privados
+dotnet_naming_rule.campos_privados.style = estilo_sublinhado
+dotnet_naming_symbols.simbolos_campos_privados.applicable_kinds = field
+dotnet_naming_symbols.simbolos_campos_privados.applicable_accessibilities = private
+dotnet_naming_style.estilo_sublinhado.required_prefix = _
+dotnet_naming_style.estilo_sublinhado.capitalization = camel_case
+
+# Constantes e campos estáticos readonly usam PascalCase
+dotnet_naming_rule.constantes.severity = warning
+dotnet_naming_rule.constantes.symbols = simbolos_constantes
+dotnet_naming_rule.constantes.style = estilo_pascal
+dotnet_naming_symbols.simbolos_constantes.applicable_kinds = field
+dotnet_naming_symbols.simbolos_constantes.required_modifiers = const
+dotnet_naming_style.estilo_pascal.capitalization = pascal_case
+
+dotnet_naming_rule.estaticos_readonly.severity = warning
+dotnet_naming_rule.estaticos_readonly.symbols = simbolos_estaticos_readonly
+dotnet_naming_rule.estaticos_readonly.style = estilo_pascal
+dotnet_naming_symbols.simbolos_estaticos_readonly.applicable_kinds = field
+dotnet_naming_symbols.simbolos_estaticos_readonly.required_modifiers = static, readonly
+
+# Interfaces começam com I: IGatewayPagamento
+dotnet_naming_rule.interfaces.severity = warning
+dotnet_naming_rule.interfaces.symbols = simbolos_interfaces
+dotnet_naming_rule.interfaces.style = estilo_interface
+dotnet_naming_symbols.simbolos_interfaces.applicable_kinds = interface
+dotnet_naming_style.estilo_interface.required_prefix = I
+dotnet_naming_style.estilo_interface.capitalization = pascal_case
+
+# As migrations são geradas pelo EF Core: não vale a pena reformatar
+[**/Migrations/*.cs]
+generated_code = true

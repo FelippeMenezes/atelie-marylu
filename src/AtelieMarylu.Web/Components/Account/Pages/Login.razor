@@ -3,14 +3,14 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
-@using AtelieMarylu.Web.Data
+@using AtelieMarylu.Infrastructure.Data
 
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
-@inject AtelieMarylu.Web.Integracoes.Turnstile Turnstile
+@inject AtelieMarylu.Infrastructure.Integrations.Turnstile Turnstile
 
 <PageTitle>Entrar · Ateliê Marylu</PageTitle>
 
@@ -89,7 +89,7 @@
 
     public async Task LoginUser()
     {
-        if (!await Turnstile.ValidarAsync(HttpContext.Request.Form[AtelieMarylu.Web.Integracoes.Turnstile.CampoFormulario], HttpContext.Connection.RemoteIpAddress?.ToString()))
+        if (!await Turnstile.ValidarAsync(HttpContext.Request.Form[AtelieMarylu.Infrastructure.Integrations.Turnstile.CampoFormulario], HttpContext.Connection.RemoteIpAddress?.ToString()))
         {
             errorMessage = "Erro: confirme que você não é um robô.";
             return;

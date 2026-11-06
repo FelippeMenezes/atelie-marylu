@@ -3,7 +3,7 @@ using AtelieMarylu.Domain.Frete;
 using AtelieMarylu.Domain.Pagamentos;
 using AtelieMarylu.Domain.Pedidos;
 using AtelieMarylu.Web.Configuracao;
-using AtelieMarylu.Web.Integracoes;
+using AtelieMarylu.Infrastructure.Integrations;
 using AtelieMarylu.Web.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +28,7 @@ public class PedidoServiceTests(BancoDeTeste banco) : IClassFixture<BancoDeTeste
 
     private PedidoService Servico()
     {
-        var auditoria = new AuditoriaService(new UsuarioAtual(new ServiceCollection().BuildServiceProvider(), new HttpContextAccessor()));
+        var auditoria = new AuditoriaService(new UsuarioAtual(new ServiceCollection().BuildServiceProvider(), new HttpContextAccessor()), banco);
         return new PedidoService(banco, new FreteSimulado(), new PagamentoSimulado(), auditoria, new PedidoEventos(),
             Options.Create(loja), relogio, NullLogger<PedidoService>.Instance);
     }

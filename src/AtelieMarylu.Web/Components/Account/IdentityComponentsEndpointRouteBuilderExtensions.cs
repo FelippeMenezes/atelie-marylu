@@ -11,8 +11,8 @@ using Microsoft.Extensions.Primitives;
 using AtelieMarylu.Web.Configuracao;
 using AtelieMarylu.Web.Components.Account.Pages;
 using AtelieMarylu.Web.Components.Account.Pages.Manage;
-using AtelieMarylu.Web.Data;
-using Microsoft.EntityFrameworkCore;
+using AtelieMarylu.Infrastructure.Data;
+using AtelieMarylu.Web.Services;
 
 namespace Microsoft.AspNetCore.Routing;
 
@@ -89,7 +89,7 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
         manageGroup.MapPost("/DownloadPersonalData", async (
             HttpContext context,
             [FromServices] UserManager<ApplicationUser> userManager,
-            [FromServices] IDbContextFactory<ApplicationDbContext> dbFactory,
+            [FromServices] DadosPessoaisService dadosPessoais,
             [FromServices] AuthenticationStateProvider authenticationStateProvider) =>
         {
             var user = await userManager.GetUserAsync(context.User);
@@ -118,17 +118,7 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
 
             personalData.Add("Authenticator Key", (await userManager.GetAuthenticatorKeyAsync(user))!);
 
-            // LGPD: a pessoa tem direito a todos os seus dados, inclusive pedidos e endereços
-            await using var db = await dbFactory.CreateDbContextAsync();
-            var pedidos = await db.Pedidos.AsNoTracking().Include(p => p.Itens)
-                .Where(p => p.ClienteId == userId)
-                .OrderBy(p => p.CriadoEm)
-                .Select(p => new
-                {
-                    p.Codigo, p.CriadoEm, Status = p.Status.ToString(), p.Endereco, p.FreteNome, p.FreteValor, p.CodigoRastreio,
-                    Itens = p.Itens.Select(i => new { i.NomeProduto, i.Quantidade, i.PrecoUnitario }),
-                })
-                .ToListAsync();
+            var pedidos = await dadosPessoais.ExportarPedidosAsync(userId);
             var fileBytes = JsonSerializer.SerializeToUtf8Bytes(new { Conta = personalData, Pedidos = pedidos },
                 new JsonSerializerOptions { WriteIndented = true });
 

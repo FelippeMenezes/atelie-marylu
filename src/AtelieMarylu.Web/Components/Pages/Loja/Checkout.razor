@@ -5,7 +5,7 @@
 @using AtelieMarylu.Domain.Frete
 @using AtelieMarylu.Web.Configuracao
 @using Microsoft.Extensions.Options
-@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject ProdutoService ProdutoService
 @inject CarrinhoService Carrinho
 @inject PedidoService Pedidos
 @inject NavigationManager Navigation
@@ -142,7 +142,7 @@ else
 
     private decimal Subtotal => Carrinho.Atual.Itens.Sum(i => (produtos.GetValueOrDefault(i.ProdutoId)?.Preco ?? 0) * i.Quantidade);
     private decimal Desconto => metodo == MetodoPagamento.Pix
-        ? Math.Round(Subtotal * Loja.Value.DescontoPixPercentual / 100m, 2, MidpointRounding.AwayFromZero) : 0;
+        ? CalculadoraDescontoPix.Calcular(Subtotal, Loja.Value.DescontoPixPercentual) : 0;
     private OpcaoFrete? FreteEscolhido => opcoesFrete?.FirstOrDefault(o => o.Codigo == codigoFrete);
     private decimal Total => Subtotal - Desconto + (FreteEscolhido?.Valor ?? 0);
 
@@ -160,12 +160,7 @@ else
         clienteId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
 
         // Sugere o endereço do último pedido
-        await using var db = await DbFactory.CreateDbContextAsync();
-        var ultimo = await db.Pedidos.AsNoTracking()
-            .Where(p => p.ClienteId == clienteId)
-            .OrderByDescending(p => p.CriadoEm)
-            .Select(p => p.Endereco)
-            .FirstOrDefaultAsync();
+        var ultimo = await Pedidos.ObterUltimoEnderecoAsync(clienteId);
         if (ultimo is not null) endereco = FormularioEndereco.De(ultimo);
     }
 
@@ -173,9 +168,7 @@ else
     {
         if (!firstRender) return;
         await Carrinho.CarregarAsync();
-        var ids = Carrinho.Atual.Itens.Select(i => i.ProdutoId).ToList();
-        await using var db = await DbFactory.CreateDbContextAsync();
-        produtos = await db.Produtos.AsNoTracking().Where(p => ids.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
+        produtos = await ProdutoService.ObterPorIdsAsync(Carrinho.Atual.Itens.Select(i => i.ProdutoId));
         pronto = true;
         StateHasChanged();
     }

@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/AtelieMarylu.Domain/AtelieMarylu.Domain.csproj" />
+    <Project Path="src/AtelieMarylu.Infrastructure/AtelieMarylu.Infrastructure.csproj" />
     <Project Path="src/AtelieMarylu.Web/AtelieMarylu.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">

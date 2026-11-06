@@ -1,7 +1,7 @@
 @page "/meus-pedidos"
 @attribute [Authorize]
 @using System.Security.Claims
-@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject PedidoService Pedidos
 
 <PageTitle>Meus pedidos · Ateliê Marylu</PageTitle>
 
@@ -25,10 +25,6 @@ else
     protected override async Task OnInitializedAsync()
     {
         var clienteId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier);
-        await using var db = await DbFactory.CreateDbContextAsync();
-        pedidos = await db.Pedidos.AsNoTracking().Include(p => p.Itens)
-            .Where(p => p.ClienteId == clienteId)
-            .OrderByDescending(p => p.CriadoEm)
-            .ToListAsync();
+        pedidos = await Pedidos.ListarDoClienteAsync(clienteId);
     }
 }

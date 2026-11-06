@@ -1,6 +1,7 @@
 @page "/painel/clientes/{Id}"
 @attribute [Authorize(Policy = Permissoes.ClientesVer)]
-@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject ClienteService ClienteService
+@inject PedidoService PedidoService
 
 <PageTitle>Cliente · Painel</PageTitle>
 
@@ -39,10 +40,8 @@ else if (cliente is not null)
 
     protected override async Task OnParametersSetAsync()
     {
-        await using var db = await DbFactory.CreateDbContextAsync();
-        cliente = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == Id);
-        pedidos = await db.Pedidos.AsNoTracking().Include(p => p.Itens)
-            .Where(p => p.ClienteId == Id).OrderByDescending(p => p.CriadoEm).ToListAsync();
+        cliente = await ClienteService.ObterAsync(Id);
+        pedidos = await PedidoService.ListarDoClienteAsync(Id);
         carregado = true;
     }
 }

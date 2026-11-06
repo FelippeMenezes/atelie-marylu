@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
-using AtelieMarylu.Web.Data;
+using AtelieMarylu.Infrastructure.Data;
 
 namespace AtelieMarylu.Web.Components.Account;
 

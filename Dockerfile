@@ -9,7 +9,9 @@ ARG TARGETARCH
 WORKDIR /src
 
 # Copia só os .csproj primeiro: o restore fica em cache enquanto as dependências não mudarem
+COPY Directory.Build.props Directory.Packages.props ./
 COPY src/AtelieMarylu.Domain/AtelieMarylu.Domain.csproj src/AtelieMarylu.Domain/
+COPY src/AtelieMarylu.Infrastructure/AtelieMarylu.Infrastructure.csproj src/AtelieMarylu.Infrastructure/
 COPY src/AtelieMarylu.Web/AtelieMarylu.Web.csproj src/AtelieMarylu.Web/
 RUN dotnet restore src/AtelieMarylu.Web/AtelieMarylu.Web.csproj -a $TARGETARCH
 

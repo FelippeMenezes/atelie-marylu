@@ -1,7 +1,7 @@
 @page "/produto/{Id:int}"
 @page "/produto/{Id:int}/{Slug}"
 @using System.Text.Json
-@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject ProdutoService ProdutoService
 @inject NavigationManager Navigation
 
 @* Página estática (rápida e indexável). Só "adicionar ao carrinho" e "calcular frete" são ilhas interativas. *@
@@ -108,8 +108,7 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        await using var db = await DbFactory.CreateDbContextAsync();
-        produto = await db.Produtos.AsNoTracking().Include(p => p.Imagens).FirstOrDefaultAsync(p => p.Id == Id && p.Ativo);
+        produto = await ProdutoService.ObterAtivoAsync(Id);
 
         // Produto inexistente responde 404 (página "não encontrada"), para o Google não indexar páginas vazias
         if (produto is null)

@@ -1,4 +1,4 @@
-using AtelieMarylu.Web.Data;
+using AtelieMarylu.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +9,22 @@ namespace AtelieMarylu.Web.Services;
 // some nome, e-mail, telefone, CPF, senha e acessos, e ninguém mais consegue entrar nela.
 public class DadosPessoaisService(UserManager<ApplicationUser> userManager, IDbContextFactory<ApplicationDbContext> dbFactory)
 {
+    // LGPD: a pessoa tem direito a todos os seus dados, inclusive pedidos e endereços
+    public async Task<IReadOnlyList<object>> ExportarPedidosAsync(string userId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var pedidos = await db.Pedidos.AsNoTracking().Include(p => p.Itens)
+            .Where(p => p.ClienteId == userId)
+            .OrderBy(p => p.CriadoEm)
+            .Select(p => new
+            {
+                p.Codigo, p.CriadoEm, Status = p.Status.ToString(), p.Endereco, p.FreteNome, p.FreteValor, p.CodigoRastreio,
+                Itens = p.Itens.Select(i => new { i.NomeProduto, i.Quantidade, i.PrecoUnitario }),
+            })
+            .ToListAsync(ct);
+        return pedidos;
+    }
+
     public async Task<IdentityResult> ExcluirContaAsync(ApplicationUser usuario)
     {
         await using (var db = await dbFactory.CreateDbContextAsync())

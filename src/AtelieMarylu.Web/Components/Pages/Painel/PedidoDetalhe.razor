@@ -1,13 +1,14 @@
 @page "/painel/pedidos/{Id:int}"
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Permissoes.PedidosVer)]
-@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject ClienteService ClienteService
+@inject ProdutoService ProdutoService
+@inject AuditoriaService AuditoriaService
 @inject PedidoService Pedidos
 @inject IAuthorizationService Autorizacao
 @inject ILogger<PedidoDetalhe> Logger
 @inject PedidoEventos Eventos
 @implements IDisposable
-@using AtelieMarylu.Domain.Auditoria
 
 <PageTitle>Pedido · Painel</PageTitle>
 
@@ -158,7 +159,7 @@ else if (pedido is not null)
         <h2 class="h5">Histórico</h2>
         @foreach (var h in historico)
         {
-            <div class="small py-1 @(h.Acao == "pagamento.divergente" ? "text-danger fw-bold" : "")">
+            <div class="small py-1 @(h.Acao == AcoesAuditoria.PagamentoDivergente ? "text-danger fw-bold" : "")">
                 @h.Quando.Formatar() · <strong>@h.Autor</strong> · <code>@h.Acao</code> @h.Detalhes
             </div>
         }
@@ -204,22 +205,18 @@ else if (pedido is not null)
 
     private async Task CarregarAsync()
     {
-        await using var db = await DbFactory.CreateDbContextAsync();
-        pedido = await db.Pedidos.AsNoTracking().Include(p => p.Itens).Include(p => p.Pagamentos).FirstOrDefaultAsync(p => p.Id == Id);
+        pedido = await Pedidos.ObterAsync(Id);
         carregado = true;
         if (pedido is null) return;
 
-        var idTexto = Id.ToString();
-        historico = await db.Auditoria.AsNoTracking()
-            .Where(a => a.Entidade == "Pedido" && a.EntidadeId == idTexto)
-            .OrderByDescending(a => a.Quando).ToListAsync();
-        var cliente = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == pedido.ClienteId);
+        historico = await AuditoriaService.ListarDoPedidoAsync(Id);
+        var cliente = await ClienteService.ObterAsync(pedido.ClienteId);
         nomeCliente = cliente is null ? "?" : $"{cliente.NomeCompleto} ({cliente.Email})";
         endereco = FormularioEndereco.De(pedido.Endereco);
         observacao = pedido.Observacao;
         rastreio = pedido.CodigoRastreio;
         if (podeEditar && pedido.PodeAlterarItens)
-            produtosDisponiveis = await db.Produtos.AsNoTracking().Where(p => p.Ativo && p.Estoque > 0).OrderBy(p => p.Nome).ToListAsync();
+            produtosDisponiveis = await ProdutoService.ListarComEstoqueAsync();
     }
 
     private async Task<bool> PodeAsync(string politica) =>

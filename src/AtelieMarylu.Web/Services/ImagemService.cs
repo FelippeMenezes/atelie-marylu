@@ -3,8 +3,6 @@ using SkiaSharp;
 
 namespace AtelieMarylu.Web.Services;
 
-public record ImagemSalva(string Url, string UrlMiniatura);
-
 // Fotos dos produtos, guardadas em wwwroot/uploads/produtos.
 // Toda foto é decodificada e regravada do zero (SkiaSharp), o que:
 // - garante que é uma imagem de verdade (não confiamos na extensão nem no tipo enviado pelo navegador);

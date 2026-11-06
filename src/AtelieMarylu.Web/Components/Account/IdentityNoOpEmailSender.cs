@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using AtelieMarylu.Web.Data;
+using AtelieMarylu.Infrastructure.Data;
 
 namespace AtelieMarylu.Web.Components.Account;
 

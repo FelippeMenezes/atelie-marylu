@@ -1,3 +1,4 @@
+using AtelieMarylu.Infrastructure.Integrations;
 using AtelieMarylu.Domain.Frete;
 
 namespace AtelieMarylu.Tests;

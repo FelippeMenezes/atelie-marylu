@@ -4,7 +4,6 @@
 @implements IDisposable
 @using System.Security.Claims
 @using AtelieMarylu.Web.Configuracao
-@inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject PedidoService Pedidos
 @inject PedidoEventos Eventos
 @inject IWebHostEnvironment Ambiente
@@ -117,11 +116,7 @@ else if (pedido is not null)
     private async Task CarregarAsync()
     {
         var clienteId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier);
-        await using var db = await DbFactory.CreateDbContextAsync();
-        // O filtro por ClienteId garante que ninguém veja o pedido de outra pessoa trocando o código na URL
-        pedido = await db.Pedidos.AsNoTracking()
-            .Include(p => p.Itens).Include(p => p.Pagamentos)
-            .FirstOrDefaultAsync(p => p.Codigo == Codigo && p.ClienteId == clienteId);
+        pedido = await Pedidos.ObterDoClienteAsync(Codigo, clienteId);
         carregado = true;
     }
 
