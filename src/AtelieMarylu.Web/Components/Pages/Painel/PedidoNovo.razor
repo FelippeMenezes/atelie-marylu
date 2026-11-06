@@ -103,7 +103,7 @@
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
 
-    private List<ApplicationUser> clientes = [];
+    private List<DadosCliente> clientes = [];
     private List<Produto> produtos = [];
     private readonly Carrinho carrinho = new();
     private FormularioEndereco endereco = new();
@@ -116,7 +116,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        clientes = await ClienteService.ListarTodosAsync();
+        clientes = await ClienteService.ListarParaSelecaoAsync();
         produtos = await ProdutoService.ListarAtivosAsync();
     }
 

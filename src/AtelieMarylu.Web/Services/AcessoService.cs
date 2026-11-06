@@ -23,8 +23,9 @@ public class AcessoService(
         var consulta = db.Users.AsNoTracking();
         if (!string.IsNullOrWhiteSpace(busca))
         {
-            var termo = $"%{busca.Trim()}%";
-            consulta = consulta.Where(u => EF.Functions.ILike(u.Email!, termo) || EF.Functions.ILike(u.NomeCompleto, termo));
+            var padrao = PadraoBusca.Contem(busca);
+            consulta = consulta.Where(u => EF.Functions.ILike(u.Email!, padrao, PadraoBusca.CaractereDeEscape)
+                || EF.Functions.ILike(u.NomeCompleto, padrao, PadraoBusca.CaractereDeEscape));
         }
         var usuarios = await consulta.OrderBy(u => u.NomeCompleto).Take(200).ToListAsync();
         var ids = usuarios.Select(u => u.Id).ToList();
@@ -45,8 +46,6 @@ public class AcessoService(
                 grupos.Count > 0 || comPermissao.Contains(u.Id), grupos);
         }).ToList();
     }
-
-    public Task<ApplicationUser?> ObterUsuarioAsync(string userId) => userManager.FindByIdAsync(userId);
 
     public async Task<AcessoUsuario> ObterAcessoAsync(string userId)
     {

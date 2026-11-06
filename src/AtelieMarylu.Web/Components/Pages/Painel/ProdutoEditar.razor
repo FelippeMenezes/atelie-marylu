@@ -7,6 +7,7 @@
 @inject ImagemService Imagens
 @inject NavigationManager Navigation
 @inject ILogger<ProdutoEditar> Logger
+@implements IDisposable
 
 <PageTitle>@(Id is null ? "Novo produto" : "Editar produto") · Painel</PageTitle>
 
@@ -128,10 +129,13 @@ else
     // Fotos removidas só têm o arquivo apagado depois de salvar (se cancelar, nada se perde)
     private readonly List<ImagemSalva> removidas = [];
     private readonly List<ImagemSalva> novas = [];
+    private int estoqueAoAbrir;
     private bool encontrado, salvando, enviando, erro;
     private string? mensagem;
 
-    protected override async Task OnParametersSetAsync()
+    protected override Task OnParametersSetAsync() => CarregarAsync();
+
+    private async Task CarregarAsync()
     {
         if (Id is null) return;
         var p = await ProdutoService.ObterAsync(Id.Value);
@@ -143,6 +147,7 @@ else
             Nome = p.Nome, Descricao = p.Descricao, Preco = p.Preco, Estoque = p.Estoque, Ativo = p.Ativo, PrazoProducaoDias = p.PrazoProducaoDias,
             PesoGramas = p.PesoGramas, AlturaCm = p.AlturaCm, LarguraCm = p.LarguraCm, ComprimentoCm = p.ComprimentoCm,
         };
+        estoqueAoAbrir = p.Estoque;
         fotos = p.Imagens.OrderBy(i => i.Ordem).Select(i => new ImagemSalva(i.Url, i.UrlMiniatura)).ToList();
     }
 
@@ -199,7 +204,7 @@ else
         try
         {
             var dados = new DadosProduto(form.Nome, form.Descricao, form.Preco, form.Estoque, form.Ativo, form.PrazoProducaoDias,
-                form.PesoGramas, form.AlturaCm, form.LarguraCm, form.ComprimentoCm);
+                form.PesoGramas, form.AlturaCm, form.LarguraCm, form.ComprimentoCm, estoqueAoAbrir);
             var produtoId = await ProdutoService.SalvarAsync(Id, dados, fotos);
             if (produtoId is null) { (mensagem, erro) = ("Produto não encontrado.", true); return; }
 
@@ -212,12 +217,29 @@ else
                 Navigation.NavigateTo($"painel/produtos/{produtoId}");
                 return;
             }
+            await CarregarAsync();
             (mensagem, erro) = ("Produto salvo.", false);
+        }
+        catch (RegraDeProdutoException ex)
+        {
+            (mensagem, erro) = (ex.Message, true);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Falha ao salvar o produto {ProdutoId}", Id);
+            (mensagem, erro) = ("Não foi possível salvar. Tente novamente.", true);
         }
         finally
         {
             salvando = false;
         }
+    }
+
+    // Fotos enviadas e nunca salvas não têm registro no banco: apaga ao sair da página
+    public void Dispose()
+    {
+        if (novas.Count > 0)
+            Imagens.Excluir(novas.SelectMany(f => new[] { f.Url, f.UrlMiniatura }).ToArray());
     }
 
     private sealed class FormProduto

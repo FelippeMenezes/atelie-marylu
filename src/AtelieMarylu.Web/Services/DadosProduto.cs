@@ -1,6 +1,7 @@
 namespace AtelieMarylu.Web.Services;
 
-// Dados digitados no formulário do painel para criar ou editar um produto
+// Dados digitados no formulário do painel para criar ou editar um produto.
+// EstoqueAoAbrir é o estoque que o formulário mostrou ao abrir: a diferença para Estoque é o ajuste feito pelo admin.
 public record DadosProduto(
     string Nome,
     string Descricao,
@@ -11,4 +12,5 @@ public record DadosProduto(
     int PesoGramas,
     int AlturaCm,
     int LarguraCm,
-    int ComprimentoCm);
+    int ComprimentoCm,
+    int EstoqueAoAbrir = 0);

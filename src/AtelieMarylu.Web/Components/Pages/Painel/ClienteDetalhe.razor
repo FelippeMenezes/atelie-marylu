@@ -11,11 +11,11 @@
 }
 else if (cliente is not null)
 {
-    <h1>@(string.IsNullOrEmpty(cliente.NomeCompleto) ? cliente.Email : cliente.NomeCompleto)</h1>
+    <h1>@cliente.NomeParaExibir</h1>
 
     <section class="caixa mb-3">
         <p class="m-0">E-mail: @cliente.Email</p>
-        <p class="m-0">Telefone: @(cliente.PhoneNumber ?? "—")</p>
+        <p class="m-0">Telefone: @(cliente.Telefone ?? "—")</p>
         <p class="m-0">Cliente desde: @cliente.CriadoEm.Formatar("dd/MM/yyyy")</p>
     </section>
 
@@ -34,7 +34,7 @@ else if (cliente is not null)
 @code {
     [Parameter] public string Id { get; set; } = "";
 
-    private ApplicationUser? cliente;
+    private DadosCliente? cliente;
     private List<Pedido> pedidos = [];
     private bool carregado;
 

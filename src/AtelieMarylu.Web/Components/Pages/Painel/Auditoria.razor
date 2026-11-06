@@ -46,8 +46,15 @@
     private List<RegistroAuditoria> registros = [];
     private string entidade = "";
     private string? busca;
+    private int ultimaBusca;
 
     protected override Task OnInitializedAsync() => CarregarAsync();
 
-    private async Task CarregarAsync() => registros = await AuditoriaService.ListarAsync(entidade, busca);
+    // Com a busca a cada tecla, uma resposta antiga pode chegar depois da nova: só vale a última
+    private async Task CarregarAsync()
+    {
+        var numero = ++ultimaBusca;
+        var resultado = await AuditoriaService.ListarAsync(entidade, busca);
+        if (numero == ultimaBusca) registros = resultado;
+    }
 }

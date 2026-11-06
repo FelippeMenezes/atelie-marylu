@@ -100,7 +100,7 @@ else
     {
         if (!firstRender) return;
         await Carrinho.CarregarAsync();
-        produtos = await ProdutoService.ObterPorIdsAsync(Carrinho.Atual.Itens.Select(i => i.ProdutoId));
+        produtos = await ProdutoService.ObterPorIdsAsync(Carrinho.Atual.Itens.Select(i => i.ProdutoId), incluirImagens: true);
         pronto = true;
         StateHasChanged();
     }
