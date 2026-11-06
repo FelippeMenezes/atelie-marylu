@@ -3,52 +3,6 @@ using AtelieMarylu.Domain.Pagamentos;
 
 namespace AtelieMarylu.Domain.Pedidos;
 
-public enum StatusPedido
-{
-    AguardandoPagamento = 1,
-    Pago = 2,
-    EmPreparo = 3,
-    Enviado = 4,
-    Entregue = 5,
-    Cancelado = 6,
-}
-
-public class EnderecoEntrega
-{
-    public string Cep { get; set; } = "";
-    public string Logradouro { get; set; } = "";
-    public string Numero { get; set; } = "";
-    public string? Complemento { get; set; }
-    public string Bairro { get; set; } = "";
-    public string Cidade { get; set; } = "";
-    public string Uf { get; set; } = "";
-}
-
-// Nome e preço são copiados do produto no momento da compra:
-// se o preço mudar depois, o pedido continua com o valor que o cliente pagou.
-public class ItemPedido
-{
-    private ItemPedido() { } // EF Core
-
-    public ItemPedido(int produtoId, string nomeProduto, decimal precoUnitario, int quantidade)
-    {
-        if (quantidade <= 0) throw new RegraDePedidoException("A quantidade deve ser maior que zero.");
-        ProdutoId = produtoId;
-        NomeProduto = nomeProduto;
-        PrecoUnitario = precoUnitario;
-        Quantidade = quantidade;
-    }
-
-    public int Id { get; private set; }
-    public int ProdutoId { get; private set; }
-    public string NomeProduto { get; private set; } = "";
-    public decimal PrecoUnitario { get; private set; }
-    public int Quantidade { get; internal set; }
-    public decimal Subtotal => PrecoUnitario * Quantidade;
-}
-
-public class RegraDePedidoException(string mensagem) : Exception(mensagem);
-
 public class Pedido
 {
     private readonly List<ItemPedido> _itens = [];
@@ -106,7 +60,7 @@ public class Pedido
 
     public decimal Subtotal => _itens.Sum(i => i.Subtotal);
     public decimal Total => Subtotal + FreteValor;
-    public decimal DescontoPix => Math.Round(Subtotal * PercentualDescontoPix / 100m, 2, MidpointRounding.AwayFromZero);
+    public decimal DescontoPix => CalculadoraDescontoPix.Calcular(Subtotal, PercentualDescontoPix);
 
     public decimal ValorPara(MetodoPagamento metodo) => metodo == MetodoPagamento.Pix ? Total - DescontoPix : Total;
 

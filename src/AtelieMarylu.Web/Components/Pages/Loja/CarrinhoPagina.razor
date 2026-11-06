@@ -1,7 +1,7 @@
 @page "/carrinho"
 @rendermode InteractiveServer
 @implements IDisposable
-@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject ProdutoService ProdutoService
 @inject CarrinhoService Carrinho
 
 <PageTitle>Carrinho · Ateliê Marylu</PageTitle>
@@ -100,9 +100,7 @@ else
     {
         if (!firstRender) return;
         await Carrinho.CarregarAsync();
-        var ids = Carrinho.Atual.Itens.Select(i => i.ProdutoId).ToList();
-        await using var db = await DbFactory.CreateDbContextAsync();
-        produtos = await db.Produtos.AsNoTracking().Include(p => p.Imagens).Where(p => ids.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
+        produtos = await ProdutoService.ObterPorIdsAsync(Carrinho.Atual.Itens.Select(i => i.ProdutoId));
         pronto = true;
         StateHasChanged();
     }

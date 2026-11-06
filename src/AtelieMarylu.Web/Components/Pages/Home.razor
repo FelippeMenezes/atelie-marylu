@@ -1,5 +1,5 @@
 ﻿@page "/"
-@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject ProdutoService ProdutoService
 @inject NavigationManager Navigation
 
 <PageTitle>Ateliê Marylu · Costura criativa</PageTitle>
@@ -54,10 +54,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await using var db = await DbFactory.CreateDbContextAsync();
-        produtos = await db.Produtos.AsNoTracking().Include(p => p.Imagens)
-            .Where(p => p.Ativo)
-            .OrderByDescending(p => p.Estoque > 0).ThenBy(p => p.Nome)
-            .ToListAsync();
+        produtos = await ProdutoService.ListarVitrineAsync();
     }
 }

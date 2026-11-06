@@ -1,20 +1,5 @@
 namespace AtelieMarylu.Domain.Pagamentos;
 
-public enum MetodoPagamento
-{
-    Pix = 1,
-    CartaoCredito = 2,
-}
-
-public enum StatusPagamento
-{
-    Pendente = 1,
-    Aprovado = 2,
-    Recusado = 3,
-    Cancelado = 4,
-    Estornado = 5,
-}
-
 // Uma tentativa de pagamento de um pedido. Um pedido pode ter várias
 // (ex.: cartão recusado e depois pago com PIX).
 public class Pagamento

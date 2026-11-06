@@ -1,7 +1,8 @@
 @page "/painel/pedidos"
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Permissoes.PedidosVer)]
-@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject PedidoService PedidoService
+@inject ClienteService ClienteService
 @inject NavigationManager Navigation
 
 <PageTitle>Pedidos · Painel</PageTitle>
@@ -44,15 +45,9 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        await using var db = await DbFactory.CreateDbContextAsync();
-        var consulta = db.Pedidos.AsNoTracking().Include(p => p.Itens).AsQueryable();
-        if (Enum.TryParse<StatusPedido>(Status, out var status))
-            consulta = consulta.Where(p => p.Status == status);
-        pedidos = await consulta.OrderByDescending(p => p.CriadoEm).Take(200).ToListAsync();
-
-        var ids = pedidos.Select(p => p.ClienteId).Distinct().ToList();
-        nomes = await db.Users.Where(u => ids.Contains(u.Id))
-            .ToDictionaryAsync(u => u.Id, u => string.IsNullOrEmpty(u.NomeCompleto) ? u.Email ?? "" : u.NomeCompleto);
+        StatusPedido? filtro = Enum.TryParse<StatusPedido>(Status, out var status) ? status : null;
+        pedidos = await PedidoService.ListarAsync(filtro);
+        nomes = await ClienteService.ObterNomesAsync(pedidos.Select(p => p.ClienteId));
     }
 
     private void Filtrar(ChangeEventArgs e) =>

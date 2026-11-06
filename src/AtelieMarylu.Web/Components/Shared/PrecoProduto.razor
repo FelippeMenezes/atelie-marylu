@@ -4,7 +4,7 @@
 
 @{
     var loja = Opcoes.Value;
-    var pix = Math.Round(Preco * (1 - loja.DescontoPixPercentual / 100m), 2, MidpointRounding.AwayFromZero);
+    var pix = Preco - CalculadoraDescontoPix.Calcular(Preco, loja.DescontoPixPercentual);
 }
 <span class="preco @(Grande ? "fs-3" : "")">@Preco.ToString("C")</span>
 @if (loja.DescontoPixPercentual > 0)

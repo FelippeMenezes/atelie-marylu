@@ -2,6 +2,18 @@
 
 Loja online do Ateliê Marylu, de costura criativa. Feita em .NET 10 (Blazor) com PostgreSQL.
 
+## Como o código está organizado
+
+A solution tem três projetos de código e dois de testes:
+
+- `src/AtelieMarylu.Domain`: as regras do negócio. Não depende de nenhum outro projeto.
+- `src/AtelieMarylu.Infrastructure`: banco de dados, migrations e integrações externas.
+- `src/AtelieMarylu.Web`: as telas (Blazor), os serviços usados por elas e a configuração.
+- `tests/AtelieMarylu.Tests`: testes automáticos.
+- `tests/AtelieMarylu.E2E`: teste ponta a ponta, no navegador.
+
+O caminho é sempre **tela → serviço → banco**: as telas não acessam o banco direto. O [guia do projeto](docs/GUIA-DO-PROJETO.md) explica cada parte para quem está começando em C# e .NET.
+
 ## Pré-requisitos
 
 - .NET SDK 10
@@ -73,7 +85,7 @@ E2E_URL=https://localhost:7050 dotnet test tests/AtelieMarylu.E2E
 
 ```bash
 dotnet tool restore
-dotnet ef migrations add NomeDaMudanca -p src/AtelieMarylu.Web -o Data/Migrations
+dotnet ef migrations add NomeDaMudanca -p src/AtelieMarylu.Infrastructure -s src/AtelieMarylu.Web -o Data/Migrations
 ```
 
 ## Pagamento simulado

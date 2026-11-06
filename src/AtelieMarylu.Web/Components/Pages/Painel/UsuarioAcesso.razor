@@ -3,7 +3,6 @@
 @attribute [Authorize(Policy = Papeis.Admin)]
 @using System.Security.Claims
 @inject AcessoService Acesso
-@inject UserManager<ApplicationUser> UserManager
 @using Microsoft.AspNetCore.Identity
 
 <PageTitle>Acessos · Painel</PageTitle>
@@ -81,7 +80,7 @@ else
     protected override async Task OnParametersSetAsync()
     {
         meuId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
-        usuario = await UserManager.FindByIdAsync(Id);
+        usuario = await Acesso.ObterUsuarioAsync(Id);
         carregado = true;
         if (usuario is null) return;
 

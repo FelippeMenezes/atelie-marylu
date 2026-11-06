@@ -5,7 +5,7 @@
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
-@using AtelieMarylu.Web.Data
+@using AtelieMarylu.Infrastructure.Data
 @using AtelieMarylu.Domain.Seguranca
 
 @inject UserManager<ApplicationUser> UserManager
@@ -15,7 +15,7 @@
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
-@inject AtelieMarylu.Web.Integracoes.Turnstile Turnstile
+@inject AtelieMarylu.Infrastructure.Integrations.Turnstile Turnstile
 
 <PageTitle>Criar conta · Ateliê Marylu</PageTitle>
 
@@ -87,7 +87,7 @@
 
     public async Task RegisterUser(EditContext editContext)
     {
-        if (!await Turnstile.ValidarAsync(HttpContext.Request.Form[AtelieMarylu.Web.Integracoes.Turnstile.CampoFormulario], HttpContext.Connection.RemoteIpAddress?.ToString()))
+        if (!await Turnstile.ValidarAsync(HttpContext.Request.Form[AtelieMarylu.Infrastructure.Integrations.Turnstile.CampoFormulario], HttpContext.Connection.RemoteIpAddress?.ToString()))
         {
             identityErrors = [new IdentityError { Description = "Confirme que você não é um robô." }];
             return;

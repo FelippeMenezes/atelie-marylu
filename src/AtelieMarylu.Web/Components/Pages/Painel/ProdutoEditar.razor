@@ -3,9 +3,8 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Permissoes.ProdutosGerenciar)]
 @using System.ComponentModel.DataAnnotations
-@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject ProdutoService ProdutoService
 @inject ImagemService Imagens
-@inject AuditoriaService Auditoria
 @inject NavigationManager Navigation
 @inject ILogger<ProdutoEditar> Logger
 
@@ -135,8 +134,7 @@ else
     protected override async Task OnParametersSetAsync()
     {
         if (Id is null) return;
-        await using var db = await DbFactory.CreateDbContextAsync();
-        var p = await db.Produtos.AsNoTracking().Include(x => x.Imagens).FirstOrDefaultAsync(x => x.Id == Id);
+        var p = await ProdutoService.ObterAsync(Id.Value);
         encontrado = p is not null;
         if (p is null) return;
 
@@ -200,39 +198,10 @@ else
         salvando = true;
         try
         {
-            await using var db = await DbFactory.CreateDbContextAsync();
-            Produto? produto;
-            if (Id is null)
-            {
-                produto = new Produto();
-                db.Produtos.Add(produto);
-            }
-            else
-            {
-                produto = await db.Produtos.Include(x => x.Imagens).FirstOrDefaultAsync(x => x.Id == Id);
-                if (produto is null) { (mensagem, erro) = ("Produto não encontrado.", true); return; }
-            }
-
-            var estoqueAntes = produto.Estoque;
-            produto.Nome = form.Nome.Trim();
-            produto.Descricao = form.Descricao.Trim();
-            produto.Preco = form.Preco;
-            produto.Estoque = form.Estoque;
-            produto.Ativo = form.Ativo;
-            produto.PrazoProducaoDias = form.PrazoProducaoDias;
-            produto.PesoGramas = form.PesoGramas;
-            produto.AlturaCm = form.AlturaCm;
-            produto.LarguraCm = form.LarguraCm;
-            produto.ComprimentoCm = form.ComprimentoCm;
-
-            produto.Imagens.Clear();
-            for (var i = 0; i < fotos.Count; i++)
-                produto.Imagens.Add(new ProdutoImagem { Url = fotos[i].Url, UrlMiniatura = fotos[i].UrlMiniatura, Ordem = i });
-
-            await db.SaveChangesAsync();
-            await Auditoria.RegistrarAsync(db, Id is null ? "produto.criado" : "produto.editado", "Produto", produto.Id,
-                $"{produto.Nome} · {produto.Preco:C} · estoque {estoqueAntes}→{produto.Estoque}");
-            await db.SaveChangesAsync();
+            var dados = new DadosProduto(form.Nome, form.Descricao, form.Preco, form.Estoque, form.Ativo, form.PrazoProducaoDias,
+                form.PesoGramas, form.AlturaCm, form.LarguraCm, form.ComprimentoCm);
+            var produtoId = await ProdutoService.SalvarAsync(Id, dados, fotos);
+            if (produtoId is null) { (mensagem, erro) = ("Produto não encontrado.", true); return; }
 
             Imagens.Excluir(removidas.SelectMany(f => new[] { f.Url, f.UrlMiniatura }).ToArray());
             removidas.Clear();
@@ -240,7 +209,7 @@ else
 
             if (Id is null)
             {
-                Navigation.NavigateTo($"painel/produtos/{produto.Id}");
+                Navigation.NavigateTo($"painel/produtos/{produtoId}");
                 return;
             }
             (mensagem, erro) = ("Produto salvo.", false);

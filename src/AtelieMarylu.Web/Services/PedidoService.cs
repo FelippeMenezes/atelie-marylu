@@ -1,10 +1,11 @@
+using AtelieMarylu.Domain.Auditoria;
 using AtelieMarylu.Domain.Carrinho;
 using AtelieMarylu.Domain.Catalogo;
 using AtelieMarylu.Domain.Frete;
 using AtelieMarylu.Domain.Pagamentos;
 using AtelieMarylu.Domain.Pedidos;
 using AtelieMarylu.Web.Configuracao;
-using AtelieMarylu.Web.Data;
+using AtelieMarylu.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -24,7 +25,51 @@ public class PedidoService(
     ILogger<PedidoService> logger)
 {
     public const string ProvedorManual = "manual";
+    private const int LimiteDaLista = 200;
     private const string MensagemConcorrencia = "O pedido foi alterado por outra pessoa ao mesmo tempo. Recarregue a página e tente de novo.";
+
+    public async Task<Pedido?> ObterAsync(int id, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Pedidos.AsNoTracking().Include(p => p.Itens).Include(p => p.Pagamentos).FirstOrDefaultAsync(p => p.Id == id, ct);
+    }
+
+    // O filtro por ClienteId garante que ninguém veja o pedido de outra pessoa trocando o código na URL
+    public async Task<Pedido?> ObterDoClienteAsync(string codigo, string? clienteId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Pedidos.AsNoTracking().Include(p => p.Itens).Include(p => p.Pagamentos)
+            .FirstOrDefaultAsync(p => p.Codigo == codigo && p.ClienteId == clienteId, ct);
+    }
+
+    public async Task<List<Pedido>> ListarDoClienteAsync(string? clienteId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Pedidos.AsNoTracking().Include(p => p.Itens)
+            .Where(p => p.ClienteId == clienteId)
+            .OrderByDescending(p => p.CriadoEm)
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<Pedido>> ListarAsync(StatusPedido? status, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var consulta = db.Pedidos.AsNoTracking().Include(p => p.Itens).AsQueryable();
+        if (status is not null)
+            consulta = consulta.Where(p => p.Status == status);
+        return await consulta.OrderByDescending(p => p.CriadoEm).Take(LimiteDaLista).ToListAsync(ct);
+    }
+
+    // Endereço do último pedido, para sugerir no checkout
+    public async Task<EnderecoEntrega?> ObterUltimoEnderecoAsync(string clienteId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Pedidos.AsNoTracking()
+            .Where(p => p.ClienteId == clienteId)
+            .OrderByDescending(p => p.CriadoEm)
+            .Select(p => p.Endereco)
+            .FirstOrDefaultAsync(ct);
+    }
 
     public async Task<IReadOnlyList<OpcaoFrete>> CotarFreteAsync(string cep, IReadOnlyList<ItemCarrinho> itens, CancellationToken ct = default)
     {
@@ -75,7 +120,7 @@ public class PedidoService(
                 await BaixarEstoqueAsync(db, item.ProdutoId, item.Quantidade, item.NomeProduto, ct);
             db.Pedidos.Add(pedido);
             await db.SaveChangesAsync(ct);
-            await auditoria.RegistrarAsync(db, "pedido.criado", "Pedido", pedido.Id, $"{pedido.Codigo} · {pedido.Total:C}");
+            await auditoria.RegistrarAsync(db, AcoesAuditoria.PedidoCriado, EntidadesAuditoria.Pedido, pedido.Id, $"{pedido.Codigo} · {pedido.Total:C}");
             await db.SaveChangesAsync(ct);
             await transacao.CommitAsync(ct);
         }
@@ -167,7 +212,7 @@ public class PedidoService(
             pagamento.AtualizarStatus(notificacao.Status);
         }
 
-        await auditoria.RegistrarAsync(db, alerta is null ? "pagamento.notificacao" : "pagamento.divergente", "Pedido", pedido.Id,
+        await auditoria.RegistrarAsync(db, alerta is null ? AcoesAuditoria.PagamentoNotificacao : AcoesAuditoria.PagamentoDivergente, EntidadesAuditoria.Pedido, pedido.Id,
             alerta ?? $"{notificacao.Status} via {gateway.Nome} ({notificacao.IdExterno})", Autor.Sistema);
         await db.SaveChangesAsync(ct);
         await transacao.CommitAsync(ct);
@@ -179,7 +224,7 @@ public class PedidoService(
 
     // Para quando o cliente pagou por fora (PIX direto, dinheiro na retirada...)
     public Task RegistrarPagamentoManualAsync(int pedidoId, MetodoPagamento metodo, CancellationToken ct = default) =>
-        AlterarAsync(pedidoId, "pagamento.manual", (pedido, _) =>
+        AlterarAsync(pedidoId, AcoesAuditoria.PagamentoManual, (pedido, _) =>
         {
             var pagamento = pedido.IniciarPagamento(metodo, ProvedorManual);
             pagamento.RegistrarInicio($"manual-{Guid.NewGuid():N}", null, null);
@@ -188,7 +233,7 @@ public class PedidoService(
         }, ct: ct);
 
     public Task CancelarAsync(int pedidoId, string? motivo = null, CancellationToken ct = default) =>
-        AlterarAsync(pedidoId, "pedido.cancelado", async (pedido, db) =>
+        AlterarAsync(pedidoId, AcoesAuditoria.PedidoCancelado, async (pedido, db) =>
         {
             pedido.Cancelar(motivo);
             foreach (var item in pedido.Itens)
@@ -213,7 +258,7 @@ public class PedidoService(
         {
             try
             {
-                await AlterarAsync(id, "pedido.expirado", async (pedido, db) =>
+                var expirou = await AlterarAsync(id, AcoesAuditoria.PedidoExpirado, async (pedido, db) =>
                 {
                     // Confere de novo: pode ter sido pago entre a consulta e agora
                     if (!pedido.PrazoDePagamentoVencido(agora)) return null;
@@ -222,7 +267,7 @@ public class PedidoService(
                         await DevolverEstoqueAsync(db, item.ProdutoId, item.Quantidade, ct);
                     return "Prazo de pagamento expirado";
                 }, Autor.Sistema, ct);
-                cancelados++;
+                if (expirou) cancelados++;
             }
             catch (Exception ex) when (ex is RegraDePedidoException or DbUpdateException)
             {
@@ -233,7 +278,7 @@ public class PedidoService(
     }
 
     public Task AlterarQuantidadeAsync(int pedidoId, int produtoId, int quantidade, CancellationToken ct = default) =>
-        AlterarAsync(pedidoId, "pedido.itens", async (pedido, db) =>
+        AlterarAsync(pedidoId, AcoesAuditoria.PedidoItens, async (pedido, db) =>
         {
             var nome = pedido.Itens.FirstOrDefault(i => i.ProdutoId == produtoId)?.NomeProduto ?? "";
             var diferenca = pedido.AlterarQuantidade(produtoId, quantidade);
@@ -244,7 +289,7 @@ public class PedidoService(
         }, ct: ct);
 
     public Task AdicionarItemAsync(int pedidoId, int produtoId, int quantidade, CancellationToken ct = default) =>
-        AlterarAsync(pedidoId, "pedido.itens", async (pedido, db) =>
+        AlterarAsync(pedidoId, AcoesAuditoria.PedidoItens, async (pedido, db) =>
         {
             var produto = await db.Produtos.FirstOrDefaultAsync(p => p.Id == produtoId && p.Ativo, ct)
                 ?? throw new RegraDePedidoException("Produto não encontrado.");
@@ -255,7 +300,7 @@ public class PedidoService(
         }, ct: ct);
 
     public Task AlterarEntregaAsync(int pedidoId, EnderecoEntrega endereco, string? observacao, CancellationToken ct = default) =>
-        AlterarAsync(pedidoId, "pedido.entrega", async (pedido, db) =>
+        AlterarAsync(pedidoId, AcoesAuditoria.PedidoEntrega, async (pedido, db) =>
         {
             endereco.Cep = Cep.Normalizar(endereco.Cep) ?? throw new RegraDePedidoException("CEP inválido.");
             var cepMudou = endereco.Cep != pedido.Endereco.Cep;
@@ -266,17 +311,18 @@ public class PedidoService(
         }, ct: ct);
 
     public Task IniciarPreparoAsync(int pedidoId, CancellationToken ct = default) =>
-        AlterarAsync(pedidoId, "pedido.preparo", (p, _) => { p.IniciarPreparo(); return Task.FromResult<string?>(null); }, ct: ct);
+        AlterarAsync(pedidoId, AcoesAuditoria.PedidoPreparo, (p, _) => { p.IniciarPreparo(); return Task.FromResult<string?>(null); }, ct: ct);
 
     public Task MarcarEnviadoAsync(int pedidoId, string? codigoRastreio, CancellationToken ct = default) =>
-        AlterarAsync(pedidoId, "pedido.enviado", (p, _) => { p.MarcarEnviado(codigoRastreio); return Task.FromResult(p.CodigoRastreio); }, ct: ct);
+        AlterarAsync(pedidoId, AcoesAuditoria.PedidoEnviado, (p, _) => { p.MarcarEnviado(codigoRastreio); return Task.FromResult(p.CodigoRastreio); }, ct: ct);
 
     public Task MarcarEntregueAsync(int pedidoId, CancellationToken ct = default) =>
-        AlterarAsync(pedidoId, "pedido.entregue", (p, _) => { p.MarcarEntregue(); return Task.FromResult<string?>(null); }, ct: ct);
+        AlterarAsync(pedidoId, AcoesAuditoria.PedidoEntregue, (p, _) => { p.MarcarEntregue(); return Task.FromResult<string?>(null); }, ct: ct);
 
     // Carrega, altera, registra auditoria e grava tudo numa transação.
     // A alteração devolve o texto de detalhe da auditoria (ou null para "nada a fazer").
-    private async Task AlterarAsync(int pedidoId, string acao, Func<Pedido, ApplicationDbContext, Task<string?>> alteracao,
+    // Devolve false quando não havia nada a fazer.
+    private async Task<bool> AlterarAsync(int pedidoId, string acao, Func<Pedido, ApplicationDbContext, Task<string?>> alteracao,
         Autor? autor = null, CancellationToken ct = default)
     {
         await using (var db = await dbFactory.CreateDbContextAsync(ct))
@@ -286,13 +332,14 @@ public class PedidoService(
             var estadoAntes = pedido.Status;
             var detalhes = await alteracao(pedido, db);
             if (detalhes is null && pedido.Status == estadoAntes && !db.ChangeTracker.HasChanges())
-                return;
-            await auditoria.RegistrarAsync(db, acao, "Pedido", pedido.Id, detalhes, autor);
+                return false;
+            await auditoria.RegistrarAsync(db, acao, EntidadesAuditoria.Pedido, pedido.Id, detalhes, autor);
             await SalvarAsync(db, ct);
             await transacao.CommitAsync(ct);
         }
 
         eventos.Notificar(pedidoId);
+        return true;
     }
 
     private static async Task SalvarAsync(ApplicationDbContext db, CancellationToken ct)

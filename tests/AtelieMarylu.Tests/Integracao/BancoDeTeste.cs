@@ -1,5 +1,5 @@
 using AtelieMarylu.Domain.Catalogo;
-using AtelieMarylu.Web.Data;
+using AtelieMarylu.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

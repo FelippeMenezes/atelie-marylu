@@ -2,7 +2,7 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Papeis.Admin)]
 @using AtelieMarylu.Domain.Auditoria
-@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject AuditoriaService AuditoriaService
 
 <PageTitle>Auditoria · Painel</PageTitle>
 
@@ -12,10 +12,10 @@
 <div class="d-flex gap-2 mb-3 flex-wrap">
     <select class="form-select w-auto" @bind="entidade" @bind:after="CarregarAsync" aria-label="Filtrar por tipo">
         <option value="">Tudo</option>
-        <option value="Pedido">Pedidos</option>
-        <option value="Produto">Produtos</option>
-        <option value="Usuario">Usuários</option>
-        <option value="Grupo">Grupos</option>
+        <option value="@EntidadesAuditoria.Pedido">Pedidos</option>
+        <option value="@EntidadesAuditoria.Produto">Produtos</option>
+        <option value="@EntidadesAuditoria.Usuario">Usuários</option>
+        <option value="@EntidadesAuditoria.Grupo">Grupos</option>
     </select>
     <input class="form-control w-auto" placeholder="Buscar autor ou detalhe" @bind="busca" @bind:event="oninput" @bind:after="CarregarAsync" />
 </div>
@@ -26,13 +26,13 @@
         <tbody>
             @foreach (var r in registros)
             {
-                <tr class="@(r.Acao == "pagamento.divergente" ? "table-danger" : "")">
+                <tr class="@(r.Acao == AcoesAuditoria.PagamentoDivergente ? "table-danger" : "")">
                     <td class="text-nowrap">@r.Quando.Formatar()</td>
                     <td>@r.Autor</td>
                     <td><code>@r.Acao</code></td>
                     <td>
-                        @if (r.Entidade == "Pedido") { <a href="painel/pedidos/@r.EntidadeId">Pedido @r.EntidadeId</a> }
-                        else if (r.Entidade == "Produto") { <a href="painel/produtos/@r.EntidadeId">Produto @r.EntidadeId</a> }
+                        @if (r.Entidade == EntidadesAuditoria.Pedido) { <a href="painel/pedidos/@r.EntidadeId">Pedido @r.EntidadeId</a> }
+                        else if (r.Entidade == EntidadesAuditoria.Produto) { <a href="painel/produtos/@r.EntidadeId">Produto @r.EntidadeId</a> }
                         else { @($"{r.Entidade} {r.EntidadeId}") }
                     </td>
                     <td class="small">@r.Detalhes</td>
@@ -49,16 +49,5 @@
 
     protected override Task OnInitializedAsync() => CarregarAsync();
 
-    private async Task CarregarAsync()
-    {
-        await using var db = await DbFactory.CreateDbContextAsync();
-        var consulta = db.Auditoria.AsNoTracking();
-        if (entidade != "") consulta = consulta.Where(a => a.Entidade == entidade);
-        if (!string.IsNullOrWhiteSpace(busca))
-        {
-            var termo = $"%{busca.Trim()}%";
-            consulta = consulta.Where(a => EF.Functions.ILike(a.Autor, termo) || EF.Functions.ILike(a.Detalhes!, termo));
-        }
-        registros = await consulta.OrderByDescending(a => a.Quando).Take(300).ToListAsync();
-    }
+    private async Task CarregarAsync() => registros = await AuditoriaService.ListarAsync(entidade, busca);
 }
