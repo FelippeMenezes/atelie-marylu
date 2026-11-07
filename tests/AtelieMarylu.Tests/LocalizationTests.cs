@@ -25,7 +25,7 @@ public partial class LocalizationTests
     }
 
     private static Dictionary<string, string> ReadResource(string language) =>
-        XDocument.Load(Path.Combine(WebProject, "Resources", $"SharedResource.{language}.resx"))
+        XDocument.Load(Path.Join(WebProject, "Resources", $"SharedResource.{language}.resx"))
             .Root!.Elements("data")
             .ToDictionary(d => d.Attribute("name")!.Value, d => d.Element("value")!.Value);
 
