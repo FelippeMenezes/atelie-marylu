@@ -1,0 +1,197 @@
+@page "/painel/pedidos/novo"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Permissions.OrdersCreate)]
+@using System.Security.Claims
+@using AtelieMarylu.Domain.Carts
+@using AtelieMarylu.Domain.Shipping
+@inject CustomerService CustomerService
+@inject ProductService ProductService
+@inject OrderService Orders
+@inject NavigationManager Navigation
+@inject ILogger<NewOrder> Logger
+
+<PageTitle>Novo pedido · Painel</PageTitle>
+
+<h1>Novo pedido</h1>
+<p class="text-secondary">Para vendas feitas pelo Instagram, WhatsApp ou pessoalmente. O cliente precisa ter cadastro.</p>
+
+<EditForm Model="address" OnValidSubmit="CreateAsync" FormName="isNew-order">
+    <DataAnnotationsValidator />
+
+    <section class="panel-box mb-3">
+        <h2 class="h5">Cliente</h2>
+        <select class="form-select" @bind="customerId" @bind:after="OnCustomerSelectedAsync" aria-label="Cliente">
+            <option value="">Escolha o cliente...</option>
+            @foreach (var c in customers)
+            {
+                <option value="@c.Id">@c.FullName (@c.Email)</option>
+            }
+        </select>
+    </section>
+
+    <section class="panel-box mb-3">
+        <h2 class="h5">Itens</h2>
+        @foreach (var item in cart.Items)
+        {
+            var p = products.First(x => x.Id == item.ProductId);
+            <div class="d-flex justify-content-between align-items-center py-1">
+                <span>@item.Quantity× @p.Name</span>
+                <span>
+                    @((p.Price * item.Quantity).ToString("C"))
+                    <button type="button" class="btn btn-link text-danger btn-sm" @onclick="() => { cart.Remove(item.ProductId); ClearShipping(); }">Remover</button>
+                </span>
+            </div>
+        }
+        <div class="d-flex gap-2 mt-2 flex-wrap">
+            <select class="form-select w-auto" @bind="productId" aria-label="Produto">
+                <option value="0">Escolha o produto...</option>
+                @foreach (var p in products.Where(p => p.Stock > 0))
+                {
+                    <option value="@p.Id">@p.Name · @p.Price.ToString("C") (@p.Stock em estoque)</option>
+                }
+            </select>
+            <input type="number" class="form-control" style="max-width: 90px" min="1" @bind="quantity" aria-label="Quantidade" />
+            <button type="button" class="btn btn-outline-primary" disabled="@(productId == 0)" @onclick="AddItem">Adicionar</button>
+        </div>
+    </section>
+
+    <section class="panel-box mb-3">
+        <h2 class="h5">Entrega</h2>
+        <AddressFields Address="address" OnPostalCodeChanged="ClearShipping" />
+        <div class="mt-3">
+            @if (shippingOptions is null)
+            {
+                <button type="button" class="btn btn-outline-primary" @onclick="CalculateShippingAsync" disabled="@(cart.IsEmpty || processing)">Calcular frete</button>
+            }
+            else
+            {
+                <select class="form-select w-auto" @bind="shippingCode" aria-label="Frete">
+                    @foreach (var o in shippingOptions)
+                    {
+                        <option value="@o.Code">@o.Name · @o.Amount.ToString("C")</option>
+                    }
+                </select>
+            }
+        </div>
+    </section>
+
+    <section class="panel-box mb-3">
+        <h2 class="h5">Pagamento</h2>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="pago" @bind="alreadyPaid" />
+            <label class="form-check-label" for="pago">O cliente já pagou (registrar pagamento manual)</label>
+        </div>
+        @if (alreadyPaid)
+        {
+            <select class="form-select w-auto mt-2" @bind="method" aria-label="Forma de pagamento">
+                <option value="@PaymentMethod.Pix">PIX</option>
+                <option value="@PaymentMethod.CreditCard">Cartão</option>
+            </select>
+        }
+        else
+        {
+            <p class="small text-secondary mt-2 mb-0">O pedido fica "Aguardando pagamento" e o cliente pode pagar pela área "Meus pedidos".</p>
+        }
+    </section>
+
+    <Notice Message="@isError" IsError="true" />
+
+    <button type="submit" class="btn btn-primary" disabled="@(processing || shippingCode is null || customerId == "" || cart.IsEmpty)">Criar pedido</button>
+    <a href="painel/pedidos" class="btn btn-outline-primary">Voltar</a>
+</EditForm>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private List<CustomerData> customers = [];
+    private List<Product> products = [];
+    private readonly Cart cart = new();
+    private AddressForm address = new();
+    private IReadOnlyList<ShippingOption>? shippingOptions;
+    private string customerId = "";
+    private string? shippingCode, isError;
+    private int productId, quantity = 1;
+    private bool alreadyPaid, processing;
+    private PaymentMethod method = PaymentMethod.Pix;
+
+    protected override async Task OnInitializedAsync()
+    {
+        customers = await CustomerService.ListForSelectionAsync();
+        products = await ProductService.ListActiveAsync();
+    }
+
+    private async Task OnCustomerSelectedAsync()
+    {
+        if (customerId == "") return;
+        var last = await Orders.GetLastAddressAsync(customerId);
+        address = last is null ? new() : AddressForm.FromAddress(last);
+        ClearShipping();
+    }
+
+    private void AddItem()
+    {
+        var p = products.FirstOrDefault(x => x.Id == productId);
+        if (p is null) return;
+        cart.Add(p.Id, Math.Clamp(quantity, 1, p.Stock));
+        productId = 0;
+        quantity = 1;
+        ClearShipping();
+    }
+
+    private void ClearShipping()
+    {
+        shippingOptions = null;
+        shippingCode = null;
+    }
+
+    private async Task CalculateShippingAsync()
+    {
+        isError = null;
+        if (PostalCode.Normalize(address.PostalCode) is not { } postalCode) { isError = "Informe um CEP válido."; return; }
+        try
+        {
+            shippingOptions = await Orders.QuoteShippingAsync(postalCode, cart.Items);
+            shippingCode = shippingOptions.FirstOrDefault()?.Code;
+        }
+        catch (OrderRuleException ex)
+        {
+            Logger.LogWarning(ex, "Regra de negócio ao cotar frete");
+            isError = ex.Message;
+        }
+        catch (OperationCanceledException ex)
+        {
+            Logger.LogWarning(ex, "Cotação de frete cancelada");
+            isError = "A cotação de frete foi cancelada.";
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        if (processing || shippingCode is null || customerId == "") return;
+        processing = true;
+        isError = null;
+        int? orderId = null;
+        try
+        {
+            var authorId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var order = await Orders.CreateAsync(customerId, cart.Items, address.ToAddress(), shippingCode, authorId);
+            orderId = order.Id;
+            if (alreadyPaid) await Orders.RecordManualPaymentAsync(order.Id, method);
+        }
+        catch (OrderRuleException ex)
+        {
+            isError = ex.Message;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.IO.IOException or TaskCanceledException)
+        {
+            Logger.LogError(ex, "Falha ao criar pedido pelo painel");
+            isError = "Não foi possível criar o pedido.";
+        }
+        finally
+        {
+            processing = false;
+        }
+
+        if (orderId is not null) Navigation.NavigateTo($"painel/pedidos/{orderId}");
+    }
+}

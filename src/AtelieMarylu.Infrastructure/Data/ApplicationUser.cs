@@ -7,15 +7,15 @@ namespace AtelieMarylu.Infrastructure.Data;
 public class ApplicationUser : IdentityUser
 {
     [PersonalData]
-    public string NomeCompleto { get; set; } = "";
+    public string FullName { get; set; } = "";
 
     // Opcional no MVP; será exigido para emitir etiqueta de frete (Melhor Envio) e nota fiscal
     [PersonalData]
-    public string? Cpf { get; set; }
+    public string? TaxId { get; set; }
 
     [PersonalData]
-    public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Usado no Admin inicial: a senha veio da configuração e precisa ser trocada no primeiro acesso
-    public bool TrocarSenhaObrigatoria { get; set; }
+    public bool MustChangePassword { get; set; }
 }

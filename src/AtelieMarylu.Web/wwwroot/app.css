@@ -18,7 +18,7 @@ html, body {
     background: var(--creme);
 }
 
-h1, h2, h3, h4, .marca span {
+h1, h2, h3, h4, .brand span {
     font-family: "Fredoka", "Quicksand", sans-serif;
     font-weight: 600;
 }
@@ -35,12 +35,12 @@ a, .btn-link {
     color: var(--marca-escura);
 }
 
-.pular-conteudo {
+.skip-link {
     position: absolute;
     left: -9999px;
 }
 
-.pular-conteudo:focus {
+.skip-link:focus {
     left: 1rem;
     top: 1rem;
     z-index: 100;
@@ -49,7 +49,7 @@ a, .btn-link {
 }
 
 /* Cabeçalho */
-.topo {
+.top-bar {
     background: var(--marca);
     padding: .6rem 0;
     position: sticky;
@@ -57,30 +57,30 @@ a, .btn-link {
     z-index: 10;
 }
 
-.topo a, .topo .btn-link {
+.top-bar a, .top-bar .btn-link {
     color: var(--branco);
     text-decoration: none;
     font-weight: 600;
 }
 
-.topo a:hover, .topo .btn-link:hover {
+.top-bar a:hover, .top-bar .btn-link:hover {
     text-decoration: underline;
 }
 
-.marca {
+.brand {
     display: flex;
     align-items: center;
     gap: .6rem;
     font-size: 1.2rem;
 }
 
-.topo .links {
+.top-bar .links {
     display: flex;
     align-items: center;
     gap: 1.25rem;
 }
 
-.carrinho .badge {
+.cart .badge {
     background: var(--branco);
     color: var(--marca-escura);
     border-radius: 999px;
@@ -93,7 +93,7 @@ a, .btn-link {
     pointer-events: none;
 }
 
-.menu-botao {
+.menu-button {
     width: 36px;
     height: 36px;
     display: flex;
@@ -103,7 +103,7 @@ a, .btn-link {
     border-radius: 8px;
 }
 
-.menu-botao span, .menu-botao span::before, .menu-botao span::after {
+.menu-button span, .menu-button span::before, .menu-button span::after {
     display: block;
     width: 22px;
     height: 2px;
@@ -112,15 +112,15 @@ a, .btn-link {
     content: "";
 }
 
-.menu-botao span::before { position: absolute; top: -7px; }
-.menu-botao span::after { position: absolute; top: 7px; }
+.menu-button span::before { position: absolute; top: -7px; }
+.menu-button span::after { position: absolute; top: 7px; }
 
-.menu-toggle:focus-visible + .menu-botao {
+.menu-toggle:focus-visible + .menu-button {
     outline: 2px solid var(--branco);
 }
 
 @media (max-width: 991.98px) {
-    .topo .links {
+    .top-bar .links {
         display: none;
         width: 100%;
         flex-direction: column;
@@ -135,14 +135,14 @@ a, .btn-link {
 }
 
 /* Rodapé */
-.rodape {
+.footer {
     padding: 1.75rem 0;
     background: var(--marca);
     color: var(--branco);
     font-size: .92rem;
 }
 
-.rodape a {
+.footer a {
     color: var(--branco);
 }
 
@@ -206,7 +206,7 @@ a, .btn-link {
 }
 
 /* Linha com texto no meio ("ou entre com e-mail e senha") */
-.separador-ou {
+.or-divider {
     display: flex;
     align-items: center;
     gap: .75rem;
@@ -214,7 +214,7 @@ a, .btn-link {
     font-size: .875rem;
 }
 
-.separador-ou::before, .separador-ou::after {
+.or-divider::before, .or-divider::after {
     content: "";
     flex: 1;
     border-top: 1px solid var(--bs-border-color);
@@ -236,20 +236,20 @@ a, .btn-link {
 }
 
 /* Vitrine */
-.vitrine {
+.storefront {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 1.25rem;
 }
 
 @media (max-width: 575.98px) {
-    .vitrine {
+    .storefront {
         grid-template-columns: repeat(2, 1fr);
         gap: .75rem;
     }
 }
 
-.produto-card {
+.product-card {
     background: var(--branco);
     border-radius: 18px;
     overflow: hidden;
@@ -258,12 +258,12 @@ a, .btn-link {
     flex-direction: column;
 }
 
-.produto-card a {
+.product-card a {
     text-decoration: none;
     color: inherit;
 }
 
-.produto-foto {
+.product-photo {
     aspect-ratio: 1 / 1;
     width: 100%;
     object-fit: cover;
@@ -273,16 +273,16 @@ a, .btn-link {
     justify-content: center;
 }
 
-.produto-foto img {
+.product-photo img {
     width: 40%;
     opacity: .6;
 }
 
-img.produto-foto {
+img.product-photo {
     display: block;
 }
 
-.produto-info {
+.product-info {
     padding: .9rem 1rem 1rem;
     display: flex;
     flex-direction: column;
@@ -290,17 +290,17 @@ img.produto-foto {
     flex: 1;
 }
 
-.preco {
+.price {
     color: var(--marca-escura);
     font-weight: 700;
     font-size: 1.15rem;
 }
 
-.preco-extra {
+.price-extra {
     font-size: .85rem;
 }
 
-.selo {
+.tag {
     display: inline-block;
     font-size: .78rem;
     font-weight: 700;
@@ -311,7 +311,7 @@ img.produto-foto {
 }
 
 /* Galeria do produto: rolagem com "encaixe", funciona sem JavaScript */
-.galeria {
+.gallery {
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
@@ -319,23 +319,23 @@ img.produto-foto {
     border-radius: 18px;
 }
 
-.galeria > * {
+.gallery > * {
     flex: 0 0 100%;
     scroll-snap-align: center;
 }
 
-.galeria-miniaturas {
+.gallery-thumbs {
     display: flex;
     gap: .5rem;
     margin-top: .5rem;
     flex-wrap: wrap;
 }
 
-.galeria-miniaturas a {
+.gallery-thumbs a {
     width: 64px;
 }
 
-.caixa {
+.panel-box {
     background: var(--branco);
     border-radius: 18px;
     padding: 1.25rem;
@@ -352,18 +352,18 @@ img.produto-foto {
     color: var(--marca-escura);
 }
 
-.status-Cancelado {
+.status-Cancelled {
     background: #eee;
     color: #555;
 }
 
-.status-Pago, .status-Entregue {
+.status-Paid, .status-Delivered {
     background: #d9f2e3;
     color: #1d6b3c;
 }
 
 /* Quantidade − / + */
-.quantidade {
+.quantity {
     display: inline-flex;
     align-items: center;
     border: 1px solid #ced4da;
@@ -372,7 +372,7 @@ img.produto-foto {
     background: var(--branco);
 }
 
-.quantidade button {
+.quantity button {
     border: 0;
     background: transparent;
     width: 36px;
@@ -381,18 +381,18 @@ img.produto-foto {
     color: var(--marca-escura);
 }
 
-.quantidade button:disabled {
+.quantity button:disabled {
     color: #bbb;
 }
 
-.quantidade span {
+.quantity span {
     min-width: 32px;
     text-align: center;
     font-weight: 700;
 }
 
 /* Esqueleto de carregamento (evita o "pisca" de conteúdo) */
-.esqueleto {
+.skeleton {
     background: linear-gradient(90deg, var(--lilas) 25%, #f7e4ef 50%, var(--lilas) 75%);
     background-size: 200% 100%;
     animation: esqueleto 1.2s infinite;
@@ -406,7 +406,7 @@ img.produto-foto {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .esqueleto { animation: none; }
+    .skeleton { animation: none; }
 }
 
 .pix {
@@ -424,7 +424,7 @@ img.produto-foto {
 }
 
 /* Painel */
-.painel-menu a {
+.admin-menu a {
     display: block;
     padding: .4rem .75rem;
     border-radius: 8px;
@@ -432,7 +432,7 @@ img.produto-foto {
     font-weight: 600;
 }
 
-.painel-menu a.active {
+.admin-menu a.active {
     background: var(--marca);
     color: var(--branco);
 }

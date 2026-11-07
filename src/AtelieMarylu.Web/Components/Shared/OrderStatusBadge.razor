@@ -1,0 +1,5 @@
+<span class="status status-@Status">@Order.Describe(Status)</span>
+
+@code {
+    [Parameter, EditorRequired] public OrderStatus Status { get; set; }
+}

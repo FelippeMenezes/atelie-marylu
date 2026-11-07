@@ -25,7 +25,7 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Auditoria.RegistroAuditoria", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Auditing.RegistroAuditoria", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -72,7 +72,7 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                     b.ToTable("Auditoria", (string)null);
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Catalogo.Produto", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Catalog.Produto", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -126,7 +126,7 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Catalogo.ProdutoImagem", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Catalog.ProdutoImagem", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -157,7 +157,7 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                     b.ToTable("ProdutoImagens");
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Pagamentos.Pagamento", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Payments.Pagamento", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -213,7 +213,7 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                     b.ToTable("Pagamentos");
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Pedidos.ItemPedido", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Orders.ItemPedido", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -248,7 +248,7 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                     b.ToTable("ItensPedido", (string)null);
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Pedidos.Pedido", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Orders.Pedido", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -597,39 +597,39 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Catalogo.ProdutoImagem", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Catalog.ProdutoImagem", b =>
                 {
-                    b.HasOne("AtelieMarylu.Domain.Catalogo.Produto", null)
+                    b.HasOne("AtelieMarylu.Domain.Catalog.Produto", null)
                         .WithMany("Imagens")
                         .HasForeignKey("ProdutoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Pagamentos.Pagamento", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Payments.Pagamento", b =>
                 {
-                    b.HasOne("AtelieMarylu.Domain.Pedidos.Pedido", null)
+                    b.HasOne("AtelieMarylu.Domain.Orders.Pedido", null)
                         .WithMany("Pagamentos")
                         .HasForeignKey("PedidoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Pedidos.ItemPedido", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Orders.ItemPedido", b =>
                 {
-                    b.HasOne("AtelieMarylu.Domain.Pedidos.Pedido", null)
+                    b.HasOne("AtelieMarylu.Domain.Orders.Pedido", null)
                         .WithMany("Itens")
                         .HasForeignKey("PedidoId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("AtelieMarylu.Domain.Catalogo.Produto", null)
+                    b.HasOne("AtelieMarylu.Domain.Catalog.Produto", null)
                         .WithMany()
                         .HasForeignKey("ProdutoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Pedidos.Pedido", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Orders.Pedido", b =>
                 {
                     b.HasOne("AtelieMarylu.Infrastructure.Data.ApplicationUser", null)
                         .WithMany()
@@ -637,7 +637,7 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.OwnsOne("AtelieMarylu.Domain.Pedidos.EnderecoEntrega", "Endereco", b1 =>
+                    b.OwnsOne("AtelieMarylu.Domain.Orders.EnderecoEntrega", "Endereco", b1 =>
                         {
                             b1.Property<int>("PedidoId")
                                 .HasColumnType("integer");
@@ -739,12 +739,12 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Catalogo.Produto", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Catalog.Produto", b =>
                 {
                     b.Navigation("Imagens");
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Pedidos.Pedido", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Orders.Pedido", b =>
                 {
                     b.Navigation("Itens");
 

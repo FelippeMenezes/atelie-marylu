@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -23,10 +23,10 @@
     <Routes />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
-    @if (Turnstile.Ativo)
+    @if (Turnstile.IsActive)
     {
         <script src="@Assets["js/turnstile.js"]"></script>
-        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=atelieTurnstile" async defer></script>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=renderTurnstile" async defer></script>
     }
 </body>
 

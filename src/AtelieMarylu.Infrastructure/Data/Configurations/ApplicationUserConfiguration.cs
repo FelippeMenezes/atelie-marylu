@@ -7,7 +7,7 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
 {
     public void Configure(EntityTypeBuilder<ApplicationUser> builder)
     {
-        builder.Property(x => x.NomeCompleto).HasMaxLength(150);
-        builder.Property(x => x.Cpf).HasMaxLength(11);
+        builder.Property(x => x.FullName).HasMaxLength(150);
+        builder.Property(x => x.TaxId).HasMaxLength(11);
     }
 }

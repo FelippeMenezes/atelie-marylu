@@ -1,0 +1,117 @@
+@page "/Account/Manage/Google"
+
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Google
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Options
+@using AtelieMarylu.Web.Configuration
+@using AtelieMarylu.Infrastructure.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IdentityRedirectManager RedirectManager
+@inject IOptions<GoogleLoginOptions> GoogleOptions
+
+<PageTitle>Conta Google · Ateliê Marylu</PageTitle>
+
+<StatusMessage />
+<h3>Conta Google</h3>
+
+@if (!GoogleOptions.Value.IsActive)
+{
+    <p>O login com Google não está disponível no momento.</p>
+}
+else if (googleLogin is not null)
+{
+    <p>Sua conta Google está conectada. Você pode entrar na loja com o botão <strong>Continuar com Google</strong>.</p>
+    @if (hasPassword)
+    {
+        <form @formname="desconectar-google" @onsubmit="DisconnectAsync" method="post">
+            <AntiforgeryToken />
+            <button type="submit" class="btn btn-outline-danger">Desconectar a conta Google</button>
+        </form>
+    }
+    else
+    {
+        <p class="small text-secondary">O Google é a única forma de entrar na sua conta. Para desconectá-lo, crie antes uma <a href="Account/Manage/SetPassword">senha</a>.</p>
+    }
+}
+else
+{
+    <p>Conecte sua conta Google para entrar na loja com um clique, sem digitar senha.</p>
+    <div style="max-width: 320px">
+        <GoogleButton Action="@GoogleButton.ConnectAction" Text="Conectar conta Google" />
+    </div>
+}
+
+@code {
+    public const string ConnectCallbackAction = "ConectarCallback";
+
+    private ApplicationUser user = default!;
+    private UserLoginInfo? googleLogin;
+    private bool hasPassword;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? Action { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var loadedUser = await UserManager.GetUserAsync(HttpContext.User);
+        if (loadedUser is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+        user = loadedUser;
+
+        googleLogin = (await UserManager.GetLoginsAsync(user)).FirstOrDefault(l => l.LoginProvider == GoogleDefaults.AuthenticationScheme);
+        hasPassword = await UserManager.HasPasswordAsync(user);
+
+        if (HttpMethods.IsGet(HttpContext.Request.Method) && Action == ConnectCallbackAction)
+            await OnReturnFromGoogleAsync();
+    }
+
+    private async Task DisconnectAsync()
+    {
+        // Sem senha, desconectar o Google deixaria a pessoa trancada fora da conta
+        if (googleLogin is null || !hasPassword)
+        {
+            RedirectManager.RedirectToCurrentPageWithStatus("Erro: crie uma senha antes de desconectar o Google.", HttpContext);
+            return;
+        }
+
+        var result = await UserManager.RemoveLoginAsync(user, googleLogin.LoginProvider, googleLogin.ProviderKey);
+        if (!result.Succeeded)
+        {
+            RedirectManager.RedirectToCurrentPageWithStatus("Erro: não foi possível desconectar a conta Google.", HttpContext);
+            return;
+        }
+
+        await SignInManager.RefreshSignInAsync(user);
+        RedirectManager.RedirectToCurrentPageWithStatus("Conta Google desconectada.", HttpContext);
+    }
+
+    private async Task OnReturnFromGoogleAsync()
+    {
+        // O userId confere que quem voltou do Google é a mesma pessoa que clicou em "Conectar"
+        var info = await SignInManager.GetExternalLoginInfoAsync(await UserManager.GetUserIdAsync(user));
+        if (info is null)
+        {
+            RedirectManager.RedirectToCurrentPageWithStatus("Erro: não foi possível carregar os dados do Google. Tente de novo.", HttpContext);
+            return;
+        }
+
+        var result = await UserManager.AddLoginAsync(user, info);
+        await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        if (!result.Succeeded)
+        {
+            RedirectManager.RedirectToCurrentPageWithStatus("Erro: essa conta Google já está conectada a outro cadastro da loja.", HttpContext);
+            return;
+        }
+
+        RedirectManager.RedirectToCurrentPageWithStatus("Conta Google conectada.", HttpContext);
+    }
+}

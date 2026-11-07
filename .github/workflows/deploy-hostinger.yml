@@ -1,0 +1,35 @@
+# Publica a loja no VPS pelo Docker Manager da Hostinger.
+#
+# Por enquanto só roda à mão (aba Actions → Deploy Hostinger → Run workflow).
+# Depois da primeira publicação conferida, descomente o "push" abaixo para publicar a cada merge.
+# Veja docs/DEPLOY.md, seção "Deploy pela Hostinger".
+name: Deploy Hostinger
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+
+permissions:
+  contents: read
+
+# Duas publicações ao mesmo tempo poderiam se atropelar no servidor
+concurrency:
+  group: deploy-producao
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publicar
+        # Fixado no commit da versão v2: uma tag pode mudar, e esta action recebe as senhas de produção
+        uses: hostinger/deploy-on-vps@b0868cec74bfa63af6bfa7bdb0dfee2f9bef13ea
+        with:
+          api-key: ${{ secrets.HOSTINGER_API_KEY }}
+          virtual-machine: ${{ vars.HOSTINGER_VM_ID }}
+          # Mesmo nome do docker-compose.prod.yml: mantém os volumes do banco e das fotos
+          project-name: atelie-marylu
+          # Sem isto, a Hostinger poderia usar o docker-compose.yml, que é só de desenvolvimento
+          docker-compose-path: docker-compose.prod.yml
+          environment-variables: ${{ secrets.ENV_PRODUCAO }}

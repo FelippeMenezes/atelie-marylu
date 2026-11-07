@@ -1,0 +1,22 @@
+@using AtelieMarylu.Web.Configuration
+@using Microsoft.Extensions.Options
+@inject IOptions<ShopOptions> Options
+
+@{
+    var store = Options.Value;
+    var pixPrice = Price - PixDiscountCalculator.Calculate(Price, store.PixDiscountPercent);
+}
+<span class="price @(Large ? "fs-3" : "")">@Price.ToString("C")</span>
+@if (store.PixDiscountPercent > 0)
+{
+    <span class="price-extra d-block"><strong>@pixPrice.ToString("C")</strong> no PIX (@store.PixDiscountPercent.ToString("0.#")% off)</span>
+}
+@if (store.InterestFreeInstallments > 1)
+{
+    <span class="price-extra d-block text-secondary">ou @(store.InterestFreeInstallments)x de @((Price / store.InterestFreeInstallments).ToString("C")) sem juros</span>
+}
+
+@code {
+    [Parameter, EditorRequired] public decimal Price { get; set; }
+    [Parameter] public bool Large { get; set; }
+}

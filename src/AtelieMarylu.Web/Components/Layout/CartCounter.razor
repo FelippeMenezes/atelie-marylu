@@ -1,0 +1,20 @@
+@implements IDisposable
+@inject CartService Cart
+
+@if (Cart.IsLoaded && !Cart.Current.IsEmpty)
+{
+    <span class="badge" aria-label="@($"{Cart.Current.TotalUnits} itens")">@Cart.Current.TotalUnits</span>
+}
+
+@code {
+    protected override void OnInitialized() => Cart.Changed += OnCartChanged;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await Cart.LoadAsync();
+    }
+
+    private void OnCartChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Cart.Changed -= OnCartChanged;
+}

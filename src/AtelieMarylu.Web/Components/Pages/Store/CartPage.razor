@@ -1,0 +1,111 @@
+@page "/cart"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject ProductService ProductService
+@inject CartService Cart
+
+<PageTitle>Carrinho · Ateliê Marylu</PageTitle>
+
+<h1>Carrinho</h1>
+
+@if (!ready)
+{
+    @* Esqueleto enquanto o carrinho é lido do navegador *@
+    <div class="panel-box mb-3">
+        <div class="skeleton mb-3" style="height: 70px"></div>
+        <div class="skeleton" style="height: 70px"></div>
+    </div>
+}
+else if (Cart.Current.IsEmpty)
+{
+    <p>Seu carrinho está vazio.</p>
+    <a href="" class="btn btn-primary">Ver produtos</a>
+}
+else
+{
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="panel-box">
+                @foreach (var item in Cart.Current.Items)
+                {
+                    var p = products.GetValueOrDefault(item.ProductId);
+                    var available = p is { IsActive: true } && p.Stock > 0;
+                    <div class="d-flex align-items-center gap-3 py-2 border-bottom flex-wrap">
+                        <div style="width: 70px"><ProductPhoto Url="@p?.Cover?.ThumbnailUrl" Name="@(p?.Name ?? "")" Class="rounded-3" /></div>
+                        <div class="flex-grow-1">
+                            @if (p is not null)
+                            {
+                                <a href="@p.Url" class="fw-bold text-decoration-none">@p.Name</a>
+                            }
+                            else
+                            {
+                                <strong>Produto indisponível</strong>
+                            }
+                            @if (!available)
+                            {
+                                <div class="text-danger small">Indisponível: remova do carrinho.</div>
+                            }
+                            else if (p!.Stock < item.Quantity)
+                            {
+                                <div class="text-danger small">Só restam @p.Stock unidade(s).</div>
+                            }
+                            else
+                            {
+                                <div class="small">@p.Price.ToString("C") cada</div>
+                            }
+                        </div>
+                        <QuantityPicker Value="item.Quantity" Max="@Math.Max(1, Math.Min(p?.Stock ?? 1, AtelieMarylu.Domain.Carts.Cart.MaxQuantityPerItem))"
+                                    Disabled="!available" ValueChanged="q => Cart.ChangeQuantityAsync(item.ProductId, q)" />
+                        <strong style="min-width: 90px" class="text-end">@(((p?.Price ?? 0) * item.Quantity).ToString("C"))</strong>
+                        <button class="btn btn-link text-danger btn-sm" @onclick="() => Cart.RemoveAsync(item.ProductId)">Remover</button>
+                    </div>
+                }
+                <div class="d-flex justify-content-end pt-3 fs-5">
+                    Subtotal:&nbsp;<strong>@Subtotal.ToString("C")</strong>
+                </div>
+            </div>
+            <a href="" class="btn btn-outline-primary mt-3">Continuar comprando</a>
+        </div>
+
+        <div class="col-lg-4">
+            <ShippingCalculator Items="Cart.Current.Items" />
+            <div class="panel-box mt-3">
+                @if (HasProblem)
+                {
+                    <button class="btn btn-primary btn-lg w-100" disabled>Ajuste o carrinho para continuar</button>
+                }
+                else
+                {
+                    @* Se não estiver logado, /checkout leva ao login/cadastro e volta para cá depois *@
+                    <a href="checkout" class="btn btn-primary btn-lg w-100">Finalizar compra</a>
+                    <p class="small text-secondary mt-2 mb-0">Para finalizar, você entra ou cria sua conta (leva menos de 1 minuto).</p>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private Dictionary<int, Product> products = [];
+    private bool ready;
+
+    private decimal Subtotal => Cart.Current.Items.Sum(i => (products.GetValueOrDefault(i.ProductId)?.Price ?? 0) * i.Quantity);
+
+    private bool HasProblem => Cart.Current.Items.Any(i =>
+        !products.TryGetValue(i.ProductId, out var p) || !p.IsActive || p.Stock < i.Quantity);
+
+    protected override void OnInitialized() => Cart.Changed += OnCartChanged;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Cart.LoadAsync();
+        products = await ProductService.GetByIdsAsync(Cart.Current.Items.Select(i => i.ProductId), includeImages: true);
+        ready = true;
+        StateHasChanged();
+    }
+
+    private void OnCartChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Cart.Changed -= OnCartChanged;
+}

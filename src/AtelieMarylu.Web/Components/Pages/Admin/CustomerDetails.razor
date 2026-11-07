@@ -1,0 +1,47 @@
+@page "/painel/clientes/{Id}"
+@attribute [Authorize(Policy = Permissions.CustomersView)]
+@inject CustomerService CustomerService
+@inject OrderService OrderService
+
+<PageTitle>Cliente · Painel</PageTitle>
+
+@if (loaded && customer is null)
+{
+    <h1>Cliente não encontrado</h1>
+}
+else if (customer is not null)
+{
+    <h1>@customer.DisplayName</h1>
+
+    <section class="panel-box mb-3">
+        <p class="m-0">E-mail: @customer.Email</p>
+        <p class="m-0">Telefone: @(customer.Phone ?? "—")</p>
+        <p class="m-0">Cliente desde: @customer.CreatedAt.FormatBrasilia("dd/MM/yyyy")</p>
+    </section>
+
+    <h2 class="h4">Pedidos</h2>
+    @if (orders.Count == 0)
+    {
+        <p>Nenhum pedido.</p>
+    }
+    else
+    {
+        <OrdersTable Orders="orders" Link="painel/pedidos" />
+    }
+    <p class="mt-3"><a href="painel/clientes">← Voltar para clientes</a></p>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+
+    private CustomerData? customer;
+    private List<Order> orders = [];
+    private bool loaded;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        customer = await CustomerService.GetAsync(Id);
+        orders = await OrderService.ListForCustomerAsync(Id);
+        loaded = true;
+    }
+}

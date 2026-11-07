@@ -1,0 +1,271 @@
+@page "/painel/pedidos/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Permissions.OrdersView)]
+@inject CustomerService CustomerService
+@inject ProductService ProductService
+@inject AuditService AuditService
+@inject OrderService Orders
+@inject IAuthorizationService Authorization
+@inject ILogger<OrderDetails> Logger
+@inject OrderEvents Events
+@implements IDisposable
+
+<PageTitle>Pedido · Painel</PageTitle>
+
+@if (loaded && order is null)
+{
+    <h1>Pedido não encontrado</h1>
+}
+else if (order is not null)
+{
+    <h1>Pedido @order.Code</h1>
+    <p>
+        <OrderStatusBadge Status="order.Status" />
+        <span class="ms-2">Cliente: <a href="painel/clientes/@order.CustomerId">@customerName</a></span>
+        <span class="text-secondary ms-2">· @order.CreatedAt.FormatBrasilia()</span>
+        @if (order.Status == OrderStatus.AwaitingPayment)
+        {
+            <span class="text-secondary ms-2">· pagar até @order.PayBy.FormatBrasilia()</span>
+        }
+    </p>
+
+    <Notice Message="@message" IsError="@isError" />
+
+    @if (canEdit || canCancel)
+    {
+        <section class="panel-box mb-3">
+            <h2 class="h5">Ações</h2>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                @if (canEdit && order.Status == OrderStatus.AwaitingPayment)
+                {
+                    <select class="form-select w-auto" @bind="manualMethod" aria-label="Forma do pagamento manual">
+                        <option value="@PaymentMethod.Pix">PIX</option>
+                        <option value="@PaymentMethod.CreditCard">Cartão</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" disabled="@processing"
+                            @onclick='() => RunActionAsync(() => Orders.RecordManualPaymentAsync(Id, manualMethod), Permissions.OrdersEdit, "Pagamento registrado.")'>
+                        Registrar pagamento recebido
+                    </button>
+                }
+                @if (canEdit && order.Status == OrderStatus.Paid)
+                {
+                    <button class="btn btn-primary btn-sm" disabled="@processing"
+                            @onclick='() => RunActionAsync(() => Orders.StartPreparationAsync(Id), Permissions.OrdersEdit, "Pedido em preparo.")'>
+                        Iniciar preparo
+                    </button>
+                }
+                @if (canEdit && order.Status is OrderStatus.Paid or OrderStatus.Preparing)
+                {
+                    <input class="form-control w-auto" placeholder="Código de rastreio" @bind="trackingCode" maxlength="50" />
+                    <button class="btn btn-primary btn-sm" disabled="@processing"
+                            @onclick='() => RunActionAsync(() => Orders.MarkShippedAsync(Id, trackingCode), Permissions.OrdersEdit, "Pedido marcado como enviado.")'>
+                        Marcar como enviado
+                    </button>
+                }
+                @if (canEdit && order.Status == OrderStatus.Shipped)
+                {
+                    <button class="btn btn-primary btn-sm" disabled="@processing"
+                            @onclick='() => RunActionAsync(() => Orders.MarkDeliveredAsync(Id), Permissions.OrdersEdit, "Pedido entregue.")'>
+                        Marcar como entregue
+                    </button>
+                }
+                @if (canCancel && order.CanCancel)
+                {
+                    @if (confirmCancellation)
+                    {
+                        <span>Confirma o cancelamento? O estoque será devolvido.</span>
+                        <input class="form-control form-control-sm w-auto" placeholder="Motivo (opcional)" @bind="cancellationReason" maxlength="200" />
+                        <button class="btn btn-danger btn-sm" disabled="@processing"
+                                @onclick='() => RunActionAsync(() => Orders.CancelAsync(Id, cancellationReason), Permissions.OrdersCancel, "Pedido cancelado.")'>
+                            Sim, cancelar
+                        </button>
+                        <button class="btn btn-link btn-sm" @onclick="() => confirmCancellation = false">Não</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-outline-danger btn-sm ms-auto" @onclick="() => confirmCancellation = true">Cancelar pedido</button>
+                    }
+                }
+            </div>
+            @if (order.Status == OrderStatus.Cancelled && order.Payments.Any(p => p.Status == PaymentStatus.Approved))
+            {
+                <div class="alert alert-warning mt-3 mb-0">Este pedido tinha pagamento aprovado: faça o estorno no provedor de pagamento.</div>
+            }
+        </section>
+    }
+
+    @if (canEdit && order.CanChangeItems)
+    {
+        <section class="panel-box mb-3">
+            <h2 class="h5">Editar itens</h2>
+            @foreach (var item in order.Items)
+            {
+                <div class="d-flex align-items-center gap-2 py-1 flex-wrap">
+                    <span class="flex-grow-1">@item.ProductName (@item.UnitPrice.ToString("C"))</span>
+                    <input type="number" class="form-control" style="max-width: 90px" min="0" value="@item.Quantity" aria-label="Quantidade"
+                           @onchange="e => ChangeQuantity(item.ProductId, e.Value)" />
+                </div>
+            }
+            <div class="d-flex gap-2 mt-2 flex-wrap">
+                <select class="form-select w-auto" @bind="newProductId" aria-label="Produto para adicionar">
+                    <option value="0">Adicionar produto...</option>
+                    @foreach (var p in availableProducts)
+                    {
+                        <option value="@p.Id">@p.Name (@p.Stock em estoque)</option>
+                    }
+                </select>
+                <input type="number" class="form-control" style="max-width: 90px" min="1" @bind="newQuantity" aria-label="Quantidade" />
+                <button class="btn btn-outline-primary btn-sm" disabled="@(processing || newProductId == 0)"
+                        @onclick='() => RunActionAsync(() => Orders.AddItemAsync(Id, newProductId, newQuantity), Permissions.OrdersEdit, "Item adicionado.")'>
+                    Adicionar
+                </button>
+            </div>
+            <p class="small text-secondary mt-2 mb-0">Zerar a quantidade remove o item. O estoque e o frete são ajustados automaticamente.</p>
+        </section>
+    }
+
+    <OrderSummary Order="order" />
+
+    @if (canEdit && order.CanChangeDelivery)
+    {
+        <section class="panel-box mb-3">
+            <h2 class="h5">Editar entrega</h2>
+            <EditForm Model="address" OnValidSubmit="SaveDeliveryAsync" FormName="delivery">
+                <DataAnnotationsValidator />
+                <AddressFields Address="address" />
+                <label class="form-label mt-2" for="obs">Observação</label>
+                <InputTextArea id="obs" class="form-control" rows="2" @bind-Value="notes" maxlength="500" />
+                <button type="submit" class="btn btn-outline-primary btn-sm mt-2" disabled="@processing">Salvar entrega</button>
+            </EditForm>
+        </section>
+    }
+
+    <section class="panel-box mb-3">
+        <h2 class="h5">Pagamentos</h2>
+        @if (order.Payments.Count == 0)
+        {
+            <p class="m-0">Nenhum pagamento iniciado.</p>
+        }
+        @foreach (var paymentEntry in order.Payments.OrderByDescending(p => p.CreatedAt))
+        {
+            <div class="small py-1">
+                @paymentEntry.CreatedAt.FormatBrasilia("dd/MM HH:mm") · @(paymentEntry.Method == PaymentMethod.Pix ? "PIX" : "Cartão") ·
+                @paymentEntry.Amount.ToString("C") · <strong>@paymentEntry.Status</strong> · via @paymentEntry.Provider
+            </div>
+        }
+    </section>
+
+    <section class="panel-box mb-3">
+        <h2 class="h5">Histórico</h2>
+        @foreach (var entry in history)
+        {
+            <div class="small py-1 @(entry.Action == AuditActions.PaymentMismatch ? "text-danger fw-bold" : "")">
+                @entry.OccurredAt.FormatBrasilia() · <strong>@entry.Author</strong> · <code>@entry.Action</code> @entry.Details
+            </div>
+        }
+    </section>
+
+    <a href="painel/pedidos">← Voltar para pedidos</a>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private Order? order;
+    private string customerName = "";
+    private List<Product> availableProducts = [];
+    private AddressForm address = new();
+    private string? notes;
+    private bool loaded, processing, canEdit, canCancel, confirmCancellation;
+    private string? message, trackingCode, cancellationReason;
+    private List<AuditEntry> history = [];
+    private bool isError;
+    private PaymentMethod manualMethod = PaymentMethod.Pix;
+    private int newProductId;
+    private int newQuantity = 1;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        canEdit = await HasPermissionAsync(Permissions.OrdersEdit);
+        canCancel = await HasPermissionAsync(Permissions.OrdersCancel);
+        await LoadAsync();
+    }
+
+    // Se o webhook ou outro funcionário mudar o pedido, a tela se atualiza
+    protected override void OnInitialized() => Events.OrderChanged += OnOrderChanged;
+
+    private void OnOrderChanged(int orderId)
+    {
+        if (orderId != Id || processing) return;
+        _ = InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
+    }
+
+    public void Dispose() => Events.OrderChanged -= OnOrderChanged;
+
+    private async Task LoadAsync()
+    {
+        order = await Orders.GetAsync(Id);
+        loaded = true;
+        if (order is null) return;
+
+        history = await AuditService.ListForOrderAsync(Id);
+        var customer = await CustomerService.GetAsync(order.CustomerId);
+        customerName = customer is null ? "?" : $"{customer.FullName} ({customer.Email})";
+        address = AddressForm.FromAddress(order.Address);
+        notes = order.Notes;
+        trackingCode = order.TrackingCode;
+        if (canEdit && order.CanChangeItems)
+            availableProducts = await ProductService.ListInStockAsync();
+    }
+
+    private async Task<bool> HasPermissionAsync(string policy) =>
+        (await Authorization.AuthorizeAsync((await AuthState).User, policy)).Succeeded;
+
+    private Task ChangeQuantity(int productId, object? amount) =>
+        int.TryParse(amount?.ToString(), out var quantity)
+            ? RunActionAsync(() => Orders.ChangeQuantityAsync(Id, productId, quantity), Permissions.OrdersEdit, "Quantidade alterada.")
+            : Task.CompletedTask;
+
+    private Task SaveDeliveryAsync() =>
+        RunActionAsync(() => Orders.ChangeDeliveryAsync(Id, address.ToAddress(), notes), Permissions.OrdersEdit, "Entrega atualizada.");
+
+    // Toda ação confere a permissão de novo no servidor antes de executar
+    private async Task RunActionAsync(Func<Task> action, string permission, string successMessage)
+    {
+        if (processing) return;
+        if (!await HasPermissionAsync(permission))
+        {
+            (message, isError) = ("Você não tem permissão para esta ação.", true);
+            return;
+        }
+        processing = true;
+        confirmCancellation = false;
+        try
+        {
+            await action();
+            (message, isError) = (successMessage, false);
+            newProductId = 0;
+            newQuantity = 1;
+        }
+        catch (OrderRuleException ex)
+        {
+            (message, isError) = (ex.Message, true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Logger.LogError(ex, "Falha na ação do pedido {PedidoId}", Id);
+            (message, isError) = ("Não foi possível concluir. Tente novamente.", true);
+        }
+        catch (OperationCanceledException ex)
+        {
+            Logger.LogError(ex, "Falha na ação do pedido {PedidoId}", Id);
+            (message, isError) = ("Não foi possível concluir. Tente novamente.", true);
+        }
+        finally
+        {
+            processing = false;
+        }
+        await LoadAsync();
+    }
+}

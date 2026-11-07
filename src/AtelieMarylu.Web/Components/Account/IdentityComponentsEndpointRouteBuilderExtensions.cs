@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
-using AtelieMarylu.Web.Configuracao;
+using AtelieMarylu.Web.Configuration;
 using AtelieMarylu.Web.Components.Account.Pages;
 using AtelieMarylu.Web.Components.Account.Pages.Manage;
 using AtelieMarylu.Infrastructure.Data;
@@ -26,19 +26,19 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
         var accountGroup = endpoints.MapGroup("/Account");
 
         // Botão "Continuar com Google": leva o navegador à tela de login do Google,
-        // que depois volta para /Account/LoginGoogle
+        // que depois volta para /Account/GoogleLogin
         accountGroup.MapPost("/EntrarComGoogle", (
             HttpContext context,
             [FromServices] SignInManager<ApplicationUser> signInManager,
-            [FromServices] IOptions<LoginGoogleOptions> opcoesGoogle,
+            [FromServices] IOptions<GoogleLoginOptions> googleOptions,
             [FromForm] string? returnUrl) =>
         {
-            if (!opcoesGoogle.Value.Ativo)
+            if (!googleOptions.Value.IsActive)
                 return Results.NotFound();
 
             IEnumerable<KeyValuePair<string, StringValues>> query = [
                 new("ReturnUrl", returnUrl),
-                new("Action", LoginGoogle.LoginCallbackAction)];
+                new("Action", GoogleLogin.LoginCallbackAction)];
 
             var redirectUrl = UriHelper.BuildRelative(
                 context.Request.PathBase,
@@ -65,9 +65,9 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
         manageGroup.MapPost("/ConectarGoogle", async (
             HttpContext context,
             [FromServices] SignInManager<ApplicationUser> signInManager,
-            [FromServices] IOptions<LoginGoogleOptions> opcoesGoogle) =>
+            [FromServices] IOptions<GoogleLoginOptions> googleOptions) =>
         {
-            if (!opcoesGoogle.Value.Ativo)
+            if (!googleOptions.Value.IsActive)
                 return Results.NotFound();
 
             // Limpa um login com Google anterior que tenha ficado pela metade
@@ -76,7 +76,7 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
             var redirectUrl = UriHelper.BuildRelative(
                 context.Request.PathBase,
                 "/Account/Manage/Google",
-                QueryString.Create("Action", ContaGoogle.ConectarCallbackAction));
+                QueryString.Create("Action", GoogleAccount.ConnectCallbackAction));
 
             var properties = signInManager.ConfigureExternalAuthenticationProperties(
                 GoogleDefaults.AuthenticationScheme, redirectUrl, signInManager.UserManager.GetUserId(context.User));
@@ -89,7 +89,7 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
         manageGroup.MapPost("/DownloadPersonalData", async (
             HttpContext context,
             [FromServices] UserManager<ApplicationUser> userManager,
-            [FromServices] DadosPessoaisService dadosPessoais,
+            [FromServices] PersonalDataService personalDataService,
             [FromServices] AuthenticationStateProvider authenticationStateProvider) =>
         {
             var user = await userManager.GetUserAsync(context.User);
@@ -116,10 +116,8 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
                 personalData.Add($"{l.LoginProvider} external login provider key", l.ProviderKey);
             }
 
-            personalData.Add("Authenticator Key", (await userManager.GetAuthenticatorKeyAsync(user))!);
-
-            var pedidos = await dadosPessoais.ExportarPedidosAsync(userId);
-            var fileBytes = JsonSerializer.SerializeToUtf8Bytes(new { Conta = personalData, Pedidos = pedidos },
+            var orders = await personalDataService.ExportOrdersAsync(userId);
+            var fileBytes = JsonSerializer.SerializeToUtf8Bytes(new { Account = personalData, Orders = orders },
                 new JsonSerializerOptions { WriteIndented = true });
 
             context.Response.Headers.TryAdd("Content-Disposition", "attachment; filename=meus-dados-atelie-marylu.json");
