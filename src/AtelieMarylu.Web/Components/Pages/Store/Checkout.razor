@@ -193,7 +193,7 @@ else
             shippingOptions = await Orders.QuoteShippingAsync(postalCode, Cart.Current.Items);
             shippingCode = shippingOptions.FirstOrDefault(o => o.Amount > 0)?.Code ?? shippingOptions.FirstOrDefault()?.Code;
         }
-        catch (Exception ex)
+        catch (OrderRuleException ex)
         {
             Logger.LogError(ex, "Falha ao cotar frete");
             isError = "Não foi possível calcular o frete agora. Tente novamente.";
