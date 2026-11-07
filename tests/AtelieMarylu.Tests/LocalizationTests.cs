@@ -21,7 +21,7 @@ public partial class LocalizationTests
         var folder = new DirectoryInfo(AppContext.BaseDirectory);
         while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "AtelieMarylu.slnx")))
             folder = folder.Parent;
-        return Path.Combine(folder!.FullName, "src", "AtelieMarylu.Web");
+        return Path.Join(folder!.FullName, "src", "AtelieMarylu.Web");
     }
 
     private static Dictionary<string, string> ReadResource(string language) =>
