@@ -168,6 +168,18 @@ a, .btn-link {
     filter: brightness(1.1);
 }
 
+/* Seletor de idioma */
+.language-switcher {
+    display: inline-flex;
+    gap: .35rem;
+    font-size: .8rem;
+}
+
+.language-switcher a[aria-current="true"] {
+    font-weight: 700;
+    text-decoration: underline;
+}
+
 /* Botões */
 .btn-primary {
     color: var(--branco);

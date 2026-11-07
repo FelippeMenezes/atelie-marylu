@@ -3,15 +3,15 @@
 @attribute [Authorize(Policy = AppRoles.Admin)]
 @inject AccessService Access
 
-<PageTitle>Grupos · Painel</PageTitle>
+<PageTitle>@L["Grupos · Painel"]</PageTitle>
 
-<h1>Grupos de funcionários</h1>
-<p class="text-secondary">Um grupo reúne permissões. Ao colocar um funcionário no grupo, ele recebe todas de uma vez (ex.: "Expedição" com ver e editar pedidos).</p>
+<h1>@L["Grupos de funcionários"]</h1>
+<p class="text-secondary">@L["Um grupo reúne permissões. Ao colocar um funcionário no grupo, ele recebe todas de uma vez (ex.: \"Expedição\" com ver e editar pedidos)."]</p>
 
 <section class="panel-box mb-3">
     <div class="d-flex gap-2 flex-wrap">
-        <input class="form-control w-auto" placeholder="Nome do novo grupo" @bind="newGroup" maxlength="50" />
-        <button class="btn btn-primary" @onclick="CreateAsync" disabled="@string.IsNullOrWhiteSpace(newGroup)">Criar grupo</button>
+        <input class="form-control w-auto" placeholder="@L["Nome do novo grupo"]" @bind="newGroup" maxlength="50" />
+        <button class="btn btn-primary" @onclick="CreateAsync" disabled="@string.IsNullOrWhiteSpace(newGroup)">@L["Criar grupo"]</button>
     </div>
 </section>
 
@@ -22,18 +22,18 @@
     var selected = edit[g.Name];
     <section class="panel-box mb-3">
         <div class="d-flex justify-content-between align-items-center">
-            <h2 class="h5 m-0">@g.Name <span class="small text-secondary">(@g.Members membro(s))</span></h2>
+            <h2 class="h5 m-0">@g.Name <span class="small text-secondary">@L["({0} membro(s))", g.Members]</span></h2>
             @if (deletingGroup == g.Name)
             {
                 <span>
-                    Excluir o grupo? Os membros perdem estas permissões.
-                    <button class="btn btn-danger btn-sm" @onclick="() => Delete(g.Name)">Sim</button>
-                    <button class="btn btn-link btn-sm" @onclick="() => deletingGroup = null">Não</button>
+                    @L["Excluir o grupo? Os membros perdem estas permissões."]
+                    <button class="btn btn-danger btn-sm" @onclick="() => Delete(g.Name)">@L["Sim"]</button>
+                    <button class="btn btn-link btn-sm" @onclick="() => deletingGroup = null">@L["Não"]</button>
                 </span>
             }
             else
             {
-                <button class="btn btn-outline-danger btn-sm" @onclick="() => deletingGroup = g.Name">Excluir</button>
+                <button class="btn btn-outline-danger btn-sm" @onclick="() => deletingGroup = g.Name">@L["Excluir"]</button>
             }
         </div>
         <div class="mt-2">
@@ -42,11 +42,11 @@
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="@($"{g.Name}-{code}")" checked="@selected.Contains(code)"
                            @onchange="e => { if (e.Value is true) selected.Add(code); else selected.Remove(code); }" />
-                    <label class="form-check-label" for="@($"{g.Name}-{code}")">@description</label>
+                    <label class="form-check-label" for="@($"{g.Name}-{code}")">@L[description]</label>
                 </div>
             }
         </div>
-        <button class="btn btn-outline-primary btn-sm mt-2" @onclick="() => SaveAsync(g.Name)">Salvar permissões</button>
+        <button class="btn btn-outline-primary btn-sm mt-2" @onclick="() => SaveAsync(g.Name)">@L["Salvar permissões"]</button>
     </section>
 }
 
@@ -64,11 +64,11 @@
         edit = groups.ToDictionary(g => g.Name, g => g.Permissions.ToHashSet());
     }
 
-    private Task CreateAsync() => RunActionAsync(() => Access.CreateGroupAsync(newGroup ?? ""), "Grupo criado.", clearName: true);
+    private Task CreateAsync() => RunActionAsync(() => Access.CreateGroupAsync(newGroup ?? ""), L["Grupo criado."], clearName: true);
 
-    private Task SaveAsync(string name) => RunActionAsync(() => Access.SaveGroupPermissionsAsync(name, edit[name]), $"Permissões de \"{name}\" salvas.");
+    private Task SaveAsync(string name) => RunActionAsync(() => Access.SaveGroupPermissionsAsync(name, edit[name]), L["Permissões de \"{0}\" salvas.", name]);
 
-    private Task Delete(string name) => RunActionAsync(() => Access.DeleteGroupAsync(name), "Grupo excluído.");
+    private Task Delete(string name) => RunActionAsync(() => Access.DeleteGroupAsync(name), L["Grupo excluído."]);
 
     private async Task RunActionAsync(Func<Task> action, string successMessage, bool clearName = false)
     {
@@ -81,7 +81,7 @@
         }
         catch (AccessException ex)
         {
-            (message, isError) = (ex.Message, true);
+            (message, isError) = (L[ex.Message], true);
         }
         await LoadAsync();
     }

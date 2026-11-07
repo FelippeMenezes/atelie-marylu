@@ -4,25 +4,25 @@
 @using AtelieMarylu.Domain.Auditing
 @inject AuditService AuditService
 
-<PageTitle>Auditoria · Painel</PageTitle>
+<PageTitle>@L["Auditoria · Painel"]</PageTitle>
 
-<h1>Auditoria</h1>
-<p class="text-secondary">Registro de quem fez o quê no painel e dos eventos de pagamento. Não pode ser alterado.</p>
+<h1>@L["Auditoria"]</h1>
+<p class="text-secondary">@L["Registro de quem fez o quê no painel e dos eventos de pagamento. Não pode ser alterado."]</p>
 
 <div class="d-flex gap-2 mb-3 flex-wrap">
-    <select class="form-select w-auto" @bind="entity" @bind:after="LoadAsync" aria-label="Filtrar por tipo">
-        <option value="">Tudo</option>
-        <option value="@AuditEntities.Order">Pedidos</option>
-        <option value="@AuditEntities.Product">Produtos</option>
-        <option value="@AuditEntities.User">Usuários</option>
-        <option value="@AuditEntities.Group">Grupos</option>
+    <select class="form-select w-auto" @bind="entity" @bind:after="LoadAsync" aria-label="@L["Filtrar por tipo"]">
+        <option value="">@L["Tudo"]</option>
+        <option value="@AuditEntities.Order">@L["Pedidos"]</option>
+        <option value="@AuditEntities.Product">@L["Produtos"]</option>
+        <option value="@AuditEntities.User">@L["Usuários"]</option>
+        <option value="@AuditEntities.Group">@L["Grupos"]</option>
     </select>
-    <input class="form-control w-auto" placeholder="Buscar autor ou detalhe" @bind="search" @bind:event="oninput" @bind:after="LoadAsync" />
+    <input class="form-control w-auto" placeholder="@L["Buscar autor ou detalhe"]" @bind="search" @bind:event="oninput" @bind:after="LoadAsync" />
 </div>
 
 <div class="table-responsive panel-box p-0">
     <table class="table table-sm align-middle m-0">
-        <thead><tr><th>Quando</th><th>Quem</th><th>Ação</th><th>Item</th><th>Detalhes</th></tr></thead>
+        <thead><tr><th>@L["Quando"]</th><th>@L["Quem"]</th><th>@L["Ação"]</th><th>@L["Item"]</th><th>@L["Detalhes"]</th></tr></thead>
         <tbody>
             @foreach (var entry in entries)
             {
@@ -31,8 +31,8 @@
                     <td>@entry.Author</td>
                     <td><code>@entry.Action</code></td>
                     <td>
-                        @if (entry.Entity == AuditEntities.Order) { <a href="painel/pedidos/@entry.EntityId">Pedido @entry.EntityId</a> }
-                        else if (entry.Entity == AuditEntities.Product) { <a href="painel/produtos/@entry.EntityId">Produto @entry.EntityId</a> }
+                        @if (entry.Entity == AuditEntities.Order) { <a href="painel/pedidos/@entry.EntityId">@L["Pedido {0}", entry.EntityId]</a> }
+                        else if (entry.Entity == AuditEntities.Product) { <a href="painel/produtos/@entry.EntityId">@L["Produto {0}", entry.EntityId]</a> }
                         else { @($"{entry.Entity} {entry.EntityId}") }
                     </td>
                     <td class="small">@entry.Details</td>

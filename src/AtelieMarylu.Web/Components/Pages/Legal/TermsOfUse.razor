@@ -3,35 +3,102 @@
 @using Microsoft.Extensions.Options
 @inject IOptions<ShopOptions> Options
 
-@{ var store = Options.Value; }
-<PageTitle>Termos de uso · @store.Name</PageTitle>
+@{
+    var store = Options.Value;
+    var language = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var operatorText = (string.IsNullOrEmpty(store.LegalName) ? store.Name : store.LegalName) + (string.IsNullOrEmpty(store.TaxDocument) ? "" : $", {store.TaxDocument}") + (string.IsNullOrEmpty(store.Address) ? "" : $", {store.Address}");
+}
+<PageTitle>@L["Termos de uso"] · @store.Name</PageTitle>
 
-<article class="panel-box" style="max-width: 820px">
-    <h1>Termos de uso</h1>
-    <p class="small text-secondary">Modelo inicial. Revise antes de publicar.</p>
+@if (language == "es")
+{
+    <article class="panel-box" style="max-width: 820px">
+        <h1>Términos de uso</h1>
+        <p class="small text-secondary">Traducción de cortesía. En caso de duda, prevalece la versión en portugués.</p>
 
-    <h2 class="h5">Sobre a loja</h2>
-    <p>
-        Este site é operado por @(string.IsNullOrEmpty(store.LegalName) ? store.Name : store.LegalName)@(string.IsNullOrEmpty(store.TaxDocument) ? "" : $", {store.TaxDocument}")@(string.IsNullOrEmpty(store.Address) ? "" : $", {store.Address}").
-    </p>
+        <h2 class="h5">Sobre la tienda</h2>
+        <p>Este sitio es operado por @operatorText.</p>
 
-    <h2 class="h5">Pedidos e preços</h2>
-    <ul>
-        <li>O pedido só é confirmado após a aprovação do pagamento. Pedidos não pagos dentro do prazo informado são cancelados automaticamente.</li>
-        <li>Os preços valem no momento da confirmação do pedido. O desconto no PIX vale apenas para pagamento por PIX.</li>
-        <li>As fotos representam a peça, mas por ser trabalho artesanal pode haver pequenas variações de corte, cor e estampa.</li>
-        <li>Peças sob encomenda têm prazo de produção informado na página do produto, contado a partir da confirmação do pagamento.</li>
-    </ul>
+        <h2 class="h5">Pedidos y precios</h2>
+        <ul>
+            <li>El pedido solo se confirma tras la aprobación del pago. Los pedidos no pagados dentro del plazo informado se cancelan automáticamente.</li>
+            <li>Los precios valen en el momento de confirmar el pedido. El descuento PIX vale solo para pagos por PIX.</li>
+            <li>Las fotos representan la pieza, pero al ser un trabajo artesanal puede haber pequeñas variaciones de corte, color y estampado.</li>
+            <li>Las piezas por encargo tienen el plazo de producción informado en la página del producto, contado desde la confirmación del pago.</li>
+        </ul>
 
-    <h2 class="h5">Entrega</h2>
-    <p>O prazo do frete é estimado pela transportadora e começa a contar após o envio. O código de rastreio fica disponível em "Meus pedidos".</p>
+        <h2 class="h5">Entrega</h2>
+        <p>El plazo de envío lo estima el transportista y empieza a contar tras el despacho. El código de seguimiento está disponible en "Mis pedidos".</p>
 
-    <h2 class="h5">Trocas, devoluções e cancelamento</h2>
-    <p>Veja a <a href="trocas-e-devolucoes">política de trocas e devoluções</a>, que inclui o direito de arrependimento de 7 dias.</p>
+        <h2 class="h5">Cambios, devoluciones y cancelación</h2>
+        <p>Consulta la <a href="trocas-e-devolucoes">política de cambios y devoluciones</a>, que incluye el derecho de desistimiento de 7 días.</p>
 
-    <h2 class="h5">Conta</h2>
-    <p>Você é responsável por manter sua senha em sigilo. Contas usadas para fraude podem ser bloqueadas.</p>
+        <h2 class="h5">Cuenta</h2>
+        <p>Eres responsable de mantener tu contraseña en secreto. Las cuentas usadas para fraude pueden ser bloqueadas.</p>
 
-    <h2 class="h5">Privacidade</h2>
-    <p>O uso dos seus dados segue a <a href="politica-de-privacidade">política de privacidade</a>.</p>
-</article>
+        <h2 class="h5">Privacidad</h2>
+        <p>El uso de tus datos sigue la <a href="politica-de-privacidade">política de privacidad</a>.</p>
+    </article>
+}
+else if (language == "en")
+{
+    <article class="panel-box" style="max-width: 820px">
+        <h1>Terms of use</h1>
+        <p class="small text-secondary">Courtesy translation. In case of doubt, the Portuguese version prevails.</p>
+
+        <h2 class="h5">About the store</h2>
+        <p>This site is operated by @operatorText.</p>
+
+        <h2 class="h5">Orders and prices</h2>
+        <ul>
+            <li>An order is only confirmed after the payment is approved. Orders not paid within the stated deadline are cancelled automatically.</li>
+            <li>Prices apply at the moment the order is confirmed. The PIX discount applies only to PIX payments.</li>
+            <li>Photos represent the item, but as this is handmade work there may be small variations in cut, color and print.</li>
+            <li>Made-to-order items have the production time shown on the product page, counted from payment confirmation.</li>
+        </ul>
+
+        <h2 class="h5">Delivery</h2>
+        <p>The shipping time is estimated by the carrier and starts after dispatch. The tracking code is available in "My orders".</p>
+
+        <h2 class="h5">Exchanges, returns and cancellation</h2>
+        <p>See the <a href="trocas-e-devolucoes">exchanges and returns policy</a>, which includes the 7-day right of withdrawal.</p>
+
+        <h2 class="h5">Account</h2>
+        <p>You are responsible for keeping your password secret. Accounts used for fraud may be blocked.</p>
+
+        <h2 class="h5">Privacy</h2>
+        <p>The use of your data follows the <a href="politica-de-privacidade">privacy policy</a>.</p>
+    </article>
+}
+else
+{
+    <article class="panel-box" style="max-width: 820px">
+        <h1>Termos de uso</h1>
+        <p class="small text-secondary">Modelo inicial. Revise antes de publicar.</p>
+
+        <h2 class="h5">Sobre a loja</h2>
+        <p>
+            Este site é operado por @(string.IsNullOrEmpty(store.LegalName) ? store.Name : store.LegalName)@(string.IsNullOrEmpty(store.TaxDocument) ? "" : $", {store.TaxDocument}")@(string.IsNullOrEmpty(store.Address) ? "" : $", {store.Address}").
+        </p>
+
+        <h2 class="h5">Pedidos e preços</h2>
+        <ul>
+            <li>O pedido só é confirmado após a aprovação do pagamento. Pedidos não pagos dentro do prazo informado são cancelados automaticamente.</li>
+            <li>Os preços valem no momento da confirmação do pedido. O desconto no PIX vale apenas para pagamento por PIX.</li>
+            <li>As fotos representam a peça, mas por ser trabalho artesanal pode haver pequenas variações de corte, cor e estampa.</li>
+            <li>Peças sob encomenda têm prazo de produção informado na página do produto, contado a partir da confirmação do pagamento.</li>
+        </ul>
+
+        <h2 class="h5">Entrega</h2>
+        <p>O prazo do frete é estimado pela transportadora e começa a contar após o envio. O código de rastreio fica disponível em "Meus pedidos".</p>
+
+        <h2 class="h5">Trocas, devoluções e cancelamento</h2>
+        <p>Veja a <a href="trocas-e-devolucoes">política de trocas e devoluções</a>, que inclui o direito de arrependimento de 7 dias.</p>
+
+        <h2 class="h5">Conta</h2>
+        <p>Você é responsável por manter sua senha em sigilo. Contas usadas para fraude podem ser bloqueadas.</p>
+
+        <h2 class="h5">Privacidade</h2>
+        <p>O uso dos seus dados segue a <a href="politica-de-privacidade">política de privacidade</a>.</p>
+    </article>
+}

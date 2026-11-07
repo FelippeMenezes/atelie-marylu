@@ -3,40 +3,120 @@
 @using Microsoft.Extensions.Options
 @inject IOptions<ShopOptions> Options
 
-@{ var store = Options.Value; }
-<PageTitle>Trocas e devoluções · @store.Name</PageTitle>
+@{
+    var store = Options.Value;
+    var language = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+}
+<PageTitle>@L["Trocas e devoluções"] · @store.Name</PageTitle>
 
-<article class="panel-box" style="max-width: 820px">
-    <h1>Trocas e devoluções</h1>
-    <p class="small text-secondary">Modelo inicial. Revise com a loja antes de publicar.</p>
+@if (language == "es")
+{
+    <article class="panel-box" style="max-width: 820px">
+        <h1>Cambios y devoluciones</h1>
+        <p class="small text-secondary">Traducción de cortesía. En caso de duda, prevalece la versión en portugués.</p>
 
-    <h2 class="h5">Direito de arrependimento (7 dias)</h2>
-    <p>
-        Pelo Código de Defesa do Consumidor (art. 49), você pode desistir da compra em até <strong>7 dias corridos</strong>
-        a partir do recebimento, sem precisar justificar. Devolvemos o valor integral, incluindo o frete de envio.
-        A peça deve voltar sem sinais de uso e, se possível, na embalagem original.
-    </p>
+        <h2 class="h5">Derecho de desistimiento (7 días)</h2>
+        <p>
+            Según el Código de Defensa del Consumidor de Brasil (art. 49), puedes desistir de la compra en un plazo de <strong>7 días corridos</strong>
+            desde la recepción, sin necesidad de justificarlo. Devolvemos el importe íntegro, incluido el envío.
+            La pieza debe volver sin señales de uso y, si es posible, en su embalaje original.
+        </p>
 
-    <h2 class="h5">Defeito de fabricação (90 dias)</h2>
-    <p>
-        Se a peça apresentar defeito de costura ou de material em até 90 dias, consertamos, trocamos por uma igual (se houver)
-        ou devolvemos o valor. Pequenas variações de corte e estampa são características do trabalho artesanal e não são defeito.
-    </p>
+        <h2 class="h5">Defecto de fabricación (90 días)</h2>
+        <p>
+            Si la pieza presenta un defecto de costura o de material en un plazo de 90 días, la reparamos, la cambiamos por una igual (si la hay)
+            o devolvemos el importe. Las pequeñas variaciones de corte y estampado son características del trabajo artesanal y no son defectos.
+        </p>
 
-    <h2 class="h5">Peças sob encomenda</h2>
-    <p>
-        Peças feitas sob medida ou personalizadas também têm o direito de arrependimento de 7 dias após o recebimento.
-        Se quiser desistir antes da produção começar, avise o quanto antes.
-    </p>
+        <h2 class="h5">Piezas por encargo</h2>
+        <p>
+            Las piezas hechas a medida o personalizadas también tienen el derecho de desistimiento de 7 días tras la recepción.
+            Si quieres desistir antes de que empiece la producción, avísanos lo antes posible.
+        </p>
 
-    <h2 class="h5">Como solicitar</h2>
-    <p>
-        Entre em contato informando o código do pedido (ex.: AML-7K3F9Q)
-        @if (!string.IsNullOrEmpty(store.ContactEmail)) { <text>pelo e-mail <a href="mailto:@store.ContactEmail">@store.ContactEmail</a>,</text> }
-        pelo WhatsApp ou pelo Instagram <a href="https://www.instagram.com/@store.Instagram/" target="_blank" rel="noopener">@@@store.Instagram</a>.
-        Combinamos a forma de devolução sem custo para você.
-    </p>
+        <h2 class="h5">Cómo solicitarlo</h2>
+        <p>
+            Ponte en contacto indicando el código del pedido (por ejemplo, AML-7K3F9Q)
+            @if (!string.IsNullOrEmpty(store.ContactEmail)) { <text>por correo electrónico a <a href="mailto:@store.ContactEmail">@store.ContactEmail</a>,</text> }
+            por WhatsApp o por Instagram <a href="https://www.instagram.com/@store.Instagram/" target="_blank" rel="noopener">@@@store.Instagram</a>.
+            Acordamos la forma de devolución sin coste para ti.
+        </p>
 
-    <h2 class="h5">Reembolso</h2>
-    <p>O reembolso é feito pelo mesmo meio de pagamento: PIX em até 7 dias úteis após recebermos a peça; no cartão, o estorno segue o prazo da operadora.</p>
-</article>
+        <h2 class="h5">Reembolso</h2>
+        <p>El reembolso se realiza por el mismo medio de pago: PIX en un plazo de hasta 7 días hábiles tras recibir la pieza; en tarjeta, el reintegro sigue el plazo de la operadora.</p>
+    </article>
+}
+else if (language == "en")
+{
+    <article class="panel-box" style="max-width: 820px">
+        <h1>Exchanges and returns</h1>
+        <p class="small text-secondary">Courtesy translation. In case of doubt, the Portuguese version prevails.</p>
+
+        <h2 class="h5">Right of withdrawal (7 days)</h2>
+        <p>
+            Under Brazil's Consumer Protection Code (art. 49), you may cancel your purchase within <strong>7 calendar days</strong>
+            of receipt, with no need to give a reason. We refund the full amount, including shipping.
+            The item must come back with no signs of use and, if possible, in its original packaging.
+        </p>
+
+        <h2 class="h5">Manufacturing defect (90 days)</h2>
+        <p>
+            If the item has a sewing or material defect within 90 days, we repair it, replace it with an identical one (if available)
+            or refund you. Small variations in cut and print are characteristic of handmade work and are not defects.
+        </p>
+
+        <h2 class="h5">Made-to-order items</h2>
+        <p>
+            Custom-made or personalized items also have the 7-day right of withdrawal after receipt.
+            If you want to cancel before production starts, let us know as soon as possible.
+        </p>
+
+        <h2 class="h5">How to request</h2>
+        <p>
+            Contact us with your order code (for example, AML-7K3F9Q)
+            @if (!string.IsNullOrEmpty(store.ContactEmail)) { <text>by email at <a href="mailto:@store.ContactEmail">@store.ContactEmail</a>,</text> }
+            on WhatsApp or on Instagram <a href="https://www.instagram.com/@store.Instagram/" target="_blank" rel="noopener">@@@store.Instagram</a>.
+            We will arrange the return at no cost to you.
+        </p>
+
+        <h2 class="h5">Refund</h2>
+        <p>The refund is made by the same payment method: PIX within 7 business days after we receive the item; on cards, the refund follows the card issuer's timeline.</p>
+    </article>
+}
+else
+{
+    <article class="panel-box" style="max-width: 820px">
+        <h1>Trocas e devoluções</h1>
+        <p class="small text-secondary">Modelo inicial. Revise com a loja antes de publicar.</p>
+
+        <h2 class="h5">Direito de arrependimento (7 dias)</h2>
+        <p>
+            Pelo Código de Defesa do Consumidor (art. 49), você pode desistir da compra em até <strong>7 dias corridos</strong>
+            a partir do recebimento, sem precisar justificar. Devolvemos o valor integral, incluindo o frete de envio.
+            A peça deve voltar sem sinais de uso e, se possível, na embalagem original.
+        </p>
+
+        <h2 class="h5">Defeito de fabricação (90 dias)</h2>
+        <p>
+            Se a peça apresentar defeito de costura ou de material em até 90 dias, consertamos, trocamos por uma igual (se houver)
+            ou devolvemos o valor. Pequenas variações de corte e estampa são características do trabalho artesanal e não são defeito.
+        </p>
+
+        <h2 class="h5">Peças sob encomenda</h2>
+        <p>
+            Peças feitas sob medida ou personalizadas também têm o direito de arrependimento de 7 dias após o recebimento.
+            Se quiser desistir antes da produção começar, avise o quanto antes.
+        </p>
+
+        <h2 class="h5">Como solicitar</h2>
+        <p>
+            Entre em contato informando o código do pedido (ex.: AML-7K3F9Q)
+            @if (!string.IsNullOrEmpty(store.ContactEmail)) { <text>pelo e-mail <a href="mailto:@store.ContactEmail">@store.ContactEmail</a>,</text> }
+            pelo WhatsApp ou pelo Instagram <a href="https://www.instagram.com/@store.Instagram/" target="_blank" rel="noopener">@@@store.Instagram</a>.
+            Combinamos a forma de devolução sem custo para você.
+        </p>
+
+        <h2 class="h5">Reembolso</h2>
+        <p>O reembolso é feito pelo mesmo meio de pagamento: PIX em até 7 dias úteis após recebermos a peça; no cartão, o estorno segue o prazo da operadora.</p>
+    </article>
+}

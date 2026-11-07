@@ -4,7 +4,9 @@
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Web
 @using static Microsoft.AspNetCore.Components.Web.RenderMode
+@using Microsoft.Extensions.Localization
 @using Microsoft.JSInterop
+@inject IStringLocalizer<SharedResource> L
 @using AtelieMarylu.Domain.Auditing
 @using AtelieMarylu.Domain.Catalog
 @using AtelieMarylu.Domain.Payments
@@ -14,5 +16,6 @@
 @using AtelieMarylu.Web.Components
 @using AtelieMarylu.Web.Components.Layout
 @using AtelieMarylu.Web.Components.Shared
+@using AtelieMarylu.Web.Localization
 @using AtelieMarylu.Web.Services
 

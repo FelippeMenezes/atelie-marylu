@@ -3,41 +3,124 @@
 @using Microsoft.Extensions.Options
 @inject IOptions<ShopOptions> Options
 
-@{ var store = Options.Value; }
-<PageTitle>Política de privacidade · @store.Name</PageTitle>
+@{
+    var store = Options.Value;
+    var language = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var controller = (string.IsNullOrEmpty(store.LegalName) ? store.Name : store.LegalName) + (string.IsNullOrEmpty(store.TaxDocument) ? "" : $", {store.TaxDocument}");
+}
+<PageTitle>@L["Política de privacidade"] · @store.Name</PageTitle>
 
-<article class="panel-box" style="max-width: 820px">
-    <h1>Política de privacidade</h1>
-    <p class="small text-secondary">Modelo inicial baseado na LGPD (Lei 13.709/2018). Revise antes de publicar.</p>
+@if (language == "es")
+{
+    <article class="panel-box" style="max-width: 820px">
+        <h1>Política de privacidad</h1>
+        <p class="small text-secondary">Traducción de cortesía. En caso de duda, prevalece la versión en portugués.</p>
 
-    <h2 class="h5">Quem é o controlador</h2>
-    <p>
-        @(string.IsNullOrEmpty(store.LegalName) ? store.Name : store.LegalName)@(string.IsNullOrEmpty(store.TaxDocument) ? "" : $", {store.TaxDocument}").
-        @if (!string.IsNullOrEmpty(store.ContactEmail)) { <text>Contato para assuntos de privacidade: <a href="mailto:@store.ContactEmail">@store.ContactEmail</a>.</text> }
-    </p>
+        <h2 class="h5">Quién es el responsable</h2>
+        <p>
+            @controller.
+            @if (!string.IsNullOrEmpty(store.ContactEmail)) { <text>Contacto para asuntos de privacidad: <a href="mailto:@store.ContactEmail">@store.ContactEmail</a>.</text> }
+        </p>
 
-    <h2 class="h5">Quais dados coletamos e por quê</h2>
-    <ul>
-        <li><strong>Cadastro</strong> (nome, e-mail, telefone, senha): para você acessar sua conta e acompanhar pedidos. A senha é guardada de forma irreversível (hash); nem a loja consegue lê-la.</li>
-        <li><strong>Login com Google</strong> (opcional): recebemos do Google apenas seu nome, e-mail e um código que identifica a conta. Nunca recebemos sua senha. Você pode desconectar em Minha conta → Conta Google.</li>
-        <li><strong>Endereço de entrega</strong>: para calcular o frete e enviar o pedido.</li>
-        <li><strong>Dados do pedido e do pagamento</strong>: para cumprir o contrato de compra e obrigações fiscais. Os dados do cartão são digitados no ambiente do provedor de pagamento e não passam pela loja.</li>
-        <li><strong>Registros de acesso</strong> (data, hora e IP): exigidos pelo Marco Civil da Internet e usados para segurança (ex.: bloquear tentativas de invasão).</li>
-    </ul>
+        <h2 class="h5">Qué datos recopilamos y por qué</h2>
+        <ul>
+            <li><strong>Registro</strong> (nombre, correo electrónico, teléfono, contraseña): para que accedas a tu cuenta y sigas tus pedidos. La contraseña se guarda de forma irreversible (hash); ni siquiera la tienda puede leerla.</li>
+            <li><strong>Inicio de sesión con Google</strong> (opcional): recibimos de Google solo tu nombre, correo electrónico y un código que identifica la cuenta. Nunca recibimos tu contraseña. Puedes desconectarla en Mi cuenta → Cuenta de Google.</li>
+            <li><strong>Dirección de entrega</strong>: para calcular el envío y enviar el pedido.</li>
+            <li><strong>Datos del pedido y del pago</strong>: para cumplir el contrato de compra y las obligaciones fiscales. Los datos de la tarjeta se introducen en el entorno del proveedor de pago y no pasan por la tienda.</li>
+            <li><strong>Registros de acceso</strong> (fecha, hora e IP): exigidos por el Marco Civil de Internet de Brasil y usados para seguridad (por ejemplo, bloquear intentos de intrusión).</li>
+        </ul>
 
-    <h2 class="h5">Com quem compartilhamos</h2>
-    <p>Somente com quem é necessário para concluir a compra: provedor de pagamento, transportadora/Correios e serviço de hospedagem do site. Não vendemos dados.</p>
+        <h2 class="h5">Con quién los compartimos</h2>
+        <p>Solo con quienes son necesarios para completar la compra: proveedor de pago, transportista/Correios y servicio de alojamiento del sitio. No vendemos datos.</p>
 
-    <h2 class="h5">Cookies</h2>
-    <p>Usamos apenas cookies essenciais: login, proteção contra fraudes em formulários e o carrinho guardado no seu navegador. Não usamos cookies de publicidade.</p>
+        <h2 class="h5">Cookies</h2>
+        <p>Usamos solo cookies esenciales: inicio de sesión, protección contra fraudes en formularios, el idioma elegido y el carrito guardado en tu navegador. No usamos cookies de publicidad.</p>
 
-    <h2 class="h5">Por quanto tempo guardamos</h2>
-    <p>Dados da conta: enquanto ela existir. Pedidos e notas: pelo prazo exigido pela legislação fiscal (5 anos). Registros de acesso: 6 meses.</p>
+        <h2 class="h5">Por cuánto tiempo los guardamos</h2>
+        <p>Datos de la cuenta: mientras exista. Pedidos y facturas: durante el plazo exigido por la legislación fiscal (5 años). Registros de acceso: 6 meses.</p>
 
-    <h2 class="h5">Seus direitos</h2>
-    <p>
-        Em <a href="Account/Manage/PersonalData">Minha conta → Dados pessoais</a> você pode baixar seus dados ou excluir sua conta.
-        Se houver pedidos, os dados de identificação são anonimizados e o registro da venda é mantido apenas pelo prazo legal.
-        Para correções ou dúvidas, fale com a gente pelos canais acima.
-    </p>
-</article>
+        <h2 class="h5">Tus derechos</h2>
+        <p>
+            En <a href="Account/Manage/PersonalData">Mi cuenta → Datos personales</a> puedes descargar tus datos o eliminar tu cuenta.
+            Si hay pedidos, los datos de identificación se anonimizan y el registro de la venta se conserva solo durante el plazo legal.
+            Para correcciones o dudas, contáctanos por los canales indicados arriba.
+        </p>
+    </article>
+}
+else if (language == "en")
+{
+    <article class="panel-box" style="max-width: 820px">
+        <h1>Privacy policy</h1>
+        <p class="small text-secondary">Courtesy translation. In case of doubt, the Portuguese version prevails.</p>
+
+        <h2 class="h5">Who the controller is</h2>
+        <p>
+            @controller.
+            @if (!string.IsNullOrEmpty(store.ContactEmail)) { <text>Privacy contact: <a href="mailto:@store.ContactEmail">@store.ContactEmail</a>.</text> }
+        </p>
+
+        <h2 class="h5">What data we collect and why</h2>
+        <ul>
+            <li><strong>Registration</strong> (name, email, phone, password): so you can access your account and follow your orders. Your password is stored irreversibly (hashed); not even the store can read it.</li>
+            <li><strong>Sign-in with Google</strong> (optional): we receive from Google only your name, email and a code that identifies the account. We never receive your password. You can disconnect it in My account → Google account.</li>
+            <li><strong>Delivery address</strong>: to calculate shipping and send your order.</li>
+            <li><strong>Order and payment data</strong>: to fulfil the purchase contract and tax obligations. Card details are entered in the payment provider's environment and never pass through the store.</li>
+            <li><strong>Access records</strong> (date, time and IP): required by Brazil's Internet Civil Framework and used for security (for example, blocking intrusion attempts).</li>
+        </ul>
+
+        <h2 class="h5">Who we share it with</h2>
+        <p>Only with those needed to complete the purchase: payment provider, carrier/Correios and the website hosting service. We do not sell data.</p>
+
+        <h2 class="h5">Cookies</h2>
+        <p>We use only essential cookies: sign-in, protection against form fraud, your chosen language and the cart stored in your browser. We do not use advertising cookies.</p>
+
+        <h2 class="h5">How long we keep it</h2>
+        <p>Account data: for as long as the account exists. Orders and invoices: for the period required by tax law (5 years). Access records: 6 months.</p>
+
+        <h2 class="h5">Your rights</h2>
+        <p>
+            In <a href="Account/Manage/PersonalData">My account → Personal data</a> you can download your data or delete your account.
+            If there are orders, identification data is anonymized and the sale record is kept only for the legal period.
+            For corrections or questions, contact us through the channels above.
+        </p>
+    </article>
+}
+else
+{
+    <article class="panel-box" style="max-width: 820px">
+        <h1>Política de privacidade</h1>
+        <p class="small text-secondary">Modelo inicial baseado na LGPD (Lei 13.709/2018). Revise antes de publicar.</p>
+
+        <h2 class="h5">Quem é o controlador</h2>
+        <p>
+            @(string.IsNullOrEmpty(store.LegalName) ? store.Name : store.LegalName)@(string.IsNullOrEmpty(store.TaxDocument) ? "" : $", {store.TaxDocument}").
+            @if (!string.IsNullOrEmpty(store.ContactEmail)) { <text>Contato para assuntos de privacidade: <a href="mailto:@store.ContactEmail">@store.ContactEmail</a>.</text> }
+        </p>
+
+        <h2 class="h5">Quais dados coletamos e por quê</h2>
+        <ul>
+            <li><strong>Cadastro</strong> (nome, e-mail, telefone, senha): para você acessar sua conta e acompanhar pedidos. A senha é guardada de forma irreversível (hash); nem a loja consegue lê-la.</li>
+            <li><strong>Login com Google</strong> (opcional): recebemos do Google apenas seu nome, e-mail e um código que identifica a conta. Nunca recebemos sua senha. Você pode desconectar em Minha conta → Conta Google.</li>
+            <li><strong>Endereço de entrega</strong>: para calcular o frete e enviar o pedido.</li>
+            <li><strong>Dados do pedido e do pagamento</strong>: para cumprir o contrato de compra e obrigações fiscais. Os dados do cartão são digitados no ambiente do provedor de pagamento e não passam pela loja.</li>
+            <li><strong>Registros de acesso</strong> (data, hora e IP): exigidos pelo Marco Civil da Internet e usados para segurança (ex.: bloquear tentativas de invasão).</li>
+        </ul>
+
+        <h2 class="h5">Com quem compartilhamos</h2>
+        <p>Somente com quem é necessário para concluir a compra: provedor de pagamento, transportadora/Correios e serviço de hospedagem do site. Não vendemos dados.</p>
+
+        <h2 class="h5">Cookies</h2>
+        <p>Usamos apenas cookies essenciais: login, proteção contra fraudes em formulários, o idioma escolhido e o carrinho guardado no seu navegador. Não usamos cookies de publicidade.</p>
+
+        <h2 class="h5">Por quanto tempo guardamos</h2>
+        <p>Dados da conta: enquanto ela existir. Pedidos e notas: pelo prazo exigido pela legislação fiscal (5 anos). Registros de acesso: 6 meses.</p>
+
+        <h2 class="h5">Seus direitos</h2>
+        <p>
+            Em <a href="Account/Manage/PersonalData">Minha conta → Dados pessoais</a> você pode baixar seus dados ou excluir sua conta.
+            Se houver pedidos, os dados de identificação são anonimizados e o registro da venda é mantido apenas pelo prazo legal.
+            Para correções ou dúvidas, fale com a gente pelos canais acima.
+        </p>
+    </article>
+}

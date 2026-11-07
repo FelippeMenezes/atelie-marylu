@@ -3,14 +3,14 @@
     <table class="table align-middle m-0">
         <thead>
             <tr>
-                <th>Pedido</th>
-                <th>Data</th>
+                <th>@L["Pedido"]</th>
+                <th>@L["Data"]</th>
                 @if (CustomerNames is not null)
                 {
-                    <th>Cliente</th>
+                    <th>@L["Cliente"]</th>
                 }
-                <th>Status</th>
-                <th class="text-end">Total</th>
+                <th>@L["Status"]</th>
+                <th class="text-end">@L["Total"]</th>
                 <th></th>
             </tr>
         </thead>
@@ -25,8 +25,8 @@
                         <td>@CustomerNames.GetValueOrDefault(p.CustomerId)</td>
                     }
                     <td><OrderStatusBadge Status="p.Status" /></td>
-                    <td class="text-end">@p.Total.ToString("C")</td>
-                    <td class="text-end"><a href="@Link/@(ByCode ? p.Code : p.Id.ToString())">Ver</a></td>
+                    <td class="text-end">@p.Total.ToBrl()</td>
+                    <td class="text-end"><a href="@Link/@(ByCode ? p.Code : p.Id.ToString())">@L["Ver"]</a></td>
                 </tr>
             }
         </tbody>

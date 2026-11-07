@@ -3,14 +3,14 @@
 @using System.Security.Claims
 @inject OrderService Orders
 
-<PageTitle>Meus pedidos · Ateliê Marylu</PageTitle>
+<PageTitle>@L["Meus pedidos · Ateliê Marylu"]</PageTitle>
 
-<h1>Meus pedidos</h1>
+<h1>@L["Meus pedidos"]</h1>
 
 @if (orders.Count == 0)
 {
-    <p>Você ainda não fez nenhum pedido.</p>
-    <a href="" class="btn btn-primary">Ver produtos</a>
+    <p>@L["Você ainda não fez nenhum pedido."]</p>
+    <a href="" class="btn btn-primary">@L["Ver produtos"]</a>
 }
 else
 {

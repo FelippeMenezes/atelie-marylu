@@ -5,40 +5,40 @@
 
 <div class="row g-2">
     <div class="col-sm-4">
-        <label class="form-label" for="cep">CEP</label>
+        <label class="form-label" for="cep">@L["CEP"]</label>
         <InputText id="cep" class="form-control" @bind-Value="Address.PostalCode" @bind-Value:after="PostalCodeChanged" autocomplete="postal-code" inputmode="numeric" placeholder="00000-000" />
         <ValidationMessage For="() => Address.PostalCode" />
         @if (searching)
         {
-            <div class="small text-secondary">Buscando endereço...</div>
+            <div class="small text-secondary">@L["Buscando endereço..."]</div>
         }
     </div>
     <div class="col-sm-8">
-        <label class="form-label" for="logradouro">Rua</label>
+        <label class="form-label" for="logradouro">@L["Rua"]</label>
         <InputText id="logradouro" class="form-control" @bind-Value="Address.Street" autocomplete="address-line1" />
         <ValidationMessage For="() => Address.Street" />
     </div>
     <div class="col-sm-3">
-        <label class="form-label" for="numero">Número</label>
+        <label class="form-label" for="numero">@L["Número"]</label>
         <InputText id="numero" class="form-control" @bind-Value="Address.Number" @ref="numberField" />
         <ValidationMessage For="() => Address.Number" />
     </div>
     <div class="col-sm-9">
-        <label class="form-label" for="complemento">Complemento</label>
+        <label class="form-label" for="complemento">@L["Complemento"]</label>
         <InputText id="complemento" class="form-control" @bind-Value="Address.Complement" autocomplete="address-line2" />
     </div>
     <div class="col-sm-5">
-        <label class="form-label" for="bairro">Bairro</label>
+        <label class="form-label" for="bairro">@L["Bairro"]</label>
         <InputText id="bairro" class="form-control" @bind-Value="Address.District" />
         <ValidationMessage For="() => Address.District" />
     </div>
     <div class="col-sm-5">
-        <label class="form-label" for="cidade">Cidade</label>
+        <label class="form-label" for="cidade">@L["Cidade"]</label>
         <InputText id="cidade" class="form-control" @bind-Value="Address.City" autocomplete="address-level2" />
         <ValidationMessage For="() => Address.City" />
     </div>
     <div class="col-sm-2">
-        <label class="form-label" for="uf">UF</label>
+        <label class="form-label" for="uf">@L["UF"]</label>
         <InputText id="uf" class="form-control" maxlength="2" @bind-Value="Address.State" autocomplete="address-level1" />
         <ValidationMessage For="() => Address.State" />
     </div>

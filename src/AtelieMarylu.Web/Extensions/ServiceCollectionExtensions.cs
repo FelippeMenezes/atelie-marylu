@@ -3,12 +3,14 @@ using AtelieMarylu.Domain.Security;
 using AtelieMarylu.Infrastructure.Data;
 using AtelieMarylu.Web.Components.Account;
 using AtelieMarylu.Web.Configuration;
+using AtelieMarylu.Web.Localization;
 using AtelieMarylu.Web.Security;
 using AtelieMarylu.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
 using Serilog;
 using Serilog.Formatting.Compact;
 
@@ -35,6 +37,16 @@ public static class ServiceCollectionExtensions
     {
         services.AddRazorComponents()
             .AddInteractiveServerComponents();
+
+        // O idioma vem só do cookie da escolha da pessoa. Sem cookie, o site abre em português.
+        services.AddLocalization(options => options.ResourcesPath = "Resources");
+        services.Configure<RequestLocalizationOptions>(options =>
+        {
+            options.SetDefaultCulture(SupportedLanguages.Default)
+                .AddSupportedCultures(SupportedLanguages.Codes)
+                .AddSupportedUICultures(SupportedLanguages.Codes);
+            options.RequestCultureProviders = [new CookieRequestCultureProvider()];
+        });
 
         services.AddCascadingAuthenticationState();
         services.AddScoped<IdentityRedirectManager>();
@@ -83,7 +95,8 @@ public static class ServiceCollectionExtensions
             })
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
-            .AddSignInManager();
+            .AddSignInManager()
+            .AddErrorDescriber<LocalizedIdentityErrorDescriber>();
 
         // Substitui a fábrica padrão para incluir o claim de troca de senha obrigatória
         services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppUserClaimsPrincipalFactory>();

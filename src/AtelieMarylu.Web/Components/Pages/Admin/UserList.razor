@@ -3,32 +3,32 @@
 @attribute [Authorize(Policy = AppRoles.Admin)]
 @inject AccessService Access
 
-<PageTitle>Usuários · Painel</PageTitle>
+<PageTitle>@L["Usuários · Painel"]</PageTitle>
 
-<h1>Usuários e acessos</h1>
-<p class="text-secondary">Para tornar alguém funcionário, a pessoa primeiro cria a conta no site. Depois, aqui, dê permissões individuais ou coloque-a em um grupo.</p>
+<h1>@L["Usuários e acessos"]</h1>
+<p class="text-secondary">@L["Para tornar alguém funcionário, a pessoa primeiro cria a conta no site. Depois, aqui, dê permissões individuais ou coloque-a em um grupo."]</p>
 
-<input class="form-control mb-3" style="max-width: 320px" placeholder="Buscar por nome ou e-mail"
+<input class="form-control mb-3" style="max-width: 320px" placeholder="@L["Buscar por nome ou e-mail"]"
        @bind="search" @bind:event="oninput" @bind:after="LoadAsync" />
 
 @if (users is null)
 {
-    <p>Carregando...</p>
+    <p>@L["Carregando..."]</p>
 }
 else
 {
     <div class="table-responsive panel-box p-0">
         <table class="table align-middle m-0">
-            <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Grupos</th><th></th></tr></thead>
+            <thead><tr><th>@L["Nome"]</th><th>@L["E-mail"]</th><th>@L["Perfil"]</th><th>@L["Grupos"]</th><th></th></tr></thead>
             <tbody>
                 @foreach (var u in users)
                 {
                     <tr>
                         <td>@u.Name</td>
                         <td>@u.Email</td>
-                        <td>@(u.IsAdmin ? "Admin" : u.IsEmployee ? "Funcionário" : "Cliente")</td>
+                        <td>@(u.IsAdmin ? "Admin" : u.IsEmployee ? L["Funcionário"] : L["Cliente"])</td>
                         <td>@string.Join(", ", u.Groups)</td>
-                        <td class="text-end"><a href="painel/usuarios/@u.Id">Acessos</a></td>
+                        <td class="text-end"><a href="painel/usuarios/@u.Id">@L["Acessos"]</a></td>
                     </tr>
                 }
             </tbody>

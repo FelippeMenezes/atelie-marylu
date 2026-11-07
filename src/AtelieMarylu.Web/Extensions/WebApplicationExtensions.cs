@@ -31,7 +31,7 @@ public static class WebApplicationExtensions
             app.UseExceptionHandler("/Error", createScopeForErrors: true);
             app.UseHsts();
         }
-        app.UseRequestLocalization("pt-BR");
+        app.UseRequestLocalization();
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
         app.UseHttpsRedirection();
         app.UseSecurityHeaders(
@@ -61,6 +61,7 @@ public static class WebApplicationExtensions
 
         app.MapPaymentWebhooks();
         app.MapSeo();
+        app.MapLanguageEndpoints();
         app.MapHealthChecks("/health");
 
         // Endereço antigo do carrinho: links salvos e o Google continuam funcionando

@@ -3,44 +3,56 @@
 @* Cabeçalho estático. O menu do celular abre com um checkbox + CSS (funciona sem JavaScript);
    só o contador do carrinho é interativo, porque lê o carrinho guardado no navegador. *@
 <header class="top-bar">
-    <nav class="container d-flex align-items-center gap-3 flex-wrap" aria-label="Principal">
+    <nav class="container d-flex align-items-center gap-3 flex-wrap" aria-label="@L["Principal"]">
         <a href="" class="brand">
             <img src="img/logo-nav.png" alt="" width="40" height="41" />
-            <span>Ateliê Marylu</span>
+            <span>@L["Ateliê Marylu"]</span>
         </a>
 
-        <a href="cart" class="cart ms-auto d-lg-none" aria-label="Carrinho">
-            Carrinho <CartCounter @rendermode="InteractiveServer" />
+        <a href="cart" class="cart ms-auto d-lg-none" aria-label="@L["Carrinho"]">
+            @L["Carrinho"] <CartCounter @rendermode="InteractiveServer" />
         </a>
 
-        <input type="checkbox" id="menu-aberto" class="menu-toggle" aria-label="Abrir menu" />
+        <input type="checkbox" id="menu-aberto" class="menu-toggle" aria-label="@L["Abrir menu"]" />
         <label for="menu-aberto" class="menu-button d-lg-none" aria-hidden="true"><span></span></label>
 
         <div class="links ms-lg-auto">
-            <a href="">Loja</a>
+            <a href="">@L["Loja"]</a>
 
             <AuthorizeView Policy="@Permissions.AccessAdmin">
-                <a href="painel">Painel</a>
+                <a href="painel">@L["Painel"]</a>
             </AuthorizeView>
 
             <AuthorizeView>
                 <Authorized>
-                    <a href="meus-pedidos">Meus pedidos</a>
-                    <a href="Account/Manage">Minha conta</a>
+                    <a href="meus-pedidos">@L["Meus pedidos"]</a>
+                    <a href="Account/Manage">@L["Minha conta"]</a>
                     <form action="Account/Logout" method="post" class="d-inline">
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@NavigationManager.ToBaseRelativePath(NavigationManager.Uri)" />
-                        <button type="submit" class="btn btn-link p-0">Sair</button>
+                        <button type="submit" class="btn btn-link p-0">@L["Sair"]</button>
                     </form>
                 </Authorized>
                 <NotAuthorized>
-                    <a href="Account/Login">Entrar</a>
+                    <a href="Account/Login">@L["Entrar"]</a>
                 </NotAuthorized>
             </AuthorizeView>
 
+            <span class="language-switcher">
+                @foreach (var (language, name) in SupportedLanguages.All)
+                {
+                    <a href="language/@language?returnUrl=@Uri.EscapeDataString("/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri))"
+                       data-enhance-nav="false" aria-label="@name" aria-current="@(language == CurrentLanguage ? "true" : null)">@language[..2].ToUpperInvariant()</a>
+                }
+            </span>
+
             <a href="cart" class="cart d-none d-lg-inline">
-                Carrinho <CartCounter @rendermode="InteractiveServer" />
+                @L["Carrinho"] <CartCounter @rendermode="InteractiveServer" />
             </a>
         </div>
     </nav>
 </header>
+
+@code {
+    private static string CurrentLanguage => System.Globalization.CultureInfo.CurrentUICulture.Name;
+}

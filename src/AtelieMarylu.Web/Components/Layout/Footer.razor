@@ -7,7 +7,7 @@
     <div class="container">
         <div class="row g-3">
             <div class="col-md-5">
-                <strong>@store.Name</strong> · Costura criativa<br />
+                <strong>@store.Name</strong> @L["· Costura criativa"]<br />
                 @if (store.HasLegalData)
                 {
                     <span>@(string.IsNullOrEmpty(store.LegalName) ? store.Name : store.LegalName) · @store.TaxDocument</span><br />
@@ -26,14 +26,14 @@
                 }
             </div>
             <div class="col-md-4">
-                <a href="trocas-e-devolucoes">Trocas e devoluções</a><br />
-                <a href="politica-de-privacidade">Política de privacidade</a><br />
-                <a href="termos-de-uso">Termos de uso</a>
+                <a href="trocas-e-devolucoes">@L["Trocas e devoluções"]</a><br />
+                <a href="politica-de-privacidade">@L["Política de privacidade"]</a><br />
+                <a href="termos-de-uso">@L["Termos de uso"]</a>
             </div>
             <div class="col-md-3">
-                <a href="https://www.instagram.com/@store.Instagram/" target="_blank" rel="noopener">Instagram @@@store.Instagram</a>
+                <a href="https://www.instagram.com/@store.Instagram/" target="_blank" rel="noopener">@L["Instagram @{0}", store.Instagram]</a>
             </div>
         </div>
-        <p class="small mt-3 mb-0">© @DateTime.UtcNow.Year @store.Name. Pagamentos processados em ambiente seguro do provedor.</p>
+        <p class="small mt-3 mb-0">@L["© {0} {1}. Pagamentos processados em ambiente seguro do provedor.", DateTime.UtcNow.Year, store.Name]</p>
     </div>
 </footer>

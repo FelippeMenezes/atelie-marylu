@@ -5,7 +5,7 @@
     function renderWidgets() {
         if (!window.turnstile) return;
         document.querySelectorAll(".cf-turnstile:empty").forEach(function (el) {
-            window.turnstile.render(el, { sitekey: el.dataset.sitekey, language: "pt-br" });
+            window.turnstile.render(el, { sitekey: el.dataset.sitekey, language: document.documentElement.lang.toLowerCase() });
         });
     }
 
