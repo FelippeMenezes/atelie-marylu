@@ -158,7 +158,11 @@ else if (order is not null)
         {
             (message, isError) = (ex.Message, true);
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (InvalidOperationException ex)
         {
             // Registra o Id interno, não o código digitado na URL (evita "log injection")
             Logger.LogError(ex, "Falha na ação do pedido {PedidoId}", order?.Id);
