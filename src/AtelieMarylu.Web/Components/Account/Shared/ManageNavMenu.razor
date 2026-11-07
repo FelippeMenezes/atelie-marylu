@@ -4,19 +4,19 @@
 
 <ul class="nav nav-pills flex-column">
     <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage" Match="NavLinkMatch.All">Profile</NavLink>
+        <NavLink class="nav-link" href="Account/Manage" Match="NavLinkMatch.All">@L["Perfil"]</NavLink>
     </li>
     <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/ChangePassword">Password</NavLink>
+        <NavLink class="nav-link" href="Account/Manage/ChangePassword">@L["Senha"]</NavLink>
     </li>
     @if (GoogleOptions.Value.IsActive)
     {
         <li class="nav-item">
-            <NavLink class="nav-link" href="Account/Manage/Google">Conta Google</NavLink>
+            <NavLink class="nav-link" href="Account/Manage/Google">@L["Conta Google"]</NavLink>
         </li>
     }
     <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/PersonalData">Personal data</NavLink>
+        <NavLink class="nav-link" href="Account/Manage/PersonalData">@L["Dados pessoais"]</NavLink>
     </li>
 </ul>
 

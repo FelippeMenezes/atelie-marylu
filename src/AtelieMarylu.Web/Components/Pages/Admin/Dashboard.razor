@@ -1,16 +1,16 @@
 @page "/painel"
 @inject DashboardService Painel
 
-<PageTitle>Painel · Ateliê Marylu</PageTitle>
+<PageTitle>@L["Painel · Ateliê Marylu"]</PageTitle>
 
-<h1>Painel</h1>
+<h1>@L["Painel"]</h1>
 
 <AuthorizeView Policy="@Permissions.OrdersView">
     @if (alerts.Count > 0)
     {
         <section class="alert alert-danger">
-            <h2 class="h5">Pagamentos que precisam de atenção</h2>
-            <p class="small">Pagamentos aprovados em pedidos cancelados ou com valor diferente. Verifique e, se for o caso, estorne no provedor.</p>
+            <h2 class="h5">@L["Pagamentos que precisam de atenção"]</h2>
+            <p class="small">@L["Pagamentos aprovados em pedidos cancelados ou com valor diferente. Verifique e, se for o caso, estorne no provedor."]</p>
             <ul class="mb-0">
                 @foreach (var a in alerts)
                 {
@@ -26,13 +26,13 @@
         <div class="col-sm-6">
             <a href="painel/pedidos?status=@OrderStatus.Paid" class="panel-box d-block text-decoration-none">
                 <div class="fs-2 fw-bold">@paid</div>
-                Pedidos pagos aguardando preparo
+                @L["Pedidos pagos aguardando preparo"]
             </a>
         </div>
         <div class="col-sm-6">
             <a href="painel/pedidos?status=@OrderStatus.AwaitingPayment" class="panel-box d-block text-decoration-none">
                 <div class="fs-2 fw-bold">@awaitingPayment</div>
-                Pedidos aguardando pagamento
+                @L["Pedidos aguardando pagamento"]
             </a>
         </div>
     </AuthorizeView>
@@ -40,7 +40,7 @@
         <div class="col-sm-6">
             <a href="painel/produtos" class="panel-box d-block text-decoration-none">
                 <div class="fs-2 fw-bold">@outOfStock</div>
-                Produtos ativos esgotados
+                @L["Produtos ativos esgotados"]
             </a>
         </div>
     </AuthorizeView>

@@ -10,57 +10,57 @@
 @inject ILogger<ProductEdit> Logger
 @implements IDisposable
 
-<PageTitle>@(Id is null ? "Novo produto" : "Editar produto") · Painel</PageTitle>
+<PageTitle>@L["{0} · Painel", Id is null ? L["Novo produto"] : "Editar produto"]</PageTitle>
 
-<h1>@(Id is null ? "Novo produto" : "Editar produto")</h1>
+<h1>@(Id is null ? L["Novo produto"] : L["Editar produto"])</h1>
 
 @if (Id is not null && !found)
 {
-    <p>Produto não encontrado.</p>
+    <p>@L["Produto não encontrado."]</p>
 }
 else
 {
     <EditForm Model="form" OnValidSubmit="SaveAsync" FormName="product">
-        <DataAnnotationsValidator />
+        <LocalizedDataAnnotationsValidator />
         <div class="panel-box mb-3">
             <div class="row g-3">
                 <div class="col-md-8">
-                    <label class="form-label" for="nome">Nome</label>
+                    <label class="form-label" for="nome">@L["Nome"]</label>
                     <InputText id="nome" class="form-control" @bind-Value="form.Name" />
                     <ValidationMessage For="() => form.Name" />
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" for="preco">Preço (R$)</label>
+                    <label class="form-label" for="preco">@L["Preço (R$)"]</label>
                     <InputNumber id="preco" class="form-control" @bind-Value="form.Price" step="0.01" />
                     <ValidationMessage For="() => form.Price" />
                 </div>
                 <div class="col-12">
-                    <label class="form-label" for="descricao">Descrição (inclua medidas e materiais)</label>
+                    <label class="form-label" for="descricao">@L["Descrição (inclua medidas e materiais)"]</label>
                     <InputTextArea id="descricao" class="form-control" rows="5" @bind-Value="form.Description" />
                     <ValidationMessage For="() => form.Description" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="estoque">Estoque</label>
+                    <label class="form-label" for="estoque">@L["Estoque"]</label>
                     <InputNumber id="estoque" class="form-control" @bind-Value="form.Stock" />
                     <ValidationMessage For="() => form.Stock" />
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" for="prazo">Prazo de produção (dias úteis)</label>
-                    <InputNumber id="prazo" class="form-control" @bind-Value="form.ProductionDays" placeholder="Vazio = pronta entrega" />
+                    <label class="form-label" for="prazo">@L["Prazo de produção (dias úteis)"]</label>
+                    <InputNumber id="prazo" class="form-control" @bind-Value="form.ProductionDays" placeholder="@L["Vazio = pronta entrega"]" />
                     <ValidationMessage For="() => form.ProductionDays" />
                 </div>
                 <div class="col-md-5 d-flex align-items-end">
                     <div class="form-check">
                         <InputCheckbox id="ativo" class="form-check-input" @bind-Value="form.IsActive" />
-                        <label class="form-check-label" for="ativo">Ativo (aparece na loja)</label>
+                        <label class="form-check-label" for="ativo">@L["Ativo (aparece na loja)"]</label>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="panel-box mb-3">
-            <h2 class="h5">Fotos</h2>
-            <p class="small text-secondary">A primeira foto é a capa. As fotos são reduzidas, convertidas para WEBP e têm os dados de localização (GPS) removidos.</p>
+            <h2 class="h5">@L["Fotos"]</h2>
+            <p class="small text-secondary">@L["A primeira foto é a capa. As fotos são reduzidas, convertidas para WEBP e têm os dados de localização (GPS) removidos."]</p>
             <div class="d-flex gap-3 flex-wrap mb-3">
                 @for (var i = 0; i < photos.Count; i++)
                 {
@@ -69,38 +69,38 @@ else
                     <div style="width: 130px">
                         <ProductPhoto Url="@photo.ThumbnailUrl" Name="@form.Name" Class="rounded-3" />
                         <div class="d-flex justify-content-between mt-1">
-                            <button type="button" class="btn btn-link btn-sm p-0" disabled="@(index == 0)" @onclick="() => Move(index, -1)" aria-label="Mover para a esquerda">◀</button>
-                            <button type="button" class="btn btn-link btn-sm p-0 text-danger" @onclick="() => Remove(index)">Remover</button>
-                            <button type="button" class="btn btn-link btn-sm p-0" disabled="@(index == photos.Count - 1)" @onclick="() => Move(index, 1)" aria-label="Mover para a direita">▶</button>
+                            <button type="button" class="btn btn-link btn-sm p-0" disabled="@(index == 0)" @onclick="() => Move(index, -1)" aria-label="@L["Mover para a esquerda"]">◀</button>
+                            <button type="button" class="btn btn-link btn-sm p-0 text-danger" @onclick="() => Remove(index)">@L["Remover"]</button>
+                            <button type="button" class="btn btn-link btn-sm p-0" disabled="@(index == photos.Count - 1)" @onclick="() => Move(index, 1)" aria-label="@L["Mover para a direita"]">▶</button>
                         </div>
-                        @if (index == 0) { <div class="small text-center tag d-block">Capa</div> }
+                        @if (index == 0) { <div class="small text-center tag d-block">@L["Capa"]</div> }
                     </div>
                 }
             </div>
             <InputFile OnChange="UploadPhotosAsync" multiple accept="image/jpeg,image/png,image/webp" class="form-control" disabled="@uploading" />
-            <div class="small text-secondary mt-1">@(uploading ? "Processando fotos..." : $"JPG, PNG ou WEBP, até 8 MB cada, no máximo {MaxPhotos} fotos.")</div>
+            <div class="small text-secondary mt-1">@(uploading ? L["Processando fotos..."] : L["JPG, PNG ou WEBP, até 8 MB cada, no máximo {0} fotos.", MaxPhotos])</div>
         </div>
 
         <div class="panel-box mb-3">
-            <h2 class="h5">Embalagem (para cálculo de frete)</h2>
+            <h2 class="h5">@L["Embalagem (para cálculo de frete)"]</h2>
             <div class="row g-3">
                 <div class="col-6 col-md-3">
-                    <label class="form-label" for="peso">Peso (g)</label>
+                    <label class="form-label" for="peso">@L["Peso (g)"]</label>
                     <InputNumber id="peso" class="form-control" @bind-Value="form.WeightGrams" />
                     <ValidationMessage For="() => form.WeightGrams" />
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label" for="altura">Altura (cm)</label>
+                    <label class="form-label" for="altura">@L["Altura (cm)"]</label>
                     <InputNumber id="altura" class="form-control" @bind-Value="form.HeightCm" />
                     <ValidationMessage For="() => form.HeightCm" />
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label" for="largura">Largura (cm)</label>
+                    <label class="form-label" for="largura">@L["Largura (cm)"]</label>
                     <InputNumber id="largura" class="form-control" @bind-Value="form.WidthCm" />
                     <ValidationMessage For="() => form.WidthCm" />
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label" for="comprimento">Comprimento (cm)</label>
+                    <label class="form-label" for="comprimento">@L["Comprimento (cm)"]</label>
                     <InputNumber id="comprimento" class="form-control" @bind-Value="form.LengthCm" />
                     <ValidationMessage For="() => form.LengthCm" />
                 </div>
@@ -110,11 +110,11 @@ else
         <Notice Message="@message" IsError="@isError" />
 
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary" disabled="@(saving || uploading)">Salvar</button>
-            <a href="painel/produtos" class="btn btn-outline-primary">Voltar</a>
+            <button type="submit" class="btn btn-primary" disabled="@(saving || uploading)">@L["Salvar"]</button>
+            <a href="painel/produtos" class="btn btn-outline-primary">@L["Voltar"]</a>
             @if (Id is not null && form.IsActive)
             {
-                <a href="@($"produto/{Id}")" target="_blank" class="btn btn-link ms-auto">Ver na loja</a>
+                <a href="@($"produto/{Id}")" target="_blank" class="btn btn-link ms-auto">@L["Ver na loja"]</a>
             }
         </div>
     </EditForm>
@@ -162,23 +162,23 @@ else
             {
                 if (photos.Count >= MaxPhotos)
                 {
-                    (message, isError) = ($"Limite de {MaxPhotos} fotos.", true);
+                    (message, isError) = (L["Limite de {0} fotos.", MaxPhotos], true);
                     break;
                 }
                 var saved = await Images.SaveAsync(file);
                 photos.Add(saved);
                 newPhotos.Add(saved);
             }
-            if (!isError) (message, isError) = ("Fotos adicionadas. Clique em Salvar para confirmar.", false);
+            if (!isError) (message, isError) = (L["Fotos adicionadas. Clique em Salvar para confirmar."], false);
         }
         catch (InvalidOperationException ex)
         {
-            (message, isError) = (ex.Message, true);
+            (message, isError) = (L[ex.Message], true);
         }
         catch (IOException ex)
         {
             Logger.LogWarning(ex, "Falha no upload de imagem");
-            (message, isError) = ("Não foi possível enviar a foto (máximo 8 MB).", true);
+            (message, isError) = (L["Não foi possível enviar a foto (máximo 8 MB)."], true);
         }
         finally
         {
@@ -207,7 +207,7 @@ else
             var data = new ProductInput(form.Name, form.Description, form.Price, form.Stock, form.IsActive, form.ProductionDays,
                 form.WeightGrams, form.HeightCm, form.WidthCm, form.LengthCm, stockWhenOpened);
             var productId = await ProductService.SaveAsync(Id, data, photos);
-            if (productId is null) { (message, isError) = ("Produto não encontrado.", true); return; }
+            if (productId is null) { (message, isError) = (L["Produto não encontrado."], true); return; }
 
             Images.Delete(removedPhotos.SelectMany(f => new[] { f.Url, f.ThumbnailUrl }).ToArray());
             removedPhotos.Clear();
@@ -219,21 +219,21 @@ else
                 return;
             }
             await LoadAsync();
-            (message, isError) = ("Produto salvo.", false);
+            (message, isError) = (L["Produto salvo."], false);
         }
         catch (ProductRuleException ex)
         {
-            (message, isError) = (ex.Message, true);
+            (message, isError) = (L[ex.Message], true);
         }
         catch (InvalidOperationException ex)
         {
             Logger.LogError(ex, "Falha ao salvar o produto {ProdutoId}", Id);
-            (message, isError) = ("Não foi possível salvar. Tente novamente.", true);
+            (message, isError) = (L["Não foi possível salvar. Tente novamente."], true);
         }
         catch (IOException ex)
         {
             Logger.LogError(ex, "Falha ao salvar o produto {ProdutoId}", Id);
-            (message, isError) = ("Não foi possível salvar. Tente novamente.", true);
+            (message, isError) = (L["Não foi possível salvar. Tente novamente."], true);
         }
         finally
         {

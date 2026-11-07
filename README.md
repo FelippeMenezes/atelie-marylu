@@ -14,6 +14,8 @@ A solution tem três projetos de código e dois de testes:
 
 O caminho é sempre **tela → serviço → banco**: as telas não acessam o banco direto. O [guia do projeto](docs/GUIA-DO-PROJETO.md) explica cada parte para quem está começando em C# e .NET.
 
+O site está em português do Brasil, espanhol e inglês. O guia explica como acrescentar traduções.
+
 ## Pré-requisitos
 
 - .NET SDK 10

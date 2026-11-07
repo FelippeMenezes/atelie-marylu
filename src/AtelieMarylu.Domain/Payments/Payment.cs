@@ -32,6 +32,16 @@ public class Payment
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; private set; }
 
+    public static string Describe(PaymentStatus status) => status switch
+    {
+        PaymentStatus.Pending => "Pendente",
+        PaymentStatus.Approved => "Aprovado",
+        PaymentStatus.Rejected => "Recusado",
+        PaymentStatus.Cancelled => "Cancelado",
+        PaymentStatus.Refunded => "Estornado",
+        _ => status.ToString(),
+    };
+
     public void RecordStart(string externalId, string? paymentUrl, string? pixCopyPaste)
     {
         ExternalId = externalId;

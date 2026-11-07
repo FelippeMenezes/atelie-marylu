@@ -1,4 +1,3 @@
-using System.Globalization;
 using AtelieMarylu.Infrastructure;
 using AtelieMarylu.Infrastructure.Data;
 using AtelieMarylu.Web.Extensions;
@@ -16,10 +15,6 @@ builder.Services
     .AddStoreRateLimiting()
     .AddReverseProxySupport(builder.Configuration)
     .AddStoreServices(builder.Configuration);
-
-var brazilCulture = new CultureInfo("pt-BR");
-CultureInfo.DefaultThreadCurrentCulture = brazilCulture;
-CultureInfo.DefaultThreadCurrentUICulture = brazilCulture;
 
 var app = builder.Build();
 

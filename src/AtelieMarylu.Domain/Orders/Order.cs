@@ -138,12 +138,12 @@ public class Order
         // Webhooks podem chegar repetidos: confirmar duas vezes não deve dar erro
         if (payment.Status == PaymentStatus.Approved && Status != OrderStatus.AwaitingPayment) return;
         if (Status != OrderStatus.AwaitingPayment)
-            throw new OrderRuleException($"Pedido está {Describe(Status)} e não pode receber pagamento.");
+            throw new OrderRuleException("Pedido está {0} e não pode receber pagamento.", Describe(Status));
 
         // Protege contra pagar um valor antigo (ex.: PIX gerado antes de o pedido ser editado)
         var expected = AmountFor(payment.Method);
         if (payment.Amount != expected || (amountPaid is not null && amountPaid != payment.Amount))
-            throw new OrderRuleException($"Valor pago ({(amountPaid ?? payment.Amount):C}) diferente do valor do pedido ({expected:C}).");
+            throw new OrderRuleException("Valor pago ({0}) diferente do valor do pedido ({1}).", (amountPaid ?? payment.Amount).ToBrl(), expected.ToBrl());
 
         payment.UpdateStatus(PaymentStatus.Approved);
         Status = OrderStatus.Paid;

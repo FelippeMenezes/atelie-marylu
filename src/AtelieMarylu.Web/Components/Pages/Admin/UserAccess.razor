@@ -6,11 +6,11 @@
 @inject CustomerService CustomerService
 @using Microsoft.AspNetCore.Identity
 
-<PageTitle>Acessos · Painel</PageTitle>
+<PageTitle>@L["Acessos · Painel"]</PageTitle>
 
 @if (user is null)
 {
-    <p>@(loaded ? "Usuário não encontrado." : "Carregando...")</p>
+    <p>@(loaded ? L["Usuário não encontrado."] : L["Carregando..."])</p>
 }
 else
 {
@@ -20,19 +20,19 @@ else
     <section class="panel-box mb-3">
         <div class="form-check">
             <input class="form-check-input" type="checkbox" id="admin" @bind="isAdmin" disabled="@(Id == myId)" />
-            <label class="form-check-label" for="admin"><strong>Admin</strong>: acesso total, inclusive a usuários e grupos</label>
+            <label class="form-check-label" for="admin"><strong>@L["Admin"]</strong>@L[": acesso total, inclusive a usuários e grupos"]</label>
         </div>
         @if (Id == myId)
         {
-            <div class="small text-secondary">Você não pode remover o seu próprio acesso de Admin.</div>
+            <div class="small text-secondary">@L["Você não pode remover o seu próprio acesso de Admin."]</div>
         }
     </section>
 
     <section class="panel-box mb-3">
-        <h2 class="h5">Grupos</h2>
+        <h2 class="h5">@L["Grupos"]</h2>
         @if (groups.Count == 0)
         {
-            <p class="m-0">Nenhum grupo criado. <a href="painel/grupos">Criar grupos</a></p>
+            <p class="m-0">@L["Nenhum grupo criado."] <a href="painel/grupos">@L["Criar grupos"]</a></p>
         }
         @foreach (var g in groups)
         {
@@ -40,30 +40,30 @@ else
                 <input class="form-check-input" type="checkbox" id="g-@g.Name" checked="@selectedGroups.Contains(g.Name)"
                        @onchange="e => Toggle(selectedGroups, g.Name, e)" />
                 <label class="form-check-label" for="g-@g.Name">
-                    @g.Name <span class="small text-secondary">(@string.Join(", ", g.Permissions.Select(p => Permissions.All.GetValueOrDefault(p, p))))</span>
+                    @g.Name <span class="small text-secondary">(@string.Join(", ", g.Permissions.Select(p => L[Permissions.All.GetValueOrDefault(p, p)].Value)))</span>
                 </label>
             </div>
         }
     </section>
 
     <section class="panel-box mb-3">
-        <h2 class="h5">Permissões individuais</h2>
-        <p class="small text-secondary">Somam-se às permissões dos grupos.</p>
+        <h2 class="h5">@L["Permissões individuais"]</h2>
+        <p class="small text-secondary">@L["Somam-se às permissões dos grupos."]</p>
         @foreach (var (permissionKey, description) in Permissions.All)
         {
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" id="p-@permissionKey" checked="@selectedPermissions.Contains(permissionKey)"
                        @onchange="e => Toggle(selectedPermissions, permissionKey, e)" />
-                <label class="form-check-label" for="p-@permissionKey">@description</label>
+                <label class="form-check-label" for="p-@permissionKey">@L[description]</label>
             </div>
         }
     </section>
 
     <Notice Message="@message" IsError="@isError" />
 
-    <button class="btn btn-primary" @onclick="SaveAsync" disabled="@saving">Salvar acessos</button>
-    <a href="painel/usuarios" class="btn btn-outline-primary">Voltar</a>
-    <p class="small text-secondary mt-2">A pessoa precisará entrar novamente para as mudanças valerem.</p>
+    <button class="btn btn-primary" @onclick="SaveAsync" disabled="@saving">@L["Salvar acessos"]</button>
+    <a href="painel/usuarios" class="btn btn-outline-primary">@L["Voltar"]</a>
+    <p class="small text-secondary mt-2">@L["A pessoa precisará entrar novamente para as mudanças valerem."]</p>
 }
 
 @code {
@@ -104,11 +104,11 @@ else
         try
         {
             await Access.SaveAccessAsync(Id, myId, new UserAccessData(isAdmin, selectedGroups.ToList(), selectedPermissions.ToList()));
-            (message, isError) = ("Acessos salvos.", false);
+            (message, isError) = (L["Acessos salvos."], false);
         }
         catch (AccessException ex)
         {
-            (message, isError) = (ex.Message, true);
+            (message, isError) = (L[ex.Message], true);
         }
         finally
         {

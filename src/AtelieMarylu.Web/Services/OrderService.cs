@@ -120,7 +120,7 @@ public class OrderService(
                 await ReduceStockAsync(db, item.ProductId, item.Quantity, item.ProductName, ct);
             db.Orders.Add(order);
             await db.SaveChangesAsync(ct);
-            await audit.RecordAsync(db, AuditActions.OrderCreated, AuditEntities.Order, order.Id, $"{order.Code} · {order.Total:C}");
+            await audit.RecordAsync(db, AuditActions.OrderCreated, AuditEntities.Order, order.Id, $"{order.Code} · {order.Total.ToBrl()}");
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
         }
@@ -229,7 +229,7 @@ public class OrderService(
             var payment = order.StartPayment(method, ManualProvider);
             payment.RecordStart($"manual-{Guid.NewGuid():N}", null, null);
             order.ConfirmPayment(payment);
-            return Task.FromResult<string?>($"{method} · {payment.Amount:C}");
+            return Task.FromResult<string?>($"{method} · {payment.Amount.ToBrl()}");
         }, ct: ct);
 
     public Task CancelAsync(int orderId, string? reason = null, CancellationToken ct = default) =>
@@ -389,7 +389,7 @@ public class OrderService(
             .Where(p => p.Id == productId && p.Stock >= quantity)
             .ExecuteUpdateAsync(s => s.SetProperty(p => p.Stock, p => p.Stock - quantity), ct);
         if (rows == 0)
-            throw new OrderRuleException($"Estoque insuficiente para \"{name}\".");
+            throw new OrderRuleException("Estoque insuficiente para \"{0}\".", name);
     }
 
     private static Task RestoreStockAsync(ApplicationDbContext db, int productId, int quantity, CancellationToken ct) =>

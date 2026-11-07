@@ -17,38 +17,38 @@
 @* Volta do Google. Quem já tem a conta Google conectada entra direto; quem é novo confirma
    o nome e a conta é criada com o e-mail que o Google informou. *@
 
-<PageTitle>Criar conta · Ateliê Marylu</PageTitle>
+<PageTitle>@L["Criar conta · Ateliê Marylu"]</PageTitle>
 
-<h1>Falta pouco!</h1>
+<h1>@L["Falta pouco!"]</h1>
 <StatusMessage Message="@message" />
 
 @if (googleInfo is not null && email is not null)
 {
     <div class="row">
         <div class="col-lg-6">
-            <p>Você entrou com o <strong>Google</strong> como <strong>@email</strong>. Confira seus dados para criar a conta na loja.</p>
+            <p>@L["Você entrou com o"] <strong>Google</strong> @L["como"] <strong>@email</strong>@L[". Confira seus dados para criar a conta na loja."]</p>
             <EditForm Model="Input" OnValidSubmit="CreateAccountAsync" FormName="confirmation" method="post">
-                <DataAnnotationsValidator />
+                <LocalizedDataAnnotationsValidator />
                 <ValidationSummary class="text-danger" role="alert" />
                 <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.FullName" id="Input.FullName" class="form-control" autocomplete="name" aria-required="true" placeholder="Seu nome" />
-                    <label for="Input.FullName">Nome completo</label>
+                    <InputText @bind-Value="Input.FullName" id="Input.FullName" class="form-control" autocomplete="name" aria-required="true" placeholder="@L["Seu nome"]" />
+                    <label for="Input.FullName">@L["Nome completo"]</label>
                     <ValidationMessage For="() => Input.FullName" class="text-danger" />
                 </div>
                 <div class="form-floating mb-3">
                     <InputText @bind-Value="Input.Phone" id="Input.Phone" class="form-control" autocomplete="tel" placeholder="(21) 99999-9999" />
-                    <label for="Input.Phone">Telefone / WhatsApp (opcional)</label>
+                    <label for="Input.Phone">@L["Telefone / WhatsApp (opcional)"]</label>
                     <ValidationMessage For="() => Input.Phone" class="text-danger" />
                 </div>
-                <p class="small text-secondary">Ao criar a conta você concorda com os <a href="termos-de-uso" target="_blank">termos de uso</a> e a <a href="politica-de-privacidade" target="_blank">política de privacidade</a>.</p>
-                <button type="submit" class="w-100 btn btn-lg btn-primary">Criar conta</button>
+                <p class="small text-secondary">@L["Ao criar a conta você concorda com"] <a href="termos-de-uso" target="_blank">@L["os termos de uso"]</a> @L["e"] <a href="politica-de-privacidade" target="_blank">@L["a política de privacidade"]</a>.</p>
+                <button type="submit" class="w-100 btn btn-lg btn-primary">@L["Criar conta"]</button>
             </EditForm>
         </div>
     </div>
 }
 else
 {
-    <p><a href="Account/Login">Voltar para o login</a></p>
+    <p><a href="Account/Login">@L["Voltar para o login"]</a></p>
 }
 
 @code {
@@ -81,14 +81,14 @@ else
         {
             // Ex.: a pessoa clicou em "Cancelar" na tela do Google
             Logger.LogInformation("Login com Google cancelado ou recusado: {Erro}", RemoteError);
-            RedirectManager.RedirectToWithStatus("Account/Login", "Erro: o login com Google não foi concluído. Tente de novo.", HttpContext);
+            RedirectManager.RedirectToWithStatus("Account/Login", L["Erro: o login com Google não foi concluído. Tente de novo."], HttpContext);
             return;
         }
 
         var info = await SignInManager.GetExternalLoginInfoAsync();
         if (info is null)
         {
-            RedirectManager.RedirectToWithStatus("Account/Login", "Erro: não foi possível carregar os dados do Google. Tente de novo.", HttpContext);
+            RedirectManager.RedirectToWithStatus("Account/Login", L["Erro: não foi possível carregar os dados do Google. Tente de novo."], HttpContext);
             return;
         }
 
@@ -96,7 +96,7 @@ else
         {
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
             RedirectManager.RedirectToWithStatus("Account/Login",
-                "Erro: a conta Google não informou um e-mail confirmado. Use outra conta ou crie um cadastro com e-mail e senha.", HttpContext);
+                L["Erro: a conta Google não informou um e-mail confirmado. Use outra conta ou crie um cadastro com e-mail e senha."], HttpContext);
             return;
         }
 
@@ -139,7 +139,7 @@ else
         {
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
             RedirectManager.RedirectToWithStatus("Account/Login",
-                $"Erro: já existe uma conta com o e-mail {email}. Entre com sua senha e conecte o Google em Minha conta → Conta Google.", HttpContext);
+                L["Erro: já existe uma conta com o e-mail {0}. Entre com sua senha e conecte o Google em Minha conta → Conta Google.", email!], HttpContext);
             return;
         }
 

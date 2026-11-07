@@ -220,6 +220,20 @@ Alguns valores continuam em português de propósito:
 - **A pasta `uploads/produtos`**, porque as fotos já gravadas apontam para ela.
 - **As variáveis do `.env.producao`**, como `LOJA_TELEFONE`. O `docker-compose.prod.yml` as traduz para os nomes novos, então o arquivo do servidor não precisa mudar.
 
-## 10. O que ainda vai mudar
+## 10. Idiomas do site
 
-- **Próxima fase:** o site inteiro, inclusive o painel, em português do Brasil, com opção de espanhol e inglês. O preço continua em reais em qualquer idioma.
+O site inteiro, inclusive o painel, existe em português do Brasil, espanhol e inglês. O visitante escolhe em **PT · ES · EN**, no topo. Sem escolha, o site abre em português.
+
+- **Como funciona:** nas telas, `@L["Carrinho"]` pede a tradução de "Carrinho". `L` é um `IStringLocalizer`, o tradutor padrão do .NET.
+- **Onde ficam as traduções:** `Resources/SharedResource.es.resx` e `SharedResource.en.resx`. O texto em português é a própria chave. Se faltar tradução, aparece o português, e a tela não quebra.
+- **Onde fica a escolha:** num cookie. A rota `/language/{código}` grava o cookie e volta para a mesma página.
+- **Por que `ToBrl()`:** o formato de moeda comum (`ToString("C")`) seguiria o idioma, e R$ 39,90 viraria $39.90 em inglês. A loja vende em reais, então o preço usa sempre o formato brasileiro.
+- **O que não é traduzido:** o que a loja cadastra ou o sistema grava, como nome e descrição de produto, nome de cliente e o histórico da auditoria.
+- **Páginas legais:** têm texto completo nos três idiomas, dentro do próprio arquivo. As versões em espanhol e inglês avisam que, em caso de dúvida, vale o português.
+
+**Para acrescentar um texto novo:** escreva `@L["Texto em português"]` na tela e adicione a tradução nos dois arquivos `.resx`. Os testes de `LocalizationTests` falham se a tradução faltar.
+
+## 11. O que ainda vai mudar
+
+- **Pagamento e frete reais:** antes de integrar, faltam estorno atualizando o pedido, chave contra cobrança dupla, CPF e dados do destinatário.
+- **Serviço de e-mail:** para confirmar pedidos e recuperar senha.

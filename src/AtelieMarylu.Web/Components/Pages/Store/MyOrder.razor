@@ -10,40 +10,40 @@
 @inject IWebHostEnvironment Environment
 @inject ILogger<MyOrder> Logger
 
-<PageTitle>Pedido @Code · Ateliê Marylu</PageTitle>
+<PageTitle>@L["Pedido {0} · Ateliê Marylu", Code]</PageTitle>
 
 @if (loaded && order is null)
 {
-    <h1>Pedido não encontrado</h1>
-    <a href="meus-pedidos">Voltar para meus pedidos</a>
+    <h1>@L["Pedido não encontrado"]</h1>
+    <a href="meus-pedidos">@L["Voltar para meus pedidos"]</a>
 }
 else if (order is not null)
 {
     @if (New == 1 && order.Status == OrderStatus.AwaitingPayment)
     {
         <div class="alert alert-success">
-            <strong>Pedido recebido!</strong> Agora é só pagar para a gente começar a preparar sua encomenda.
+            <strong>@L["Pedido recebido!"]</strong> @L["Agora é só pagar para a gente começar a preparar sua encomenda."]
         </div>
     }
 
-    <h1>Pedido @order.Code</h1>
+    <h1>@L["Pedido {0}", order.Code]</h1>
     <p>
         <OrderStatusBadge Status="order.Status" />
-        <span class="text-secondary ms-2">feito em @order.CreatedAt.FormatBrasilia()</span>
+        <span class="text-secondary ms-2">@L["feito em {0}", order.CreatedAt.FormatBrasilia()]</span>
     </p>
 
     <Notice Message="@message" IsError="@isError" />
 
     @if (order.Status == OrderStatus.Paid)
     {
-        <div class="alert alert-success">Pagamento confirmado! Vamos preparar seu pedido e avisar quando ele for enviado.</div>
+        <div class="alert alert-success">@L["Pagamento confirmado! Vamos preparar seu pedido e avisar quando ele for enviado."]</div>
     }
 
     @if (order.Status == OrderStatus.AwaitingPayment)
     {
         <section class="panel-box mb-3">
-            <h2 class="h5">Pagamento</h2>
-            <p class="small">Pague até <strong>@order.PayBy.FormatBrasilia()</strong>. Depois disso o pedido é cancelado automaticamente.</p>
+            <h2 class="h5">@L["Pagamento"]</h2>
+            <p class="small">@L["Pague até"] <strong>@order.PayBy.FormatBrasilia()</strong>@L[". Depois disso o pedido é cancelado automaticamente."]</p>
 
             @if (PendingPayment is { } paymentEntry)
             {
@@ -53,29 +53,29 @@ else if (order is not null)
                 }
                 else if (paymentEntry.PaymentUrl is not null)
                 {
-                    <a class="btn btn-primary" href="@paymentEntry.PaymentUrl" target="_blank" rel="noopener">Pagar com cartão (@paymentEntry.Amount.ToString("C"))</a>
+                    <a class="btn btn-primary" href="@paymentEntry.PaymentUrl" target="_blank" rel="noopener">@L["Pagar com cartão ({0})", paymentEntry.Amount.ToBrl()]</a>
                 }
                 else
                 {
-                    <p>Pagamento com cartão iniciado (@paymentEntry.Amount.ToString("C")). Assim que o provedor confirmar, esta página atualiza sozinha.</p>
+                    <p>@L["Pagamento com cartão iniciado ({0}). Assim que o provedor confirmar, esta página atualiza sozinha.", paymentEntry.Amount.ToBrl()]</p>
                 }
             }
             else
             {
-                <p>Escolha como pagar:</p>
+                <p>@L["Escolha como pagar:"]</p>
             }
 
             <div class="d-flex gap-2 flex-wrap mt-3">
                 @if (PendingPayment?.Method != PaymentMethod.Pix)
                 {
                     <button class="btn btn-outline-primary btn-sm" @onclick="() => NewPaymentAsync(PaymentMethod.Pix)" disabled="@processing">
-                        Pagar com PIX (@order.AmountFor(PaymentMethod.Pix).ToString("C"))
+                        @L["Pagar com PIX ({0})", order.AmountFor(PaymentMethod.Pix).ToBrl()]
                     </button>
                 }
                 @if (PendingPayment?.Method != PaymentMethod.CreditCard)
                 {
                     <button class="btn btn-outline-primary btn-sm" @onclick="() => NewPaymentAsync(PaymentMethod.CreditCard)" disabled="@processing">
-                        Pagar com cartão (@order.AmountFor(PaymentMethod.CreditCard).ToString("C"))
+                        @L["Pagar com cartão ({0})", order.AmountFor(PaymentMethod.CreditCard).ToBrl()]
                     </button>
                 }
             </div>
@@ -83,16 +83,16 @@ else if (order is not null)
             @if (Environment.IsDevelopment() && PendingPayment is { Provider: SimulatedPaymentGateway.ProviderName } simulated)
             {
                 <div class="alert alert-warning mt-3 mb-0">
-                    <strong>Ambiente de desenvolvimento:</strong> o pagamento é simulado.
-                    <button class="btn btn-sm btn-warning ms-2" @onclick="() => SimulateApprovalAsync(simulated)" disabled="@processing">Simular pagamento aprovado</button>
+                    <strong>@L["Ambiente de desenvolvimento:"]</strong> @L["o pagamento é simulado."]
+                    <button class="btn btn-sm btn-warning ms-2" @onclick="() => SimulateApprovalAsync(simulated)" disabled="@processing">@L["Simular pagamento aprovado"]</button>
                 </div>
             }
         </section>
     }
 
     <OrderSummary Order="order" />
-    <p class="small">Dúvidas sobre o pedido? Fale com a gente pelo WhatsApp ou Instagram informando o código <strong>@order.Code</strong>.</p>
-    <a href="meus-pedidos">← Voltar para meus pedidos</a>
+    <p class="small">@L["Dúvidas sobre o pedido? Fale com a gente pelo WhatsApp ou Instagram informando o código"] <strong>@order.Code</strong>.</p>
+    <a href="meus-pedidos">@L["← Voltar para meus pedidos"]</a>
 }
 
 @code {
@@ -156,7 +156,7 @@ else if (order is not null)
         }
         catch (OrderRuleException ex)
         {
-            (message, isError) = (ex.Message, true);
+            (message, isError) = (L[ex.Template, ex.Arguments], true);
         }
         catch (OperationCanceledException)
         {
@@ -166,7 +166,7 @@ else if (order is not null)
         {
             // Registra o Id interno, não o código digitado na URL (evita "log injection")
             Logger.LogError(ex, "Falha na ação do pedido {PedidoId}", order?.Id);
-            (message, isError) = ("Não foi possível concluir. Tente novamente.", true);
+            (message, isError) = (L["Não foi possível concluir. Tente novamente."], true);
         }
         finally
         {

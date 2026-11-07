@@ -6,14 +6,14 @@
     var store = Options.Value;
     var pixPrice = Price - PixDiscountCalculator.Calculate(Price, store.PixDiscountPercent);
 }
-<span class="price @(Large ? "fs-3" : "")">@Price.ToString("C")</span>
+<span class="price @(Large ? "fs-3" : "")">@Price.ToBrl()</span>
 @if (store.PixDiscountPercent > 0)
 {
-    <span class="price-extra d-block"><strong>@pixPrice.ToString("C")</strong> no PIX (@store.PixDiscountPercent.ToString("0.#")% off)</span>
+    <span class="price-extra d-block"><strong>@pixPrice.ToBrl()</strong> @L["no PIX ({0}% off)", store.PixDiscountPercent.ToString("0.#")]</span>
 }
 @if (store.InterestFreeInstallments > 1)
 {
-    <span class="price-extra d-block text-secondary">ou @(store.InterestFreeInstallments)x de @((Price / store.InterestFreeInstallments).ToString("C")) sem juros</span>
+    <span class="price-extra d-block text-secondary">@L["ou {0}x de {1} sem juros", store.InterestFreeInstallments, (Price / store.InterestFreeInstallments).ToBrl()]</span>
 }
 
 @code {

@@ -1,3 +1,4 @@
+using AtelieMarylu.Domain.Payments;
 using AtelieMarylu.Domain.Auditing;
 using AtelieMarylu.Domain.Catalog;
 using AtelieMarylu.Infrastructure.Data;
@@ -104,7 +105,7 @@ public class ProductService(IDbContextFactory<ApplicationDbContext> dbFactory, A
             stockAfter = await AdjustStockAsync(db, product.Id, data.Stock - data.StockWhenOpened, ct);
 
         await audit.RecordAsync(db, id is null ? AuditActions.ProductCreated : AuditActions.ProductEdited,
-            AuditEntities.Product, product.Id, $"{product.Name} · {product.Price:C} · estoque {stockBefore}→{stockAfter}");
+            AuditEntities.Product, product.Id, $"{product.Name} · {product.Price.ToBrl()} · estoque {stockBefore}→{stockAfter}");
         await SaveChangesCheckedAsync(db, ct);
         await transaction.CommitAsync(ct);
 
