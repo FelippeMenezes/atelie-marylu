@@ -252,7 +252,12 @@ else if (order is not null)
         {
             (message, isError) = (ex.Message, true);
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
+        {
+            Logger.LogError(ex, "Falha na ação do pedido {PedidoId}", Id);
+            (message, isError) = ("Não foi possível concluir. Tente novamente.", true);
+        }
+        catch (OperationCanceledException ex)
         {
             Logger.LogError(ex, "Falha na ação do pedido {PedidoId}", Id);
             (message, isError) = ("Não foi possível concluir. Tente novamente.", true);
