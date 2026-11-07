@@ -182,7 +182,7 @@
         {
             isError = ex.Message;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is InvalidOperationException or System.IO.IOException or TaskCanceledException)
         {
             Logger.LogError(ex, "Falha ao criar pedido pelo painel");
             isError = "Não foi possível criar o pedido.";
