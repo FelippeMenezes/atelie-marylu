@@ -1,5 +1,5 @@
-using AtelieMarylu.Domain.Frete;
-using AtelieMarylu.Domain.Pagamentos;
+using AtelieMarylu.Domain.Shipping;
+using AtelieMarylu.Domain.Payments;
 using AtelieMarylu.Infrastructure.Data;
 using AtelieMarylu.Infrastructure.Integrations;
 using Microsoft.AspNetCore.DataProtection;
@@ -27,14 +27,14 @@ public static class DependencyInjection
             .SetApplicationName("AtelieMarylu")
             .PersistKeysToDbContext<ApplicationDbContext>();
 
-        services.Configure<TurnstileOptions>(configuration.GetSection(TurnstileOptions.Secao));
+        services.Configure<TurnstileOptions>(configuration.GetSection(TurnstileOptions.SectionName));
 
         // Integrações externas: trocar estas duas linhas pelas implementações reais
         // (Melhor Envio e Mercado Pago) não exige mudar nenhuma tela.
-        services.AddSingleton<ICalculadoraFrete, FreteSimulado>();
-        services.AddSingleton<IGatewayPagamento, PagamentoSimulado>();
+        services.AddSingleton<IShippingCalculator, SimulatedShippingCalculator>();
+        services.AddSingleton<IPaymentGateway, SimulatedPaymentGateway>();
 
-        services.AddHttpClient<ConsultaCep>(http =>
+        services.AddHttpClient<PostalCodeLookup>(http =>
         {
             http.BaseAddress = new Uri("https://viacep.com.br/");
             http.Timeout = TimeSpan.FromSeconds(5);

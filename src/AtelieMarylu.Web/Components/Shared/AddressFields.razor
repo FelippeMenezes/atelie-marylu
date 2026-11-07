@@ -1,0 +1,69 @@
+@* Campos de endereço; precisa estar dentro de um EditForm cujo modelo seja o AddressForm.
+   Ao digitar o CEP, rua/bairro/cidade/UF são preenchidos pelo ViaCEP. *@
+@using AtelieMarylu.Infrastructure.Integrations
+@inject PostalCodeLookup PostalCodeLookup
+
+<div class="row g-2">
+    <div class="col-sm-4">
+        <label class="form-label" for="cep">CEP</label>
+        <InputText id="cep" class="form-control" @bind-Value="Address.PostalCode" @bind-Value:after="PostalCodeChanged" autocomplete="postal-code" inputmode="numeric" placeholder="00000-000" />
+        <ValidationMessage For="() => Address.PostalCode" />
+        @if (searching)
+        {
+            <div class="small text-secondary">Buscando endereço...</div>
+        }
+    </div>
+    <div class="col-sm-8">
+        <label class="form-label" for="logradouro">Rua</label>
+        <InputText id="logradouro" class="form-control" @bind-Value="Address.Street" autocomplete="address-line1" />
+        <ValidationMessage For="() => Address.Street" />
+    </div>
+    <div class="col-sm-3">
+        <label class="form-label" for="numero">Número</label>
+        <InputText id="numero" class="form-control" @bind-Value="Address.Number" @ref="numberField" />
+        <ValidationMessage For="() => Address.Number" />
+    </div>
+    <div class="col-sm-9">
+        <label class="form-label" for="complemento">Complemento</label>
+        <InputText id="complemento" class="form-control" @bind-Value="Address.Complement" autocomplete="address-line2" />
+    </div>
+    <div class="col-sm-5">
+        <label class="form-label" for="bairro">Bairro</label>
+        <InputText id="bairro" class="form-control" @bind-Value="Address.District" />
+        <ValidationMessage For="() => Address.District" />
+    </div>
+    <div class="col-sm-5">
+        <label class="form-label" for="cidade">Cidade</label>
+        <InputText id="cidade" class="form-control" @bind-Value="Address.City" autocomplete="address-level2" />
+        <ValidationMessage For="() => Address.City" />
+    </div>
+    <div class="col-sm-2">
+        <label class="form-label" for="uf">UF</label>
+        <InputText id="uf" class="form-control" maxlength="2" @bind-Value="Address.State" autocomplete="address-level1" />
+        <ValidationMessage For="() => Address.State" />
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public AddressForm Address { get; set; } = default!;
+    [Parameter] public EventCallback OnPostalCodeChanged { get; set; }
+
+    private bool searching;
+    private InputText? numberField;
+
+    private async Task PostalCodeChanged()
+    {
+        await OnPostalCodeChanged.InvokeAsync();
+        searching = true;
+        var found = await PostalCodeLookup.FindAsync(Address.PostalCode);
+        searching = false;
+        if (found is null) return;
+
+        Address.Street = found.Street;
+        Address.District = found.District;
+        Address.City = found.City;
+        Address.State = found.State;
+        if (numberField?.Element is { } number)
+            await number.FocusAsync();
+    }
+}

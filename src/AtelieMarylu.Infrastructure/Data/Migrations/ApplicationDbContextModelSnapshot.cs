@@ -22,7 +22,7 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Auditoria.RegistroAuditoria", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Auditing.AuditEntry", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -30,46 +30,46 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("Acao")
+                    b.Property<string>("Action")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)");
 
-                    b.Property<string>("Autor")
+                    b.Property<string>("Author")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<string>("Detalhes")
+                    b.Property<string>("Details")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<string>("Entidade")
+                    b.Property<string>("Entity")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)");
 
-                    b.Property<string>("EntidadeId")
+                    b.Property<string>("EntityId")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)");
 
-                    b.Property<DateTime>("Quando")
+                    b.Property<DateTime>("OccurredAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("UsuarioId")
+                    b.Property<string>("UserId")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Quando");
+                    b.HasIndex("OccurredAt");
 
-                    b.HasIndex("Entidade", "EntidadeId");
+                    b.HasIndex("Entity", "EntityId");
 
-                    b.ToTable("Auditoria", (string)null);
+                    b.ToTable("AuditEntries", (string)null);
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Catalogo.Produto", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Catalog.Product", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -77,53 +77,53 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("AlturaCm")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Ativo")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("ComprimentoCm")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CriadoEm")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Descricao")
+                    b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
-                    b.Property<int>("Estoque")
+                    b.Property<int>("HeightCm")
                         .HasColumnType("integer");
 
-                    b.Property<int>("LarguraCm")
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("LengthCm")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Nome")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
-                    b.Property<int>("PesoGramas")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("PrazoProducaoDias")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("Preco")
+                    b.Property<decimal>("Price")
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
 
+                    b.Property<int?>("ProductionDays")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Stock")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WeightGrams")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WidthCm")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.ToTable("Produtos", t =>
+                    b.ToTable("Products", t =>
                         {
-                            t.HasCheckConstraint("CK_Produtos_Estoque", "\"Estoque\" >= 0");
+                            t.HasCheckConstraint("CK_Products_Stock", "\"Stock\" >= 0");
                         });
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Catalogo.ProdutoImagem", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Catalog.ProductImage", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -131,30 +131,30 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("Ordem")
+                    b.Property<int>("ProductId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("ProdutoId")
+                    b.Property<int>("SortOrder")
                         .HasColumnType("integer");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
 
                     b.Property<string>("Url")
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
 
-                    b.Property<string>("UrlMiniatura")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("ProdutoId");
+                    b.HasIndex("ProductId");
 
-                    b.ToTable("ProdutoImagens");
+                    b.ToTable("ProductImages");
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Pagamentos.Pagamento", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Orders.Order", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -162,157 +162,66 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("AtualizadoEm")
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("CancelledAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("IdExterno")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Metodo")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<int>("PedidoId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("PixCopiaECola")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Provedor")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("UrlPagamento")
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("Valor")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PedidoId");
-
-                    b.HasIndex("Provedor", "IdExterno")
-                        .IsUnique();
-
-                    b.ToTable("Pagamentos");
-                });
-
-            modelBuilder.Entity("AtelieMarylu.Domain.Pedidos.ItemPedido", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("NomeProduto")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<int?>("PedidoId")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("PrecoUnitario")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)");
-
-                    b.Property<int>("ProdutoId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Quantidade")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PedidoId");
-
-                    b.HasIndex("ProdutoId");
-
-                    b.ToTable("ItensPedido", (string)null);
-                });
-
-            modelBuilder.Entity("AtelieMarylu.Domain.Pedidos.Pedido", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("CanceladoEm")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ClienteId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Codigo")
+                    b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(12)
                         .HasColumnType("character varying(12)");
 
-                    b.Property<string>("CodigoRastreio")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CriadoEm")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("CriadoPor")
+                    b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
-                    b.Property<string>("FreteCodigo")
+                    b.Property<string>("CustomerId")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("FreteNome")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int?>("FretePrazoDias")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("FreteValor")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)");
-
-                    b.Property<string>("MotivoCancelamento")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("Observacao")
+                    b.Property<string>("Notes")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<DateTime>("PagarAte")
+                    b.Property<DateTime?>("PaidAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("PagoEm")
+                    b.Property<DateTime>("PayBy")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("PercentualDescontoPix")
+                    b.Property<decimal>("PixDiscountPercent")
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
+
+                    b.Property<string>("ShippingCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("ShippingCost")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<int?>("ShippingDays")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ShippingName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
-                    b.Property<uint>("Versao")
+                    b.Property<string>("TrackingCode")
+                        .HasColumnType("text");
+
+                    b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
@@ -320,14 +229,105 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ClienteId");
-
-                    b.HasIndex("Codigo")
+                    b.HasIndex("Code")
                         .IsUnique();
 
-                    b.HasIndex("Status", "PagarAte");
+                    b.HasIndex("CustomerId");
 
-                    b.ToTable("Pedidos");
+                    b.HasIndex("Status", "PayBy");
+
+                    b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("AtelieMarylu.Domain.Orders.OrderItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("OrderItems", (string)null);
+                });
+
+            modelBuilder.Entity("AtelieMarylu.Domain.Payments.Payment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExternalId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PaymentUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PixCopyPaste")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("Provider", "ExternalId")
+                        .IsUnique();
+
+                    b.ToTable("Payments");
                 });
 
             modelBuilder.Entity("AtelieMarylu.Infrastructure.Data.ApplicationUser", b =>
@@ -342,11 +342,7 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
-                    b.Property<string>("Cpf")
-                        .HasMaxLength(11)
-                        .HasColumnType("character varying(11)");
-
-                    b.Property<DateTime>("CriadoEm")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
@@ -356,16 +352,19 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("NomeCompleto")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -388,8 +387,9 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
-                    b.Property<bool>("TrocarSenhaObrigatoria")
-                        .HasColumnType("boolean");
+                    b.Property<string>("TaxId")
+                        .HasMaxLength(11)
+                        .HasColumnType("character varying(11)");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean");
@@ -410,7 +410,7 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Infrastructure.Data.NotificacaoProcessada", b =>
+            modelBuilder.Entity("AtelieMarylu.Infrastructure.Data.ProcessedNotification", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -418,25 +418,25 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("IdEvento")
+                    b.Property<string>("EventId")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
-                    b.Property<string>("Provedor")
+                    b.Property<string>("Provider")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
-                    b.Property<DateTime>("RecebidaEm")
+                    b.Property<DateTime>("ReceivedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Provedor", "IdEvento")
+                    b.HasIndex("Provider", "EventId")
                         .IsUnique();
 
-                    b.ToTable("NotificacoesProcessadas");
+                    b.ToTable("ProcessedNotifications");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
@@ -594,94 +594,94 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Catalogo.ProdutoImagem", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Catalog.ProductImage", b =>
                 {
-                    b.HasOne("AtelieMarylu.Domain.Catalogo.Produto", null)
-                        .WithMany("Imagens")
-                        .HasForeignKey("ProdutoId")
+                    b.HasOne("AtelieMarylu.Domain.Catalog.Product", null)
+                        .WithMany("Images")
+                        .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Pagamentos.Pagamento", b =>
-                {
-                    b.HasOne("AtelieMarylu.Domain.Pedidos.Pedido", null)
-                        .WithMany("Pagamentos")
-                        .HasForeignKey("PedidoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("AtelieMarylu.Domain.Pedidos.ItemPedido", b =>
-                {
-                    b.HasOne("AtelieMarylu.Domain.Pedidos.Pedido", null)
-                        .WithMany("Itens")
-                        .HasForeignKey("PedidoId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("AtelieMarylu.Domain.Catalogo.Produto", null)
-                        .WithMany()
-                        .HasForeignKey("ProdutoId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("AtelieMarylu.Domain.Pedidos.Pedido", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Orders.Order", b =>
                 {
                     b.HasOne("AtelieMarylu.Infrastructure.Data.ApplicationUser", null)
                         .WithMany()
-                        .HasForeignKey("ClienteId")
+                        .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.OwnsOne("AtelieMarylu.Domain.Pedidos.EnderecoEntrega", "Endereco", b1 =>
+                    b.OwnsOne("AtelieMarylu.Domain.Orders.ShippingAddress", "Address", b1 =>
                         {
-                            b1.Property<int>("PedidoId")
+                            b1.Property<int>("OrderId")
                                 .HasColumnType("integer");
 
-                            b1.Property<string>("Bairro")
+                            b1.Property<string>("City")
                                 .IsRequired()
                                 .HasMaxLength(80)
                                 .HasColumnType("character varying(80)");
 
-                            b1.Property<string>("Cep")
-                                .IsRequired()
-                                .HasMaxLength(8)
-                                .HasColumnType("character varying(8)");
+                            b1.Property<string>("Complement")
+                                .HasMaxLength(80)
+                                .HasColumnType("character varying(80)");
 
-                            b1.Property<string>("Cidade")
+                            b1.Property<string>("District")
                                 .IsRequired()
                                 .HasMaxLength(80)
                                 .HasColumnType("character varying(80)");
 
-                            b1.Property<string>("Complemento")
-                                .HasMaxLength(80)
-                                .HasColumnType("character varying(80)");
-
-                            b1.Property<string>("Logradouro")
-                                .IsRequired()
-                                .HasMaxLength(150)
-                                .HasColumnType("character varying(150)");
-
-                            b1.Property<string>("Numero")
+                            b1.Property<string>("Number")
                                 .IsRequired()
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)");
 
-                            b1.Property<string>("Uf")
+                            b1.Property<string>("PostalCode")
+                                .IsRequired()
+                                .HasMaxLength(8)
+                                .HasColumnType("character varying(8)");
+
+                            b1.Property<string>("State")
                                 .IsRequired()
                                 .HasMaxLength(2)
                                 .HasColumnType("character varying(2)");
 
-                            b1.HasKey("PedidoId");
+                            b1.Property<string>("Street")
+                                .IsRequired()
+                                .HasMaxLength(150)
+                                .HasColumnType("character varying(150)");
 
-                            b1.ToTable("Pedidos");
+                            b1.HasKey("OrderId");
+
+                            b1.ToTable("Orders");
 
                             b1.WithOwner()
-                                .HasForeignKey("PedidoId");
+                                .HasForeignKey("OrderId");
                         });
 
-                    b.Navigation("Endereco")
+                    b.Navigation("Address")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AtelieMarylu.Domain.Orders.OrderItem", b =>
+                {
+                    b.HasOne("AtelieMarylu.Domain.Orders.Order", null)
+                        .WithMany("Items")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("AtelieMarylu.Domain.Catalog.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AtelieMarylu.Domain.Payments.Payment", b =>
+                {
+                    b.HasOne("AtelieMarylu.Domain.Orders.Order", null)
+                        .WithMany("Payments")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
@@ -736,16 +736,16 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Catalogo.Produto", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Catalog.Product", b =>
                 {
-                    b.Navigation("Imagens");
+                    b.Navigation("Images");
                 });
 
-            modelBuilder.Entity("AtelieMarylu.Domain.Pedidos.Pedido", b =>
+            modelBuilder.Entity("AtelieMarylu.Domain.Orders.Order", b =>
                 {
-                    b.Navigation("Itens");
+                    b.Navigation("Items");
 
-                    b.Navigation("Pagamentos");
+                    b.Navigation("Payments");
                 });
 #pragma warning restore 612, 618
         }

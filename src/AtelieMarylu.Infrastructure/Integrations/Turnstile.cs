@@ -6,26 +6,26 @@ namespace AtelieMarylu.Infrastructure.Integrations;
 
 // Verificação anti-robô do Cloudflare Turnstile (gratuita e sem "clique nos semáforos").
 // Protege login e cadastro contra tentativas automatizadas. Desligado se não houver chaves.
-public class Turnstile(HttpClient http, IOptions<TurnstileOptions> opcoes, ILogger<Turnstile> logger)
+public class Turnstile(HttpClient http, IOptions<TurnstileOptions> options, ILogger<Turnstile> logger)
 {
-    public const string CampoFormulario = "cf-turnstile-response";
+    public const string FormField = "cf-turnstile-response";
 
-    public bool Ativo => opcoes.Value.Ativo;
-    public string SiteKey => opcoes.Value.SiteKey;
+    public bool IsActive => options.Value.IsActive;
+    public string SiteKey => options.Value.SiteKey;
 
-    public async Task<bool> ValidarAsync(string? token, string? ip, CancellationToken ct = default)
+    public async Task<bool> ValidateAsync(string? token, string? ip, CancellationToken ct = default)
     {
-        if (!Ativo) return true;
+        if (!IsActive) return true;
         if (string.IsNullOrWhiteSpace(token)) return false;
 
         try
         {
-            var dados = new Dictionary<string, string> { ["secret"] = opcoes.Value.SecretKey, ["response"] = token };
-            if (ip is not null) dados["remoteip"] = ip;
-            using var conteudo = new FormUrlEncodedContent(dados);
-            using var resposta = await http.PostAsync("turnstile/v0/siteverify", conteudo, ct);
-            var resultado = await resposta.Content.ReadFromJsonAsync<Resultado>(ct);
-            return resultado?.Success == true;
+            var data = new Dictionary<string, string> { ["secret"] = options.Value.SecretKey, ["response"] = token };
+            if (ip is not null) data["remoteip"] = ip;
+            using var content = new FormUrlEncodedContent(data);
+            using var response = await http.PostAsync("turnstile/v0/siteverify", content, ct);
+            var result = await response.Content.ReadFromJsonAsync<TurnstileResult>(ct);
+            return result?.Success == true;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
@@ -35,5 +35,5 @@ public class Turnstile(HttpClient http, IOptions<TurnstileOptions> opcoes, ILogg
         }
     }
 
-    private sealed record Resultado(bool Success);
+    private sealed record TurnstileResult(bool Success);
 }

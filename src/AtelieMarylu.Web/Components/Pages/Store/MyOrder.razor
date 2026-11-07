@@ -1,0 +1,175 @@
+@page "/meus-pedidos/{Code}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@implements IDisposable
+@using System.Security.Claims
+@using AtelieMarylu.Infrastructure.Integrations
+@using AtelieMarylu.Web.Configuration
+@inject OrderService Orders
+@inject OrderEvents Events
+@inject IWebHostEnvironment Environment
+@inject ILogger<MyOrder> Logger
+
+<PageTitle>Pedido @Code · Ateliê Marylu</PageTitle>
+
+@if (loaded && order is null)
+{
+    <h1>Pedido não encontrado</h1>
+    <a href="meus-pedidos">Voltar para meus pedidos</a>
+}
+else if (order is not null)
+{
+    @if (New == 1 && order.Status == OrderStatus.AwaitingPayment)
+    {
+        <div class="alert alert-success">
+            <strong>Pedido recebido!</strong> Agora é só pagar para a gente começar a preparar sua encomenda.
+        </div>
+    }
+
+    <h1>Pedido @order.Code</h1>
+    <p>
+        <OrderStatusBadge Status="order.Status" />
+        <span class="text-secondary ms-2">feito em @order.CreatedAt.FormatBrasilia()</span>
+    </p>
+
+    <Notice Message="@message" IsError="@isError" />
+
+    @if (order.Status == OrderStatus.Paid)
+    {
+        <div class="alert alert-success">Pagamento confirmado! Vamos preparar seu pedido e avisar quando ele for enviado.</div>
+    }
+
+    @if (order.Status == OrderStatus.AwaitingPayment)
+    {
+        <section class="panel-box mb-3">
+            <h2 class="h5">Pagamento</h2>
+            <p class="small">Pague até <strong>@order.PayBy.FormatBrasilia()</strong>. Depois disso o pedido é cancelado automaticamente.</p>
+
+            @if (PendingPayment is { } paymentEntry)
+            {
+                @if (paymentEntry.Method == PaymentMethod.Pix && paymentEntry.PixCopyPaste is not null)
+                {
+                    <PixPayment Code="@paymentEntry.PixCopyPaste" Amount="paymentEntry.Amount" />
+                }
+                else if (paymentEntry.PaymentUrl is not null)
+                {
+                    <a class="btn btn-primary" href="@paymentEntry.PaymentUrl" target="_blank" rel="noopener">Pagar com cartão (@paymentEntry.Amount.ToString("C"))</a>
+                }
+                else
+                {
+                    <p>Pagamento com cartão iniciado (@paymentEntry.Amount.ToString("C")). Assim que o provedor confirmar, esta página atualiza sozinha.</p>
+                }
+            }
+            else
+            {
+                <p>Escolha como pagar:</p>
+            }
+
+            <div class="d-flex gap-2 flex-wrap mt-3">
+                @if (PendingPayment?.Method != PaymentMethod.Pix)
+                {
+                    <button class="btn btn-outline-primary btn-sm" @onclick="() => NewPaymentAsync(PaymentMethod.Pix)" disabled="@processing">
+                        Pagar com PIX (@order.AmountFor(PaymentMethod.Pix).ToString("C"))
+                    </button>
+                }
+                @if (PendingPayment?.Method != PaymentMethod.CreditCard)
+                {
+                    <button class="btn btn-outline-primary btn-sm" @onclick="() => NewPaymentAsync(PaymentMethod.CreditCard)" disabled="@processing">
+                        Pagar com cartão (@order.AmountFor(PaymentMethod.CreditCard).ToString("C"))
+                    </button>
+                }
+            </div>
+
+            @if (Environment.IsDevelopment() && PendingPayment is { Provider: SimulatedPaymentGateway.ProviderName } simulated)
+            {
+                <div class="alert alert-warning mt-3 mb-0">
+                    <strong>Ambiente de desenvolvimento:</strong> o pagamento é simulado.
+                    <button class="btn btn-sm btn-warning ms-2" @onclick="() => SimulateApprovalAsync(simulated)" disabled="@processing">Simular pagamento aprovado</button>
+                </div>
+            }
+        </section>
+    }
+
+    <OrderSummary Order="order" />
+    <p class="small">Dúvidas sobre o pedido? Fale com a gente pelo WhatsApp ou Instagram informando o código <strong>@order.Code</strong>.</p>
+    <a href="meus-pedidos">← Voltar para meus pedidos</a>
+}
+
+@code {
+    [Parameter] public string Code { get; set; } = "";
+    [SupplyParameterFromQuery] public int? New { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private Order? order;
+    private bool loaded, processing, isError;
+    private string? message;
+
+    private Payment? PendingPayment => order?.Payments
+        .Where(p => p.Status == PaymentStatus.Pending)
+        .OrderByDescending(p => p.CreatedAt)
+        .FirstOrDefault();
+
+    // Quando o webhook confirma o pagamento, a página se atualiza sem o cliente recarregar
+    protected override void OnInitialized() => Events.OrderChanged += OnOrderChanged;
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var customerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier);
+        order = await Orders.GetForCustomerAsync(Code, customerId);
+        loaded = true;
+    }
+
+    private void OnOrderChanged(int orderId)
+    {
+        if (orderId != order?.Id) return;
+        _ = InvokeAsync(async () =>
+        {
+            await LoadAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task NewPaymentAsync(PaymentMethod method)
+    {
+        if (order is null || processing) return;
+        await RunActionAsync(() => Orders.StartPaymentAsync(order.Id, method), null);
+    }
+
+    private async Task SimulateApprovalAsync(Payment payment)
+    {
+        if (!Environment.IsDevelopment() || payment.ExternalId is null) return;
+        // Mesmo caminho que o webhook do provedor real vai usar
+        await RunActionAsync(() => Orders.ProcessNotificationAsync(
+            new PaymentNotification($"{payment.ExternalId}:Approved", payment.ExternalId, PaymentStatus.Approved, payment.Amount)), null);
+    }
+
+    private async Task RunActionAsync(Func<Task> action, string? successMessage)
+    {
+        processing = true;
+        message = null;
+        try
+        {
+            await action();
+            if (successMessage is not null) (message, isError) = (successMessage, false);
+        }
+        catch (OrderRuleException ex)
+        {
+            (message, isError) = (ex.Message, true);
+        }
+        catch (Exception ex)
+        {
+            // Registra o Id interno, não o código digitado na URL (evita "log injection")
+            Logger.LogError(ex, "Falha na ação do pedido {PedidoId}", order?.Id);
+            (message, isError) = ("Não foi possível concluir. Tente novamente.", true);
+        }
+        finally
+        {
+            processing = false;
+        }
+        await LoadAsync();
+    }
+
+    public void Dispose() => Events.OrderChanged -= OnOrderChanged;
+}

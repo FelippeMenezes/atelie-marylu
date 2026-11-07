@@ -1,0 +1,40 @@
+@page "/painel/produtos"
+@attribute [Authorize(Policy = Permissions.ProductsManage)]
+@inject ProductService ProductService
+
+<PageTitle>Produtos · Painel</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="m-0">Produtos</h1>
+    <a href="painel/produtos/novo" class="btn btn-primary">Novo produto</a>
+</div>
+
+<div class="table-responsive panel-box p-0">
+    <table class="table align-middle m-0">
+        <thead>
+            <tr><th></th><th>Nome</th><th class="text-end">Preço</th><th class="text-end">Estoque</th><th>Situação</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var p in products)
+            {
+                <tr>
+                    <td style="width: 56px"><ProductPhoto Url="@p.Cover?.ThumbnailUrl" Name="@p.Name" Class="rounded-2" /></td>
+                    <td>@p.Name @if (p.ProductionDays is not null) { <span class="tag">sob encomenda</span> }</td>
+                    <td class="text-end">@p.Price.ToString("C")</td>
+                    <td class="text-end @(p.Stock == 0 ? "text-danger fw-bold" : "")">@p.Stock</td>
+                    <td>@(p.IsActive ? "Ativo" : "Inativo")</td>
+                    <td class="text-end"><a href="painel/produtos/@p.Id">Editar</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private List<Product> products = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = await ProductService.ListAllAsync();
+    }
+}

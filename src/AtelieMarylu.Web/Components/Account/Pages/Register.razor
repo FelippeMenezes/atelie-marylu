@@ -1,17 +1,14 @@
 @page "/Account/Register"
 
 @using System.ComponentModel.DataAnnotations
-@using System.Text
-@using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
-@using Microsoft.AspNetCore.WebUtilities
 @using AtelieMarylu.Infrastructure.Data
-@using AtelieMarylu.Domain.Seguranca
+@using AtelieMarylu.Web.Validation
+@using AtelieMarylu.Domain.Security
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
 @inject SignInManager<ApplicationUser> SignInManager
-@inject IEmailSender<ApplicationUser> EmailSender
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
@@ -24,21 +21,21 @@
 <div class="row">
     <div class="col-lg-6">
         <StatusMessage Message="@Message" />
-        <BotaoGoogle ReturnUrl="@ReturnUrl" Separador="ou cadastre-se com e-mail e senha" />
+        <GoogleButton ReturnUrl="@ReturnUrl" Divider="ou cadastre-se com e-mail e senha" />
         <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
             <DataAnnotationsValidator />
             <p>Falta pouco! Crie sua conta para finalizar a compra e acompanhar seus pedidos.</p>
             <hr />
             <ValidationSummary class="text-danger" role="alert" />
             <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.NomeCompleto" id="Input.NomeCompleto" class="form-control" autocomplete="name" aria-required="true" placeholder="Seu nome" />
-                <label for="Input.NomeCompleto">Nome completo</label>
-                <ValidationMessage For="() => Input.NomeCompleto" class="text-danger" />
+                <InputText @bind-Value="Input.FullName" id="Input.FullName" class="form-control" autocomplete="name" aria-required="true" placeholder="Seu nome" />
+                <label for="Input.FullName">Nome completo</label>
+                <ValidationMessage For="() => Input.FullName" class="text-danger" />
             </div>
             <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Telefone" id="Input.Telefone" class="form-control" autocomplete="tel" placeholder="(21) 99999-9999" />
-                <label for="Input.Telefone">Telefone / WhatsApp</label>
-                <ValidationMessage For="() => Input.Telefone" class="text-danger" />
+                <InputText @bind-Value="Input.Phone" id="Input.Phone" class="form-control" autocomplete="tel" placeholder="(21) 99999-9999" />
+                <label for="Input.Phone">Telefone / WhatsApp (opcional)</label>
+                <ValidationMessage For="() => Input.Phone" class="text-danger" />
             </div>
             <div class="form-floating mb-3">
                 <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
@@ -55,7 +52,7 @@
                 <label for="Input.ConfirmPassword">Confirme a senha</label>
                 <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
             </div>
-            @if (Turnstile.Ativo)
+            @if (Turnstile.IsActive)
             {
                 <div class="cf-turnstile mb-3" data-sitekey="@Turnstile.SiteKey"></div>
             }
@@ -87,15 +84,15 @@
 
     public async Task RegisterUser(EditContext editContext)
     {
-        if (!await Turnstile.ValidarAsync(HttpContext.Request.Form[AtelieMarylu.Infrastructure.Integrations.Turnstile.CampoFormulario], HttpContext.Connection.RemoteIpAddress?.ToString()))
+        if (!await Turnstile.ValidateAsync(HttpContext.Request.Form[AtelieMarylu.Infrastructure.Integrations.Turnstile.FormField], HttpContext.Connection.RemoteIpAddress?.ToString()))
         {
             identityErrors = [new IdentityError { Description = "Confirme que você não é um robô." }];
             return;
         }
 
         var user = CreateUser();
-        user.NomeCompleto = Input.NomeCompleto.Trim();
-        user.PhoneNumber = string.IsNullOrWhiteSpace(Input.Telefone) ? null : Input.Telefone.Trim();
+        user.FullName = Input.FullName.Trim();
+        user.PhoneNumber = string.IsNullOrWhiteSpace(Input.Phone) ? null : Input.Phone.Trim();
 
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
         var emailStore = GetEmailStore();
@@ -109,28 +106,10 @@
         }
 
         Logger.LogInformation("User created a new account with password.");
-        await UserManager.AddToRoleAsync(user, Papeis.Cliente);
+        await UserManager.AddToRoleAsync(user, AppRoles.Customer);
 
-        var userId = await UserManager.GetUserIdAsync(user);
-        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
-        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-        var callbackUrl = NavigationManager.GetUriWithQueryParameters(
-            NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
-            new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
-
-        await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
-
-        if (UserManager.Options.SignIn.RequireConfirmedAccount)
-        {
-            RedirectManager.RedirectTo(
-                "Account/RegisterConfirmation",
-                new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
-        }
-        else
-        {
-            await SignInManager.SignInAsync(user, isPersistent: false);
-            RedirectManager.RedirectTo(ReturnUrl);
-        }
+        await SignInManager.SignInAsync(user, isPersistent: false);
+        RedirectManager.RedirectTo(ReturnUrl);
     }
 
     private ApplicationUser CreateUser()
@@ -165,12 +144,12 @@
         [Required(ErrorMessage = "Informe o nome.")]
         [StringLength(150)]
         [Display(Name = "Nome completo")]
-        public string NomeCompleto { get; set; } = "";
+        public string FullName { get; set; } = "";
 
-        [Phone(ErrorMessage = "Telefone inválido.")]
+        [OptionalPhone(ErrorMessage = "Telefone inválido.")]
         [StringLength(20)]
         [Display(Name = "Telefone")]
-        public string? Telefone { get; set; }
+        public string? Phone { get; set; }
 
         [Required(ErrorMessage = "Informe o e-mail.")]
         [EmailAddress(ErrorMessage = "E-mail inválido.")]

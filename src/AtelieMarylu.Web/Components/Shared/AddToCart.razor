@@ -1,0 +1,32 @@
+@* "Ilha" interativa dentro da página de produto, que é estática *@
+@inject CartService Cart
+
+<div class="d-flex gap-3 align-items-center flex-wrap mb-2">
+    <QuantityPicker @bind-Value="quantity" Max="@Math.Min(Stock, AtelieMarylu.Domain.Carts.Cart.MaxQuantityPerItem)" />
+    <button class="btn btn-primary btn-lg" @onclick="Add" disabled="@(!RendererInfo.IsInteractive)">Adicionar ao carrinho</button>
+</div>
+
+@if (added)
+{
+    <div class="alert alert-success d-flex justify-content-between align-items-center flex-wrap gap-2" role="status">
+        <span>Adicionado ao carrinho!</span>
+        <span>
+            <a href="cart" class="btn btn-primary btn-sm">Ver carrinho</a>
+            <button type="button" class="btn btn-link btn-sm" @onclick="() => added = false">Continuar comprando</button>
+        </span>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public int ProductId { get; set; }
+    [Parameter, EditorRequired] public int Stock { get; set; }
+
+    private int quantity = 1;
+    private bool added;
+
+    private async Task Add()
+    {
+        await Cart.AddAsync(ProductId, Math.Clamp(quantity, 1, Stock));
+        added = true;
+    }
+}

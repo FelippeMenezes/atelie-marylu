@@ -1,0 +1,52 @@
+@* Itens, totais e entrega de um pedido. Usado na tela do cliente e no painel. *@
+@using AtelieMarylu.Web.Configuration
+<section class="panel-box mb-3">
+    <h2 class="h5">Itens</h2>
+    @foreach (var item in Order.Items)
+    {
+        <div class="d-flex justify-content-between py-1">
+            <span>@item.Quantity× @item.ProductName <span class="text-secondary small">(@item.UnitPrice.ToString("C") cada)</span></span>
+            <span>@item.Subtotal.ToString("C")</span>
+        </div>
+    }
+    <hr />
+    <div class="d-flex justify-content-between"><span>Subtotal</span><span>@Order.Subtotal.ToString("C")</span></div>
+    <div class="d-flex justify-content-between"><span>Frete (@Order.ShippingName)</span><span>@Order.ShippingCost.ToString("C")</span></div>
+    <div class="d-flex justify-content-between fs-5"><strong>Total</strong><strong>@Order.Total.ToString("C")</strong></div>
+    @if (Order.PixDiscount > 0)
+    {
+        <div class="d-flex justify-content-between small text-secondary">
+            <span>No PIX (@Order.PixDiscountPercent.ToString("0.#")% off nos produtos)</span>
+            <span>@Order.AmountFor(PaymentMethod.Pix).ToString("C")</span>
+        </div>
+    }
+</section>
+
+<section class="panel-box mb-3">
+    <h2 class="h5">Entrega</h2>
+    @{ var e = Order.Address; }
+    <p class="m-0">
+        @e.Street, @e.Number @(e.Complement is null ? "" : $"- {e.Complement}")<br />
+        @e.District · @e.City/@e.State · CEP @(e.PostalCode.Length == 8 ? $"{e.PostalCode[..5]}-{e.PostalCode[5..]}" : e.PostalCode)
+    </p>
+    @if (Order.ShippingDays is int days)
+    {
+        <p class="small text-secondary m-0">Prazo de entrega: até @days dias úteis após o envio.</p>
+    }
+    @if (Order.TrackingCode is not null)
+    {
+        <p class="mt-2 mb-0">Código de rastreio: <strong>@Order.TrackingCode</strong></p>
+    }
+    @if (Order.Notes is not null)
+    {
+        <p class="mt-2 mb-0">Observação: @Order.Notes</p>
+    }
+    @if (Order.CancellationReason is not null)
+    {
+        <p class="mt-2 mb-0">Motivo do cancelamento: @Order.CancellationReason</p>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public Order Order { get; set; } = default!;
+}

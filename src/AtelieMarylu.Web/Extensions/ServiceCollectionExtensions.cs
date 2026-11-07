@@ -1,9 +1,9 @@
 using System.Threading.RateLimiting;
-using AtelieMarylu.Domain.Seguranca;
+using AtelieMarylu.Domain.Security;
 using AtelieMarylu.Infrastructure.Data;
 using AtelieMarylu.Web.Components.Account;
-using AtelieMarylu.Web.Configuracao;
-using AtelieMarylu.Web.Seguranca;
+using AtelieMarylu.Web.Configuration;
+using AtelieMarylu.Web.Security;
 using AtelieMarylu.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -41,31 +41,31 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
         services.AddHttpContextAccessor();
         services.AddDatabaseDeveloperPageExceptionFilter();
-        services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>("banco");
+        services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>("database");
 
         return services;
     }
 
     public static IServiceCollection AddStoreAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
-        var autenticacao = services.AddAuthentication(options =>
+        var authentication = services.AddAuthentication(options =>
         {
             options.DefaultScheme = IdentityConstants.ApplicationScheme;
             options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
         });
-        autenticacao.AddIdentityCookies();
+        authentication.AddIdentityCookies();
 
         // Entrar com Google: só é ligado se tiver as chaves na configuração
-        var secaoGoogle = configuration.GetSection(LoginGoogleOptions.Secao);
-        services.Configure<LoginGoogleOptions>(secaoGoogle);
-        var loginGoogle = secaoGoogle.Get<LoginGoogleOptions>() ?? new();
-        if (loginGoogle.Ativo)
+        var googleSection = configuration.GetSection(GoogleLoginOptions.SectionName);
+        services.Configure<GoogleLoginOptions>(googleSection);
+        var googleLogin = googleSection.Get<GoogleLoginOptions>() ?? new();
+        if (googleLogin.IsActive)
         {
-            autenticacao.AddGoogle(options =>
+            authentication.AddGoogle(options =>
             {
-                options.ClientId = loginGoogle.ClientId;
-                options.ClientSecret = loginGoogle.ClientSecret;
-                // Usado para recusar e-mails que o Google não confirmou (veja LoginGoogle.razor)
+                options.ClientId = googleLogin.ClientId;
+                options.ClientSecret = googleLogin.ClientSecret;
+                // Usado para recusar e-mails que o Google não confirmou (veja GoogleLogin.razor)
                 options.ClaimActions.MapJsonKey("email_verified", "email_verified");
             });
         }
@@ -83,11 +83,10 @@ public static class ServiceCollectionExtensions
             })
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
-            .AddSignInManager()
-            .AddDefaultTokenProviders();
+            .AddSignInManager();
 
         // Substitui a fábrica padrão para incluir o claim de troca de senha obrigatória
-        services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, FabricaClaimsUsuario>();
+        services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppUserClaimsPrincipalFactory>();
 
         // Reavalia o login a cada minuto: ao remover o acesso de um funcionário, ele perde o painel em até 1 min
         services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.FromMinutes(1));
@@ -101,25 +100,23 @@ public static class ServiceCollectionExtensions
             options.SlidingExpiration = true;
         });
 
-        services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
-
         return services;
     }
 
-    // Cada permissão vira uma policy: passa quem é Admin ou tem o claim "permissao" correspondente
+    // Cada permissão vira uma policy: passa quem é Admin ou tem o claim "permission" correspondente
     // (direto no usuário ou herdado de um grupo).
     public static IServiceCollection AddStoreAuthorization(this IServiceCollection services)
     {
         services.AddAuthorization(options =>
         {
-            foreach (var permissao in Permissoes.Todas.Keys)
+            foreach (var permission in Permissions.All.Keys)
             {
-                options.AddPolicy(permissao, policy => policy.RequireAssertion(ctx =>
-                    ctx.User.IsInRole(Papeis.Admin) || ctx.User.HasClaim(Permissoes.TipoClaim, permissao)));
+                options.AddPolicy(permission, policy => policy.RequireAssertion(ctx =>
+                    ctx.User.IsInRole(AppRoles.Admin) || ctx.User.HasClaim(Permissions.ClaimType, permission)));
             }
-            options.AddPolicy(Permissoes.AcessarPainel, policy => policy.RequireAssertion(ctx =>
-                ctx.User.IsInRole(Papeis.Admin) || ctx.User.HasClaim(c => c.Type == Permissoes.TipoClaim)));
-            options.AddPolicy(Papeis.Admin, policy => policy.RequireRole(Papeis.Admin));
+            options.AddPolicy(Permissions.AccessAdmin, policy => policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole(AppRoles.Admin) || ctx.User.HasClaim(c => c.Type == Permissions.ClaimType)));
+            options.AddPolicy(AppRoles.Admin, policy => policy.RequireRole(AppRoles.Admin));
         });
 
         return services;
@@ -133,13 +130,13 @@ public static class ServiceCollectionExtensions
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
             {
-                var caminho = context.Request.Path;
-                var sensivel = HttpMethods.IsPost(context.Request.Method)
-                    && (caminho.StartsWithSegments("/Account") || caminho.StartsWithSegments("/api/webhooks"));
-                if (!sensivel)
-                    return RateLimitPartition.GetNoLimiter("livre");
+                var path = context.Request.Path;
+                var sensitive = HttpMethods.IsPost(context.Request.Method)
+                    && (path.StartsWithSegments("/Account") || path.StartsWithSegments("/api/webhooks"));
+                if (!sensitive)
+                    return RateLimitPartition.GetNoLimiter("unlimited");
 
-                var ip = context.Connection.RemoteIpAddress?.ToString() ?? "desconhecido";
+                var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                 return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = 10,
@@ -152,15 +149,15 @@ public static class ServiceCollectionExtensions
     }
 
     // Em produção o site roda atrás de um proxy (HTTPS termina nele). Só confiamos no cabeçalho
-    // X-Forwarded-For vindo das redes listadas em Proxy:RedesConfiaveis (ex.: "10.0.0.0/8");
+    // X-Forwarded-For vindo das redes listadas em Proxy:TrustedNetworks (ex.: "10.0.0.0/8");
     // sem isso, todo mundo pareceria ter o IP do proxy e o limite de tentativas valeria para a loja inteira.
     public static IServiceCollection AddReverseProxySupport(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-            foreach (var rede in configuration.GetSection("Proxy:RedesConfiaveis").Get<string[]>() ?? [])
-                options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(rede));
+            foreach (var network in configuration.GetSection("Proxy:TrustedNetworks").Get<string[]>() ?? [])
+                options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(network));
         });
 
         return services;
@@ -168,21 +165,21 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddStoreServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<LojaOptions>().Bind(configuration.GetSection(LojaOptions.Secao)).ValidateDataAnnotations().ValidateOnStart();
+        services.AddOptions<ShopOptions>().Bind(configuration.GetSection(ShopOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
 
         services.AddSingleton(TimeProvider.System);
-        services.AddSingleton<PedidoEventos>();
-        services.AddScoped<UsuarioAtual>();
-        services.AddScoped<AuditoriaService>();
-        services.AddScoped<CarrinhoService>();
-        services.AddScoped<PedidoService>();
-        services.AddScoped<ProdutoService>();
-        services.AddScoped<ClienteService>();
-        services.AddScoped<PainelService>();
-        services.AddScoped<AcessoService>();
-        services.AddScoped<ImagemService>();
-        services.AddScoped<DadosPessoaisService>();
-        services.AddHostedService<ExpiracaoPedidosService>();
+        services.AddSingleton<OrderEvents>();
+        services.AddScoped<CurrentUserService>();
+        services.AddScoped<AuditService>();
+        services.AddScoped<CartService>();
+        services.AddScoped<OrderService>();
+        services.AddScoped<ProductService>();
+        services.AddScoped<CustomerService>();
+        services.AddScoped<DashboardService>();
+        services.AddScoped<AccessService>();
+        services.AddScoped<ImageService>();
+        services.AddScoped<PersonalDataService>();
+        services.AddHostedService<OrderExpirationService>();
 
         return services;
     }

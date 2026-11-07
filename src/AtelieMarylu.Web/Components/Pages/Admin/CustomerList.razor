@@ -1,0 +1,57 @@
+@page "/painel/clientes"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Permissions.CustomersView)]
+@inject CustomerService CustomerService
+
+<PageTitle>Clientes · Painel</PageTitle>
+
+<h1>Clientes</h1>
+
+<input class="form-control mb-3" style="max-width: 320px" placeholder="Buscar por nome ou e-mail"
+       @bind="search" @bind:event="oninput" @bind:after="LoadAsync" />
+
+@if (customers is null)
+{
+    <p>Carregando...</p>
+}
+else if (customers.Count == 0)
+{
+    <p>Nenhum cliente encontrado.</p>
+}
+else
+{
+    <div class="table-responsive panel-box p-0">
+        <table class="table align-middle m-0">
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Cadastro</th><th class="text-end">Pedidos</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var c in customers)
+                {
+                    <tr>
+                        <td>@c.Name</td>
+                        <td>@c.Email</td>
+                        <td>@c.Phone</td>
+                        <td>@c.CreatedAt.FormatBrasilia("dd/MM/yyyy")</td>
+                        <td class="text-end">@c.Orders</td>
+                        <td class="text-end"><a href="painel/clientes/@c.Id">Ver</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<CustomerSummary>? customers;
+    private string? search;
+    private int lastSearch;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    // Com a busca a cada tecla, uma resposta antiga pode chegar depois da nova: só vale a última
+    private async Task LoadAsync()
+    {
+        var number = ++lastSearch;
+        var result = await CustomerService.ListAsync(search);
+        if (number == lastSearch) customers = result;
+    }
+}

@@ -1,0 +1,63 @@
+@* Simulação de frete antes do checkout (frete surpresa é a maior causa de abandono de carrinho) *@
+@using AtelieMarylu.Domain.Carts
+@using AtelieMarylu.Domain.Shipping
+@inject OrderService Orders
+@inject ILogger<ShippingCalculator> Logger
+
+<div class="panel-box">
+    <label class="form-label fw-bold" for="cep-frete">Calcular frete e prazo</label>
+    <div class="d-flex gap-2">
+        <input id="cep-frete" class="form-control" style="max-width: 160px" placeholder="00000-000" inputmode="numeric" autocomplete="postal-code"
+               @bind="postalCode" @onkeydown="OnKeyDown" />
+        <button type="button" class="btn btn-outline-primary" @onclick="Calculate" disabled="@(calculando || !RendererInfo.IsInteractive)">Calcular</button>
+    </div>
+    @if (isError is not null)
+    {
+        <div class="text-danger small mt-2">@isError</div>
+    }
+    @if (options is not null)
+    {
+        <ul class="list-unstyled small mt-2 mb-0">
+            @foreach (var o in options)
+            {
+                <li>@o.Name: <strong>@(o.Amount == 0 ? "Grátis" : o.Amount.ToString("C"))</strong>@(o.DeliveryDays is int d ? $" · até {d} dias úteis" : "")</li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    // Um produto (página de produto) ou os itens do carrinho
+    [Parameter] public int? ProductId { get; set; }
+    [Parameter] public IReadOnlyList<CartItem>? Items { get; set; }
+
+    private string? postalCode, isError;
+    private IReadOnlyList<ShippingOption>? options;
+    private bool calculando;
+
+    private Task OnKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? Calculate() : Task.CompletedTask;
+
+    private async Task Calculate()
+    {
+        isError = null;
+        options = null;
+        if (PostalCode.Normalize(postalCode) is not { } normalized) { isError = "Digite um CEP válido."; return; }
+        var items = Items ?? (ProductId is int id ? [new CartItem(id, 1)] : []);
+        if (items.Count == 0) return;
+
+        calculando = true;
+        try
+        {
+            options = await Orders.QuoteShippingAsync(normalized, items);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Falha ao simular frete");
+            isError = "Não foi possível calcular agora. Tente de novo.";
+        }
+        finally
+        {
+            calculando = false;
+        }
+    }
+}

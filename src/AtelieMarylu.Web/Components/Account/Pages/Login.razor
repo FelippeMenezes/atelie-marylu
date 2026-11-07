@@ -19,7 +19,7 @@
     <div class="col-lg-6">
         <section>
             <StatusMessage Message="@errorMessage" />
-            <BotaoGoogle ReturnUrl="@ReturnUrl" Separador="ou entre com e-mail e senha" />
+            <GoogleButton ReturnUrl="@ReturnUrl" Divider="ou entre com e-mail e senha" />
             <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
                 <DataAnnotationsValidator />
                 <p>Entre com seu e-mail e senha. Ainda não tem conta? É rapidinho, veja o link abaixo.</p>
@@ -41,7 +41,7 @@
                         Manter conectado
                     </label>
                 </div>
-                @if (Turnstile.Ativo)
+                @if (Turnstile.IsActive)
                 {
                     <div class="cf-turnstile mb-3" data-sitekey="@Turnstile.SiteKey"></div>
                 }
@@ -89,7 +89,7 @@
 
     public async Task LoginUser()
     {
-        if (!await Turnstile.ValidarAsync(HttpContext.Request.Form[AtelieMarylu.Infrastructure.Integrations.Turnstile.CampoFormulario], HttpContext.Connection.RemoteIpAddress?.ToString()))
+        if (!await Turnstile.ValidateAsync(HttpContext.Request.Form[AtelieMarylu.Infrastructure.Integrations.Turnstile.FormField], HttpContext.Connection.RemoteIpAddress?.ToString()))
         {
             errorMessage = "Erro: confirme que você não é um robô.";
             return;
@@ -107,12 +107,6 @@
         {
             Logger.LogInformation("User logged in.");
             RedirectManager.RedirectTo(ReturnUrl);
-        }
-        else if (result.RequiresTwoFactor)
-        {
-            RedirectManager.RedirectTo(
-                "Account/LoginWith2fa",
-                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
         }
         else if (result.IsLockedOut)
         {

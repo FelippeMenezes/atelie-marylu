@@ -37,20 +37,20 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: "Host=postgres;Database=${POSTGRES_DB:-atelie_marylu};Username=${POSTGRES_USER:-atelie};Password=${POSTGRES_PASSWORD};GSS Encryption Mode=Disable"
-      Banco__AplicarMigrations: "true"
+      Database__ApplyMigrations: "true"
       AllowedHosts: ${DOMINIO}
       # O Caddy fica nesta sub-rede; só dele aceitamos X-Forwarded-For/Proto (IP real e HTTPS)
-      Proxy__RedesConfiaveis__0: 172.30.0.0/24
-      AdminInicial__Email: ${ADMIN_EMAIL:-}
-      AdminInicial__Senha: ${ADMIN_SENHA:-}
-      Loja__RazaoSocial: ${LOJA_RAZAO_SOCIAL:-}
-      Loja__Documento: ${LOJA_DOCUMENTO:-}
-      Loja__Endereco: ${LOJA_ENDERECO:-}
-      Loja__EmailContato: ${LOJA_EMAIL:-}
-      Loja__Telefone: ${LOJA_TELEFONE:-}
-      Loja__WhatsApp: ${LOJA_WHATSAPP:-}
-      LoginGoogle__ClientId: ${GOOGLE_CLIENT_ID:-}
-      LoginGoogle__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      Proxy__TrustedNetworks__0: 172.30.0.0/24
+      InitialAdmin__Email: ${ADMIN_EMAIL:-}
+      InitialAdmin__Password: ${ADMIN_SENHA:-}
+      Store__LegalName: ${LOJA_RAZAO_SOCIAL:-}
+      Store__TaxDocument: ${LOJA_DOCUMENTO:-}
+      Store__Address: ${LOJA_ENDERECO:-}
+      Store__ContactEmail: ${LOJA_EMAIL:-}
+      Store__Phone: ${LOJA_TELEFONE:-}
+      Store__WhatsApp: ${LOJA_WHATSAPP:-}
+      GoogleLogin__ClientId: ${GOOGLE_CLIENT_ID:-}
+      GoogleLogin__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
       Turnstile__SiteKey: ${TURNSTILE_SITE_KEY:-}
       Turnstile__SecretKey: ${TURNSTILE_SECRET_KEY:-}
     volumes:

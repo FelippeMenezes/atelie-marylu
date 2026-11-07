@@ -1,0 +1,46 @@
+@inject NavigationManager NavigationManager
+
+@* Cabeçalho estático. O menu do celular abre com um checkbox + CSS (funciona sem JavaScript);
+   só o contador do carrinho é interativo, porque lê o carrinho guardado no navegador. *@
+<header class="top-bar">
+    <nav class="container d-flex align-items-center gap-3 flex-wrap" aria-label="Principal">
+        <a href="" class="brand">
+            <img src="img/logo-nav.png" alt="" width="40" height="41" />
+            <span>Ateliê Marylu</span>
+        </a>
+
+        <a href="cart" class="cart ms-auto d-lg-none" aria-label="Carrinho">
+            Carrinho <CartCounter @rendermode="InteractiveServer" />
+        </a>
+
+        <input type="checkbox" id="menu-aberto" class="menu-toggle" aria-label="Abrir menu" />
+        <label for="menu-aberto" class="menu-button d-lg-none" aria-hidden="true"><span></span></label>
+
+        <div class="links ms-lg-auto">
+            <a href="">Loja</a>
+
+            <AuthorizeView Policy="@Permissions.AccessAdmin">
+                <a href="painel">Painel</a>
+            </AuthorizeView>
+
+            <AuthorizeView>
+                <Authorized>
+                    <a href="meus-pedidos">Meus pedidos</a>
+                    <a href="Account/Manage">Minha conta</a>
+                    <form action="Account/Logout" method="post" class="d-inline">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="ReturnUrl" value="@NavigationManager.ToBaseRelativePath(NavigationManager.Uri)" />
+                        <button type="submit" class="btn btn-link p-0">Sair</button>
+                    </form>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="Account/Login">Entrar</a>
+                </NotAuthorized>
+            </AuthorizeView>
+
+            <a href="cart" class="cart d-none d-lg-inline">
+                Carrinho <CartCounter @rendermode="InteractiveServer" />
+            </a>
+        </div>
+    </nav>
+</header>

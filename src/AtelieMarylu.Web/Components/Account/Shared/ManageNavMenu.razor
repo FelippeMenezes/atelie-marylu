@@ -1,21 +1,15 @@
 @using Microsoft.Extensions.Options
-@using AtelieMarylu.Web.Configuracao
-@inject IOptions<LoginGoogleOptions> OpcoesGoogle
+@using AtelieMarylu.Web.Configuration
+@inject IOptions<GoogleLoginOptions> GoogleOptions
 
 <ul class="nav nav-pills flex-column">
     <li class="nav-item">
         <NavLink class="nav-link" href="Account/Manage" Match="NavLinkMatch.All">Profile</NavLink>
     </li>
     <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/Email">Email</NavLink>
-    </li>
-    <li class="nav-item">
         <NavLink class="nav-link" href="Account/Manage/ChangePassword">Password</NavLink>
     </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/TwoFactorAuthentication">Two-factor authentication</NavLink>
-    </li>
-    @if (OpcoesGoogle.Value.Ativo)
+    @if (GoogleOptions.Value.IsActive)
     {
         <li class="nav-item">
             <NavLink class="nav-link" href="Account/Manage/Google">Conta Google</NavLink>

@@ -1,0 +1,239 @@
+@page "/checkout"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@using System.Security.Claims
+@using AtelieMarylu.Domain.Shipping
+@using AtelieMarylu.Web.Configuration
+@using Microsoft.Extensions.Options
+@inject ProductService ProductService
+@inject CartService Cart
+@inject OrderService Orders
+@inject NavigationManager Navigation
+@inject IOptions<ShopOptions> Store
+@inject ILogger<Checkout> Logger
+
+<PageTitle>Finalizar compra · Ateliê Marylu</PageTitle>
+
+<h1>Finalizar compra</h1>
+
+@if (!ready)
+{
+    <div class="skeleton" style="height: 300px"></div>
+}
+else if (Cart.Current.IsEmpty)
+{
+    <p>Seu carrinho está vazio.</p>
+    <a href="" class="btn btn-primary">Ver produtos</a>
+}
+else
+{
+    <EditForm Model="address" OnValidSubmit="FinishAsync" FormName="checkout">
+        <DataAnnotationsValidator />
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <section class="panel-box mb-3">
+                    <h2 class="h4">1. Endereço de entrega</h2>
+                    <AddressFields Address="address" OnPostalCodeChanged="ClearShipping" />
+                </section>
+
+                <section class="panel-box mb-3">
+                    <h2 class="h4">2. Frete</h2>
+                    @if (shippingOptions is null)
+                    {
+                        <button type="button" class="btn btn-outline-primary" @onclick="CalculateShippingAsync" disabled="@processing">Calcular frete</button>
+                    }
+                    else
+                    {
+                        <InputRadioGroup @bind-Value="shippingCode">
+                            @foreach (var o in shippingOptions)
+                            {
+                                <div class="form-check">
+                                    <InputRadio class="form-check-input" id="@($"frete-{o.Code}")" Value="o.Code" />
+                                    <label class="form-check-label" for="@($"frete-{o.Code}")">
+                                        @o.Name: <strong>@(o.Amount == 0 ? "Grátis" : o.Amount.ToString("C"))</strong>
+                                        @if (o.DeliveryDays is int days) { <span class="text-secondary"> (até @days dias úteis)</span> }
+                                    </label>
+                                </div>
+                            }
+                        </InputRadioGroup>
+                    }
+                </section>
+
+                <section class="panel-box">
+                    <h2 class="h4">3. Pagamento</h2>
+                    <InputRadioGroup @bind-Value="method">
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" id="pg-pix" Value="PaymentMethod.Pix" />
+                            <label class="form-check-label" for="pg-pix">
+                                PIX @if (Store.Value.PixDiscountPercent > 0) { <span class="tag">@Store.Value.PixDiscountPercent.ToString("0.#")% off</span> }
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" id="pg-cartao" Value="PaymentMethod.CreditCard" />
+                            <label class="form-check-label" for="pg-cartao">Cartão de crédito (até @(Store.Value.InterestFreeInstallments)x sem juros)</label>
+                        </div>
+                    </InputRadioGroup>
+                    <p class="small text-secondary mt-2 mb-0">Os dados do cartão nunca passam pelo nosso site: o pagamento é feito no ambiente seguro do provedor.</p>
+                </section>
+            </div>
+
+            <div class="col-lg-5">
+                <section class="panel-box position-sticky" style="top: 80px">
+                    <h2 class="h4">Resumo do pedido</h2>
+                    @foreach (var item in Cart.Current.Items)
+                    {
+                        var p = products.GetValueOrDefault(item.ProductId);
+                        <div class="d-flex justify-content-between small py-1">
+                            <span>@item.Quantity× @(p?.Name ?? "Produto indisponível")</span>
+                            <span>@(((p?.Price ?? 0) * item.Quantity).ToString("C"))</span>
+                        </div>
+                    }
+                    <hr />
+                    <div class="d-flex justify-content-between"><span>Subtotal</span><span>@Subtotal.ToString("C")</span></div>
+                    @if (Discount > 0)
+                    {
+                        <div class="d-flex justify-content-between text-success"><span>Desconto PIX</span><span>− @Discount.ToString("C")</span></div>
+                    }
+                    <div class="d-flex justify-content-between"><span>Frete</span><span>@(SelectedShipping?.Amount.ToString("C") ?? "—")</span></div>
+                    <div class="d-flex justify-content-between fs-5 mt-2"><strong>Total</strong><strong>@Total.ToString("C")</strong></div>
+                    @if (method == PaymentMethod.CreditCard && Store.Value.InterestFreeInstallments > 1)
+                    {
+                        <div class="text-end small text-secondary">ou @(Store.Value.InterestFreeInstallments)x de @((Total / Store.Value.InterestFreeInstallments).ToString("C"))</div>
+                    }
+
+                    <p class="small text-secondary mt-3 mb-2">
+                        Após confirmar, você tem @DeadlineText para pagar. Depois disso o pedido é cancelado e as peças voltam para a loja.
+                    </p>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="aceite" @bind="acceptedTerms" />
+                        <label class="form-check-label small" for="aceite">
+                            Li e aceito os <a href="termos-de-uso" target="_blank">termos de uso</a> e a
+                            <a href="trocas-e-devolucoes" target="_blank">política de trocas</a>.
+                        </label>
+                    </div>
+
+                    <Notice Message="@isError" IsError="true" />
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@(processing || SelectedShipping is null || !acceptedTerms)">
+                        @(processing ? "Processando..." : "Confirmar pedido")
+                    </button>
+                    @if (SelectedShipping is null)
+                    {
+                        <p class="small text-secondary text-center mt-2 mb-0">Calcule o frete para continuar.</p>
+                    }
+                </section>
+            </div>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private AddressForm address = new();
+    private string? shippingCode;
+    private PaymentMethod method = PaymentMethod.Pix;
+    private Dictionary<int, Product> products = [];
+    private IReadOnlyList<ShippingOption>? shippingOptions;
+    private string? isError;
+    private bool processing, ready, acceptedTerms;
+    private string customerId = "";
+
+    private decimal Subtotal => Cart.Current.Items.Sum(i => (products.GetValueOrDefault(i.ProductId)?.Price ?? 0) * i.Quantity);
+    private decimal Discount => method == PaymentMethod.Pix
+        ? PixDiscountCalculator.Calculate(Subtotal, Store.Value.PixDiscountPercent) : 0;
+    private ShippingOption? SelectedShipping => shippingOptions?.FirstOrDefault(o => o.Code == shippingCode);
+    private decimal Total => Subtotal - Discount + (SelectedShipping?.Amount ?? 0);
+
+    private string DeadlineText
+    {
+        get
+        {
+            var minutos = Store.Value.PaymentDeadlineMinutes;
+            return minutos % 60 == 0 ? $"{minutos / 60} hora(s)" : $"{minutos} minutos";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        customerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+
+        // Sugere o endereço do último pedido
+        var last = await Orders.GetLastAddressAsync(customerId);
+        if (last is not null) address = AddressForm.FromAddress(last);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Cart.LoadAsync();
+        products = await ProductService.GetByIdsAsync(Cart.Current.Items.Select(i => i.ProductId));
+        ready = true;
+        StateHasChanged();
+    }
+
+    private void ClearShipping()
+    {
+        shippingOptions = null;
+        shippingCode = null;
+    }
+
+    private async Task CalculateShippingAsync()
+    {
+        isError = null;
+        if (PostalCode.Normalize(address.PostalCode) is not { } postalCode)
+        {
+            isError = "Informe um CEP válido para calcular o frete.";
+            return;
+        }
+        processing = true;
+        try
+        {
+            shippingOptions = await Orders.QuoteShippingAsync(postalCode, Cart.Current.Items);
+            shippingCode = shippingOptions.FirstOrDefault(o => o.Amount > 0)?.Code ?? shippingOptions.FirstOrDefault()?.Code;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Falha ao cotar frete");
+            isError = "Não foi possível calcular o frete agora. Tente novamente.";
+        }
+        finally
+        {
+            processing = false;
+        }
+    }
+
+    private async Task FinishAsync()
+    {
+        if (processing || shippingCode is null || !acceptedTerms) return;
+        processing = true;
+        isError = null;
+        string? orderCode = null;
+        try
+        {
+            var order = await Orders.CreateAsync(customerId, Cart.Current.Items, address.ToAddress(), shippingCode);
+            orderCode = order.Code;
+            await Orders.StartPaymentAsync(order.Id, method);
+            await Cart.ClearAsync();
+        }
+        catch (OrderRuleException ex)
+        {
+            isError = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Falha ao finalizar pedido");
+            isError = orderCode is null
+                ? "Não foi possível concluir o pedido. Tente novamente."
+                : "O pedido foi criado, mas houve um problema ao iniciar o pagamento. Tente pagar pela página do pedido.";
+        }
+        finally
+        {
+            processing = false;
+        }
+
+        if (orderCode is not null)
+            Navigation.NavigateTo($"meus-pedidos/{orderCode}?new=1");
+    }
+}

@@ -1,0 +1,30 @@
+@page "/meus-pedidos"
+@attribute [Authorize]
+@using System.Security.Claims
+@inject OrderService Orders
+
+<PageTitle>Meus pedidos · Ateliê Marylu</PageTitle>
+
+<h1>Meus pedidos</h1>
+
+@if (orders.Count == 0)
+{
+    <p>Você ainda não fez nenhum pedido.</p>
+    <a href="" class="btn btn-primary">Ver produtos</a>
+}
+else
+{
+    <OrdersTable Orders="orders" Link="meus-pedidos" ByCode="true" />
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private List<Order> orders = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var customerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier);
+        orders = await Orders.ListForCustomerAsync(customerId);
+    }
+}

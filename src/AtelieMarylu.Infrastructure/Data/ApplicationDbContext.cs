@@ -1,7 +1,7 @@
-using AtelieMarylu.Domain.Auditoria;
-using AtelieMarylu.Domain.Catalogo;
-using AtelieMarylu.Domain.Pagamentos;
-using AtelieMarylu.Domain.Pedidos;
+using AtelieMarylu.Domain.Auditing;
+using AtelieMarylu.Domain.Catalog;
+using AtelieMarylu.Domain.Payments;
+using AtelieMarylu.Domain.Orders;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -10,12 +10,12 @@ namespace AtelieMarylu.Infrastructure.Data;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options), IDataProtectionKeyContext
 {
-    public DbSet<Produto> Produtos => Set<Produto>();
-    public DbSet<ProdutoImagem> ProdutoImagens => Set<ProdutoImagem>();
-    public DbSet<Pedido> Pedidos => Set<Pedido>();
-    public DbSet<Pagamento> Pagamentos => Set<Pagamento>();
-    public DbSet<NotificacaoProcessada> NotificacoesProcessadas => Set<NotificacaoProcessada>();
-    public DbSet<RegistroAuditoria> Auditoria => Set<RegistroAuditoria>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductImage> ProductImages => Set<ProductImage>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<ProcessedNotification> ProcessedNotifications => Set<ProcessedNotification>();
+    public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     // Chaves que criptografam cookies de login e o carrinho; no banco, sobrevivem a reinícios e deploys
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();

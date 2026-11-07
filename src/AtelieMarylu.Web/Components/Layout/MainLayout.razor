@@ -1,15 +1,15 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
-<div class="pagina">
-    <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
-    <Cabecalho />
+<div class="page">
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <Header />
 
     <main id="conteudo" class="container py-4">
         @Body
     </main>
 
-    <Rodape />
-    <BotaoWhatsApp />
+    <Footer />
+    <WhatsAppButton />
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>

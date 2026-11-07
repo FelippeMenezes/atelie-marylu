@@ -1,0 +1,39 @@
+@using AtelieMarylu.Web.Configuration
+@using Microsoft.Extensions.Options
+@inject IOptions<ShopOptions> Options
+
+@{ var store = Options.Value; }
+<footer class="footer">
+    <div class="container">
+        <div class="row g-3">
+            <div class="col-md-5">
+                <strong>@store.Name</strong> · Costura criativa<br />
+                @if (store.HasLegalData)
+                {
+                    <span>@(string.IsNullOrEmpty(store.LegalName) ? store.Name : store.LegalName) · @store.TaxDocument</span><br />
+                }
+                @if (!string.IsNullOrEmpty(store.Address))
+                {
+                    <span>@store.Address</span><br />
+                }
+                @if (!string.IsNullOrEmpty(store.ContactEmail))
+                {
+                    <a href="mailto:@store.ContactEmail">@store.ContactEmail</a><br />
+                }
+                @if (!string.IsNullOrEmpty(store.Phone))
+                {
+                    <span>@store.Phone</span>
+                }
+            </div>
+            <div class="col-md-4">
+                <a href="trocas-e-devolucoes">Trocas e devoluções</a><br />
+                <a href="politica-de-privacidade">Política de privacidade</a><br />
+                <a href="termos-de-uso">Termos de uso</a>
+            </div>
+            <div class="col-md-3">
+                <a href="https://www.instagram.com/@store.Instagram/" target="_blank" rel="noopener">Instagram @@@store.Instagram</a>
+            </div>
+        </div>
+        <p class="small mt-3 mb-0">© @DateTime.UtcNow.Year @store.Name. Pagamentos processados em ambiente seguro do provedor.</p>
+    </div>
+</footer>

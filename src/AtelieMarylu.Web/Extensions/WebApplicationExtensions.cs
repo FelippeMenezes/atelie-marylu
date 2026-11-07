@@ -1,8 +1,8 @@
 using AtelieMarylu.Infrastructure.Integrations;
 using AtelieMarylu.Web.Components;
-using AtelieMarylu.Web.Configuracao;
+using AtelieMarylu.Web.Configuration;
 using AtelieMarylu.Web.Endpoints;
-using AtelieMarylu.Web.Seguranca;
+using AtelieMarylu.Web.Security;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -34,17 +34,17 @@ public static class WebApplicationExtensions
         app.UseRequestLocalization("pt-BR");
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
         app.UseHttpsRedirection();
-        app.UseCabecalhosSeguranca(
+        app.UseSecurityHeaders(
             app.Environment.IsDevelopment(),
-            app.Services.GetRequiredService<IOptions<TurnstileOptions>>().Value.Ativo,
-            app.Services.GetRequiredService<IOptions<LoginGoogleOptions>>().Value.Ativo);
+            app.Services.GetRequiredService<IOptions<TurnstileOptions>>().Value.IsActive,
+            app.Services.GetRequiredService<IOptions<GoogleLoginOptions>>().Value.IsActive);
         app.UseRateLimiter();
 
         // Arquivos enviados em tempo de execução (fotos de produtos)
         app.UseStaticFiles();
         app.UseAuthentication();
         app.UseAuthorization();
-        app.UseTrocaSenhaObrigatoria();
+        app.UseMandatoryPasswordChange();
         app.UseAntiforgery();
 
         return app;
@@ -59,9 +59,12 @@ public static class WebApplicationExtensions
         // Endpoints usados pelas telas de conta em /Account
         app.MapAdditionalIdentityEndpoints();
 
-        app.MapWebhooksPagamento();
+        app.MapPaymentWebhooks();
         app.MapSeo();
         app.MapHealthChecks("/health");
+
+        // Endereço antigo do carrinho: links salvos e o Google continuam funcionando
+        app.MapGet("/carrinho", () => Results.Redirect("/cart", permanent: true));
 
         return app;
     }

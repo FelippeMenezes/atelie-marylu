@@ -207,6 +207,30 @@ cd ~/atelie-marylu && ./deploy/backup.sh && git pull && docker compose -f docker
 
 As migrations do banco são aplicadas automaticamente quando a loja reinicia. Mudanças só no `.env.producao` precisam apenas de `up -d`, sem `--build`.
 
+## Deploy pela Hostinger
+
+O arquivo `.github/workflows/deploy-hostinger.yml` publica a loja pelo **Docker Manager** da Hostinger. Ele começa desligado do merge: só roda quando você manda, na aba **Actions** do GitHub.
+
+**O que esse caminho não faz:** não faz backup antes de publicar e não confere se o site subiu. O "sucesso" no GitHub só diz que a Hostinger aceitou o pedido. Em atualização com migration, faça o backup à mão antes.
+
+**Preparar (uma vez só):**
+
+1. Na Hostinger, em **Perfil → API**, gere uma chave. Guarde-a num gerenciador de senhas.
+2. No GitHub, em **Settings → Secrets and variables → Actions**:
+   - em **Secrets**, crie `HOSTINGER_API_KEY` com a chave;
+   - em **Secrets**, crie `ENV_PRODUCAO` com as linhas do `.env.producao`, uma por linha, **sem aspas**. A action coloca esse valor entre aspas num comando, então aspas e `$` quebram o envio. Um valor com vírgula também é cortado;
+   - em **Variables**, crie `HOSTINGER_VM_ID` com o valor `2118354`, o número do nome do servidor.
+
+**Primeira publicação:** faça com tempo e acompanhando. O projeto usa o mesmo nome (`atelie-marylu`) para manter os dados, mas a loja já roda pelo `~/atelie-marylu`, e a documentação da Hostinger não diz como ela trata um projeto criado fora do Docker Manager.
+
+1. Rode `./deploy/backup.sh` no servidor.
+2. Em **Actions → Deploy Hostinger → Run workflow**, inicie o deploy.
+3. Confira o site, os produtos e o login.
+4. No servidor, rode `docker ps`. Devem existir um único `app`, um `postgres` e um `caddy`.
+5. Só então descomente o `push` no arquivo do workflow.
+
+Depois disso, o site é atualizado a cada merge na `main`.
+
 ## 6. Monitoramento e logs
 
 - `https://www.ateliemarylu.com.br/health` responde `Healthy` quando a loja e o banco estão ok. Cadastre esse endereço num monitor gratuito, como o UptimeRobot, para ser avisado se a loja cair.

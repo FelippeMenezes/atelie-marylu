@@ -1,0 +1,55 @@
+@page "/painel/pedidos"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = Permissions.OrdersView)]
+@inject OrderService OrderService
+@inject CustomerService CustomerService
+@inject NavigationManager Navigation
+
+<PageTitle>Pedidos · Painel</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="m-0">Pedidos</h1>
+    <AuthorizeView Policy="@Permissions.OrdersCreate">
+        <a href="painel/pedidos/novo" class="btn btn-primary">Novo pedido</a>
+    </AuthorizeView>
+</div>
+
+<div class="mb-3" style="max-width: 260px">
+    <select class="form-select" value="@Status" @onchange="FilterByStatus" aria-label="Filtrar por status">
+        <option value="">Todos os status</option>
+        @foreach (var s in Enum.GetValues<OrderStatus>())
+        {
+            <option value="@s">@Order.Describe(s)</option>
+        }
+    </select>
+</div>
+
+@if (orders is null)
+{
+    <p>Carregando...</p>
+}
+else if (orders.Count == 0)
+{
+    <p>Nenhum pedido encontrado.</p>
+}
+else
+{
+    <OrdersTable Orders="orders" Link="painel/pedidos" CustomerNames="names" />
+}
+
+@code {
+    [SupplyParameterFromQuery] public string? Status { get; set; }
+
+    private List<Order>? orders;
+    private Dictionary<string, string> names = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        OrderStatus? filter = Enum.TryParse<OrderStatus>(Status, out var status) ? status : null;
+        orders = await OrderService.ListAsync(filter);
+        names = await CustomerService.GetNamesAsync(orders.Select(p => p.CustomerId));
+    }
+
+    private void FilterByStatus(ChangeEventArgs e) =>
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameter("status", e.Value?.ToString() is { Length: > 0 } v ? v : null));
+}

@@ -33,8 +33,8 @@ O caminho é sempre **tela → serviço → banco**: as telas não acessam o ban
    ```bash
    cd src/AtelieMarylu.Web
    dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=127.0.0.1;Port=5440;Database=atelie_marylu;Username=atelie;Password=A_SENHA_DO_.ENV"
-   dotnet user-secrets set "AdminInicial:Email" "seu-email@exemplo.com"
-   dotnet user-secrets set "AdminInicial:Senha" "uma-senha-forte"
+   dotnet user-secrets set "InitialAdmin:Email" "seu-email@exemplo.com"
+   dotnet user-secrets set "InitialAdmin:Password" "uma-senha-forte"
    ```
 
    No primeiro login, o Admin precisa trocar essa senha.
@@ -49,11 +49,12 @@ O caminho é sempre **tela → serviço → banco**: as telas não acessam o ban
 
 ## Configuração da loja
 
-Fica na seção `Loja` do `appsettings.json`. Os dados legais (CNPJ ou CPF, endereço, contato) aparecem no rodapé e nas políticas, como exige a lei de comércio eletrônico. O WhatsApp vai só com números e DDI (ex.: `5521999999999`). Também ficam ali o desconto PIX, as parcelas e os prazos de pagamento.
+Fica na seção `Store` do `appsettings.json`. Os dados legais (CNPJ ou CPF, endereço, contato) aparecem no rodapé e nas políticas, como exige a lei de comércio eletrônico. O WhatsApp vai só com números e DDI (ex.: `5521999999999`). Também ficam ali o desconto PIX, as parcelas e os prazos de pagamento.
 
 Opcionais:
 - `Turnstile:SiteKey` e `Turnstile:SecretKey`: anti-robô do Cloudflare no login e no cadastro.
-- `Proxy:RedesConfiaveis`: redes do proxy reverso em produção (ex.: `["10.0.0.0/8"]`).
+- `GoogleLogin:ClientId` e `GoogleLogin:ClientSecret`: botão "Continuar com Google". As chaves são criadas no Google Cloud, com o endereço de retorno `/signin-google`.
+- `Proxy:TrustedNetworks`: redes do proxy reverso em produção (ex.: `["10.0.0.0/8"]`).
 
 Em produção, defina `AllowedHosts` com o domínio. A aplicação não sobe com `*`.
 
@@ -85,7 +86,7 @@ E2E_URL=https://localhost:7050 dotnet test tests/AtelieMarylu.E2E
 
 ```bash
 dotnet tool restore
-dotnet ef migrations add NomeDaMudanca -p src/AtelieMarylu.Infrastructure -s src/AtelieMarylu.Web -o Data/Migrations
+dotnet ef migrations add NameOfTheChange -p src/AtelieMarylu.Infrastructure -s src/AtelieMarylu.Web -o Data/Migrations
 ```
 
 ## Pagamento simulado

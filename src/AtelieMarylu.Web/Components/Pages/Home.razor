@@ -1,5 +1,5 @@
-﻿@page "/"
-@inject ProdutoService ProdutoService
+@page "/"
+@inject ProductService ProductService
 @inject NavigationManager Navigation
 
 <PageTitle>Ateliê Marylu · Costura criativa</PageTitle>
@@ -15,34 +15,34 @@
 <h1>Peças feitas à mão</h1>
 <p class="mb-4">Bolsas, necessaires e acessórios costurados um a um no ateliê. Cada peça é única. Você pode montar o carrinho sem cadastro.</p>
 
-@if (produtos.Count == 0)
+@if (products.Count == 0)
 {
     <p>Nenhum produto disponível no momento. Acompanhe as novidades no Instagram.</p>
 }
 else
 {
-    <div class="vitrine">
-        @foreach (var p in produtos)
+    <div class="storefront">
+        @foreach (var p in products)
         {
-            <article class="produto-card">
+            <article class="product-card">
                 <a href="@p.Url">
-                    <FotoProduto Url="@p.Capa?.UrlMiniatura" Nome="@p.Nome" />
+                    <ProductPhoto Url="@p.Cover?.ThumbnailUrl" Name="@p.Name" />
                 </a>
-                <div class="produto-info">
-                    <a href="@p.Url"><h2 class="h6 m-0">@p.Nome</h2></a>
-                    @if (p.Estoque == 0)
+                <div class="product-info">
+                    <a href="@p.Url"><h2 class="h6 m-0">@p.Name</h2></a>
+                    @if (p.Stock == 0)
                     {
-                        <span class="selo align-self-start">Esgotado</span>
+                        <span class="tag align-self-start">Esgotado</span>
                     }
-                    else if (p.Estoque <= 2)
+                    else if (p.Stock <= 2)
                     {
-                        <span class="selo align-self-start">Últimas unidades</span>
+                        <span class="tag align-self-start">Últimas unidades</span>
                     }
-                    else if (p.PrazoProducaoDias is not null)
+                    else if (p.ProductionDays is not null)
                     {
-                        <span class="selo align-self-start">Sob encomenda</span>
+                        <span class="tag align-self-start">Sob encomenda</span>
                     }
-                    <PrecoProduto Preco="p.Preco" />
+                    <ProductPrice Price="p.Price" />
                 </div>
             </article>
         }
@@ -50,10 +50,10 @@ else
 }
 
 @code {
-    private List<Produto> produtos = [];
+    private List<Product> products = [];
 
     protected override async Task OnInitializedAsync()
     {
-        produtos = await ProdutoService.ListarVitrineAsync();
+        products = await ProductService.ListStorefrontAsync();
     }
 }

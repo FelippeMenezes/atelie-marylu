@@ -8,7 +8,7 @@
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<DeletePersonalData> Logger
-@inject AtelieMarylu.Web.Services.DadosPessoaisService DadosPessoais
+@inject AtelieMarylu.Web.Services.PersonalDataService DadosPessoais
 
 <PageTitle>Delete Personal Data</PageTitle>
 
@@ -78,7 +78,7 @@
 
         // Apaga a conta ou, se houver pedidos, anonimiza (o histórico de vendas precisa ser mantido)
         var userId = await UserManager.GetUserIdAsync(user);
-        var result = await DadosPessoais.ExcluirContaAsync(user);
+        var result = await DadosPessoais.DeleteAccountAsync(user);
         if (!result.Succeeded)
         {
             throw new InvalidOperationException("Unexpected error occurred deleting user.");

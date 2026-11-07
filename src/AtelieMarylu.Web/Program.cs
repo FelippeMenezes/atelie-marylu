@@ -17,15 +17,15 @@ builder.Services
     .AddReverseProxySupport(builder.Configuration)
     .AddStoreServices(builder.Configuration);
 
-var culturaBrasil = new CultureInfo("pt-BR");
-CultureInfo.DefaultThreadCurrentCulture = culturaBrasil;
-CultureInfo.DefaultThreadCurrentUICulture = culturaBrasil;
+var brazilCulture = new CultureInfo("pt-BR");
+CultureInfo.DefaultThreadCurrentCulture = brazilCulture;
+CultureInfo.DefaultThreadCurrentUICulture = brazilCulture;
 
 var app = builder.Build();
 
 app.EnsureAllowedHostsIsConfigured();
 
-await SeedDados.ExecutarAsync(app.Services, app.Environment.IsDevelopment());
+await DatabaseSeeder.RunAsync(app.Services, app.Environment.IsDevelopment());
 
 app.UseStorePipeline();
 app.MapStoreEndpoints();

@@ -1,0 +1,118 @@
+@page "/painel/usuarios/{Id}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = AppRoles.Admin)]
+@using System.Security.Claims
+@inject AccessService Access
+@inject CustomerService CustomerService
+@using Microsoft.AspNetCore.Identity
+
+<PageTitle>Acessos · Painel</PageTitle>
+
+@if (user is null)
+{
+    <p>@(loaded ? "Usuário não encontrado." : "Carregando...")</p>
+}
+else
+{
+    <h1>@user.DisplayName</h1>
+    <p class="text-secondary">@user.Email</p>
+
+    <section class="panel-box mb-3">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="admin" @bind="isAdmin" disabled="@(Id == myId)" />
+            <label class="form-check-label" for="admin"><strong>Admin</strong>: acesso total, inclusive a usuários e grupos</label>
+        </div>
+        @if (Id == myId)
+        {
+            <div class="small text-secondary">Você não pode remover o seu próprio acesso de Admin.</div>
+        }
+    </section>
+
+    <section class="panel-box mb-3">
+        <h2 class="h5">Grupos</h2>
+        @if (groups.Count == 0)
+        {
+            <p class="m-0">Nenhum grupo criado. <a href="painel/grupos">Criar grupos</a></p>
+        }
+        @foreach (var g in groups)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="g-@g.Name" checked="@selectedGroups.Contains(g.Name)"
+                       @onchange="e => Toggle(selectedGroups, g.Name, e)" />
+                <label class="form-check-label" for="g-@g.Name">
+                    @g.Name <span class="small text-secondary">(@string.Join(", ", g.Permissions.Select(p => Permissions.All.GetValueOrDefault(p, p))))</span>
+                </label>
+            </div>
+        }
+    </section>
+
+    <section class="panel-box mb-3">
+        <h2 class="h5">Permissões individuais</h2>
+        <p class="small text-secondary">Somam-se às permissões dos grupos.</p>
+        @foreach (var (permissionKey, description) in Permissions.All)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="p-@permissionKey" checked="@selectedPermissions.Contains(permissionKey)"
+                       @onchange="e => Toggle(selectedPermissions, permissionKey, e)" />
+                <label class="form-check-label" for="p-@permissionKey">@description</label>
+            </div>
+        }
+    </section>
+
+    <Notice Message="@message" IsError="@isError" />
+
+    <button class="btn btn-primary" @onclick="SaveAsync" disabled="@saving">Salvar acessos</button>
+    <a href="painel/usuarios" class="btn btn-outline-primary">Voltar</a>
+    <p class="small text-secondary mt-2">A pessoa precisará entrar novamente para as mudanças valerem.</p>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private CustomerData? user;
+    private IReadOnlyList<GroupSummary> groups = [];
+    private HashSet<string> selectedGroups = [];
+    private HashSet<string> selectedPermissions = [];
+    private bool isAdmin, loaded, saving, isError;
+    private string? message;
+    private string myId = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        myId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+        user = await CustomerService.GetAsync(Id);
+        loaded = true;
+        if (user is null) return;
+
+        groups = await Access.ListGroupsAsync();
+        var access = await Access.GetAccessAsync(Id);
+        isAdmin = access.IsAdmin;
+        selectedGroups = access.Groups.ToHashSet();
+        selectedPermissions = access.IndividualPermissions.ToHashSet();
+    }
+
+    private static void Toggle(HashSet<string> conjunto, string amount, ChangeEventArgs e)
+    {
+        if (e.Value is true) conjunto.Add(amount);
+        else conjunto.Remove(amount);
+    }
+
+    private async Task SaveAsync()
+    {
+        saving = true;
+        try
+        {
+            await Access.SaveAccessAsync(Id, myId, new UserAccessData(isAdmin, selectedGroups.ToList(), selectedPermissions.ToList()));
+            (message, isError) = ("Acessos salvos.", false);
+        }
+        catch (AccessException ex)
+        {
+            (message, isError) = (ex.Message, true);
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+}
