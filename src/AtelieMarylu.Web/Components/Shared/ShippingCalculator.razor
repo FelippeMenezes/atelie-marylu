@@ -50,7 +50,17 @@
         {
             options = await Orders.QuoteShippingAsync(normalized, items);
         }
-        catch (Exception ex)
+        catch (System.Net.Http.HttpRequestException ex)
+        {
+            Logger.LogWarning(ex, "Falha ao simular frete");
+            isError = "Não foi possível calcular agora. Tente de novo.";
+        }
+        catch (System.Threading.Tasks.TaskCanceledException ex)
+        {
+            Logger.LogWarning(ex, "Falha ao simular frete");
+            isError = "Não foi possível calcular agora. Tente de novo.";
+        }
+        catch (InvalidOperationException ex)
         {
             Logger.LogWarning(ex, "Falha ao simular frete");
             isError = "Não foi possível calcular agora. Tente de novo.";
