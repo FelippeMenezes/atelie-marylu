@@ -57,7 +57,7 @@ public partial class LocalizationTests
     public void Every_text_on_screen_has_translation(string language)
     {
         var resource = ReadResource(language);
-        var missing = Directory.EnumerateFiles(Path.Combine(WebProject, "Components"), "*.razor", SearchOption.AllDirectories)
+        var missing = Directory.EnumerateFiles(Path.Join(WebProject, "Components"), "*.razor", SearchOption.AllDirectories)
             .SelectMany(file => LocalizerCall().Matches(File.ReadAllText(file)).Select(m => m.Groups[1].Value.Replace("\\\"", "\"")))
             .Distinct()
             .Where(key => !resource.ContainsKey(key))
