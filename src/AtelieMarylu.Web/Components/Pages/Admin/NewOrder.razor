@@ -153,10 +153,15 @@
             shippingOptions = await Orders.QuoteShippingAsync(postalCode, cart.Items);
             shippingCode = shippingOptions.FirstOrDefault()?.Code;
         }
-        catch (Exception ex)
+        catch (OrderRuleException ex)
         {
-            Logger.LogError(ex, "Falha ao cotar frete");
-            isError = "Não foi possível calcular o frete.";
+            Logger.LogWarning(ex, "Regra de negócio ao cotar frete");
+            isError = ex.Message;
+        }
+        catch (OperationCanceledException ex)
+        {
+            Logger.LogWarning(ex, "Cotação de frete cancelada");
+            isError = "A cotação de frete foi cancelada.";
         }
     }
 
