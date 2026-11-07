@@ -221,7 +221,14 @@ else
         {
             isError = ex.Message;
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
+        {
+            Logger.LogError(ex, "Falha ao finalizar pedido");
+            isError = orderCode is null
+                ? "Não foi possível concluir o pedido. Tente novamente."
+                : "O pedido foi criado, mas houve um problema ao iniciar o pagamento. Tente pagar pela página do pedido.";
+        }
+        catch (TimeoutException ex)
         {
             Logger.LogError(ex, "Falha ao finalizar pedido");
             isError = orderCode is null
