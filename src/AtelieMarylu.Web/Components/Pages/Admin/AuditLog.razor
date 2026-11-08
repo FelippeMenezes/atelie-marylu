@@ -1,28 +1,28 @@
-@page "/painel/auditoria"
+@page "/admin/audit"
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = AppRoles.Admin)]
 @using AtelieMarylu.Domain.Auditing
 @inject AuditService AuditService
 
-<PageTitle>@L["Auditoria · Painel"]</PageTitle>
+<PageTitle>@L["Audit log · Admin"]</PageTitle>
 
-<h1>@L["Auditoria"]</h1>
-<p class="text-secondary">@L["Registro de quem fez o quê no painel e dos eventos de pagamento. Não pode ser alterado."]</p>
+<h1>@L["Audit log"]</h1>
+<p class="text-secondary">@L["Record of who did what in the admin and of payment events. It cannot be changed."]</p>
 
 <div class="d-flex gap-2 mb-3 flex-wrap">
-    <select class="form-select w-auto" @bind="entity" @bind:after="LoadAsync" aria-label="@L["Filtrar por tipo"]">
-        <option value="">@L["Tudo"]</option>
-        <option value="@AuditEntities.Order">@L["Pedidos"]</option>
-        <option value="@AuditEntities.Product">@L["Produtos"]</option>
-        <option value="@AuditEntities.User">@L["Usuários"]</option>
-        <option value="@AuditEntities.Group">@L["Grupos"]</option>
+    <select class="form-select w-auto" @bind="entity" @bind:after="LoadAsync" aria-label="@L["Filter by type"]">
+        <option value="">@L["All"]</option>
+        <option value="@AuditEntities.Order">@L["Orders"]</option>
+        <option value="@AuditEntities.Product">@L["Products"]</option>
+        <option value="@AuditEntities.User">@L["Users"]</option>
+        <option value="@AuditEntities.Group">@L["Groups"]</option>
     </select>
-    <input class="form-control w-auto" placeholder="@L["Buscar autor ou detalhe"]" @bind="search" @bind:event="oninput" @bind:after="LoadAsync" />
+    <input class="form-control w-auto" placeholder="@L["Search author or detail"]" @bind="search" @bind:event="oninput" @bind:after="LoadAsync" />
 </div>
 
 <div class="table-responsive panel-box p-0">
     <table class="table table-sm align-middle m-0">
-        <thead><tr><th>@L["Quando"]</th><th>@L["Quem"]</th><th>@L["Ação"]</th><th>@L["Item"]</th><th>@L["Detalhes"]</th></tr></thead>
+        <thead><tr><th>@L["When"]</th><th>@L["Who"]</th><th>@L["Action"]</th><th>@L["Item"]</th><th>@L["Details"]</th></tr></thead>
         <tbody>
             @foreach (var entry in entries)
             {
@@ -31,8 +31,8 @@
                     <td>@entry.Author</td>
                     <td><code>@entry.Action</code></td>
                     <td>
-                        @if (entry.Entity == AuditEntities.Order) { <a href="painel/pedidos/@entry.EntityId">@L["Pedido {0}", entry.EntityId]</a> }
-                        else if (entry.Entity == AuditEntities.Product) { <a href="painel/produtos/@entry.EntityId">@L["Produto {0}", entry.EntityId]</a> }
+                        @if (entry.Entity == AuditEntities.Order) { <a href="admin/orders/@entry.EntityId">@L["Order {0}", entry.EntityId]</a> }
+                        else if (entry.Entity == AuditEntities.Product) { <a href="admin/products/@entry.EntityId">@L["Product {0}", entry.EntityId]</a> }
                         else { @($"{entry.Entity} {entry.EntityId}") }
                     </td>
                     <td class="small">@entry.Details</td>

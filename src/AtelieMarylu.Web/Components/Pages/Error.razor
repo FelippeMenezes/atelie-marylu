@@ -1,15 +1,15 @@
 @page "/Error"
 @using System.Diagnostics
 
-<PageTitle>@L["Erro"]</PageTitle>
+<PageTitle>@L["Error"]</PageTitle>
 
-<h1 class="text-danger">@L["Erro"]</h1>
-<h2 class="text-danger">@L["Ocorreu um erro ao processar o seu pedido."]</h2>
+<h1 class="text-danger">@L["Error"]</h1>
+<h2 class="text-danger">@L["An error occurred while processing your request."]</h2>
 
 @if (ShowRequestId)
 {
     <p>
-        <strong>@L["Código do erro:"]</strong> <code>@RequestId</code>
+        <strong>@L["Error code:"]</strong> <code>@RequestId</code>
     </p>
 }
 

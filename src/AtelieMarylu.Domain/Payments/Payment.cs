@@ -34,11 +34,11 @@ public class Payment
 
     public static string Describe(PaymentStatus status) => status switch
     {
-        PaymentStatus.Pending => "Pendente",
-        PaymentStatus.Approved => "Aprovado",
-        PaymentStatus.Rejected => "Recusado",
-        PaymentStatus.Cancelled => "Cancelado",
-        PaymentStatus.Refunded => "Estornado",
+        PaymentStatus.Pending => "Pending",
+        PaymentStatus.Approved => "Approved",
+        PaymentStatus.Rejected => "Rejected",
+        PaymentStatus.Cancelled => "Cancelled",
+        PaymentStatus.Refunded => "Refunded",
         _ => status.ToString(),
     };
 

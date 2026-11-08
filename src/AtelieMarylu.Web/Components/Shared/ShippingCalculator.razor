@@ -5,11 +5,11 @@
 @inject ILogger<ShippingCalculator> Logger
 
 <div class="panel-box">
-    <label class="form-label fw-bold" for="cep-frete">@L["Calcular frete e prazo"]</label>
+    <label class="form-label fw-bold" for="cep-frete">@L["Calculate shipping and delivery time"]</label>
     <div class="d-flex gap-2">
         <input id="cep-frete" class="form-control" style="max-width: 160px" placeholder="00000-000" inputmode="numeric" autocomplete="postal-code"
                @bind="postalCode" @onkeydown="OnKeyDown" />
-        <button type="button" class="btn btn-outline-primary" @onclick="Calculate" disabled="@(calculating || !RendererInfo.IsInteractive)">@L["Calcular"]</button>
+        <button type="button" class="btn btn-outline-primary" @onclick="Calculate" disabled="@(calculating || !RendererInfo.IsInteractive)">@L["Calculate"]</button>
     </div>
     @if (isError is not null)
     {
@@ -20,7 +20,7 @@
         <ul class="list-unstyled small mt-2 mb-0">
             @foreach (var o in options)
             {
-                <li>@L[o.Name]: <strong>@(o.Amount == 0 ? L["Grátis"] : o.Amount.ToBrl())</strong>@(o.DeliveryDays is int d ? L[" · até {0} dias úteis", d] : "")</li>
+                <li>@L[o.Name]: <strong>@(o.Amount == 0 ? L["Free"] : o.Amount.ToBrl())</strong>@(o.DeliveryDays is int d ? L[" · up to {0} business days", d] : "")</li>
             }
         </ul>
     }
@@ -41,7 +41,7 @@
     {
         isError = null;
         options = null;
-        if (PostalCode.Normalize(postalCode) is not { } normalized) { isError = L["Digite um CEP válido."]; return; }
+        if (PostalCode.Normalize(postalCode) is not { } normalized) { isError = L["Enter a valid postal code."]; return; }
         var items = Items ?? (ProductId is int id ? [new CartItem(id, 1)] : []);
         if (items.Count == 0) return;
 
@@ -53,17 +53,17 @@
         catch (System.Net.Http.HttpRequestException ex)
         {
             Logger.LogWarning(ex, "Falha ao simular frete");
-            isError = L["Não foi possível calcular agora. Tente de novo."];
+            isError = L["Could not calculate right now. Try again."];
         }
         catch (System.Threading.Tasks.TaskCanceledException ex)
         {
             Logger.LogWarning(ex, "Falha ao simular frete");
-            isError = L["Não foi possível calcular agora. Tente de novo."];
+            isError = L["Could not calculate right now. Try again."];
         }
         catch (InvalidOperationException ex)
         {
             Logger.LogWarning(ex, "Falha ao simular frete");
-            isError = L["Não foi possível calcular agora. Tente de novo."];
+            isError = L["Could not calculate right now. Try again."];
         }
         finally
         {

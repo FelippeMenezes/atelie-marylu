@@ -12,35 +12,35 @@
 @inject IdentityRedirectManager RedirectManager
 @inject IOptions<GoogleLoginOptions> GoogleOptions
 
-<PageTitle>@L["Conta Google · Ateliê Marylu"]</PageTitle>
+<PageTitle>@L["Google account · Ateliê Marylu"]</PageTitle>
 
 <StatusMessage />
-<h3>@L["Conta Google"]</h3>
+<h3>@L["Google account"]</h3>
 
 @if (!GoogleOptions.Value.IsActive)
 {
-    <p>@L["O login com Google não está disponível no momento."]</p>
+    <p>@L["Google sign-in is not available right now."]</p>
 }
 else if (googleLogin is not null)
 {
-    <p>@L["Sua conta Google está conectada. Você pode entrar na loja com o botão"] <strong>@L["Continuar com Google"]</strong>.</p>
+    <p>@L["Your Google account is connected. You can sign in to the store with the button"] <strong>@L["Continue with Google"]</strong>.</p>
     @if (hasPassword)
     {
         <form @formname="desconectar-google" @onsubmit="DisconnectAsync" method="post">
             <AntiforgeryToken />
-            <button type="submit" class="btn btn-outline-danger">@L["Desconectar a conta Google"]</button>
+            <button type="submit" class="btn btn-outline-danger">@L["Disconnect Google account"]</button>
         </form>
     }
     else
     {
-        <p class="small text-secondary">@L["O Google é a única forma de entrar na sua conta. Para desconectá-lo, crie antes"] <a href="Account/Manage/SetPassword">@L["uma senha"]</a>.</p>
+        <p class="small text-secondary">@L["Google is the only way to sign in to your account. To disconnect it, first create"] <a href="Account/Manage/SetPassword">@L["a password"]</a>.</p>
     }
 }
 else
 {
-    <p>@L["Conecte sua conta Google para entrar na loja com um clique, sem digitar senha."]</p>
+    <p>@L["Connect your Google account to sign in with one click, without typing a password."]</p>
     <div style="max-width: 320px">
-        <GoogleButton Action="@GoogleButton.ConnectAction" Text="@L["Conectar conta Google"]" />
+        <GoogleButton Action="@GoogleButton.ConnectAction" Text="@L["Connect Google account"]" />
     </div>
 }
 
@@ -79,19 +79,19 @@ else
         // Sem senha, desconectar o Google deixaria a pessoa trancada fora da conta
         if (googleLogin is null || !hasPassword)
         {
-            RedirectManager.RedirectToCurrentPageWithStatus(L["Erro: crie uma senha antes de desconectar o Google."], HttpContext);
+            RedirectManager.RedirectToCurrentPageWithStatus(L["Error: create a password before disconnecting Google."], HttpContext);
             return;
         }
 
         var result = await UserManager.RemoveLoginAsync(user, googleLogin.LoginProvider, googleLogin.ProviderKey);
         if (!result.Succeeded)
         {
-            RedirectManager.RedirectToCurrentPageWithStatus(L["Erro: não foi possível desconectar a conta Google."], HttpContext);
+            RedirectManager.RedirectToCurrentPageWithStatus(L["Error: could not disconnect the Google account."], HttpContext);
             return;
         }
 
         await SignInManager.RefreshSignInAsync(user);
-        RedirectManager.RedirectToCurrentPageWithStatus(L["Conta Google desconectada."], HttpContext);
+        RedirectManager.RedirectToCurrentPageWithStatus(L["Google account disconnected."], HttpContext);
     }
 
     private async Task OnReturnFromGoogleAsync()
@@ -100,7 +100,7 @@ else
         var info = await SignInManager.GetExternalLoginInfoAsync(await UserManager.GetUserIdAsync(user));
         if (info is null)
         {
-            RedirectManager.RedirectToCurrentPageWithStatus(L["Erro: não foi possível carregar os dados do Google. Tente de novo."], HttpContext);
+            RedirectManager.RedirectToCurrentPageWithStatus(L["Error: could not load the Google data. Try again."], HttpContext);
             return;
         }
 
@@ -108,10 +108,10 @@ else
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         if (!result.Succeeded)
         {
-            RedirectManager.RedirectToCurrentPageWithStatus(L["Erro: essa conta Google já está conectada a outro cadastro da loja."], HttpContext);
+            RedirectManager.RedirectToCurrentPageWithStatus(L["Error: that Google account is already connected to another store account."], HttpContext);
             return;
         }
 
-        RedirectManager.RedirectToCurrentPageWithStatus(L["Conta Google conectada."], HttpContext);
+        RedirectManager.RedirectToCurrentPageWithStatus(L["Google account connected."], HttpContext);
     }
 }

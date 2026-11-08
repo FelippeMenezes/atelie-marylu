@@ -15,12 +15,12 @@ public static class Permissions
 
     public static readonly IReadOnlyDictionary<string, string> All = new Dictionary<string, string>
     {
-        [ProductsManage] = "Criar e editar produtos",
-        [OrdersView] = "Ver pedidos",
-        [OrdersCreate] = "Criar pedidos pelo painel",
-        [OrdersEdit] = "Editar pedidos e mudar status",
-        [OrdersCancel] = "Cancelar pedidos",
-        [CustomersView] = "Ver clientes cadastrados",
+        [ProductsManage] = "Create and edit products",
+        [OrdersView] = "View orders",
+        [OrdersCreate] = "Create orders from the admin",
+        [OrdersEdit] = "Edit orders and change status",
+        [OrdersCancel] = "Cancel orders",
+        [CustomersView] = "View registered customers",
     };
 
     // Política que libera o painel para quem tem qualquer permissão

@@ -3,16 +3,16 @@
 
 <div class="d-flex gap-3 align-items-center flex-wrap mb-2">
     <QuantityPicker @bind-Value="quantity" Max="@Math.Min(Stock, AtelieMarylu.Domain.Carts.Cart.MaxQuantityPerItem)" />
-    <button class="btn btn-primary btn-lg" @onclick="Add" disabled="@(!RendererInfo.IsInteractive)">@L["Adicionar ao carrinho"]</button>
+    <button class="btn btn-primary btn-lg" @onclick="Add" disabled="@(!RendererInfo.IsInteractive)">@L["Add to cart"]</button>
 </div>
 
 @if (added)
 {
     <div class="alert alert-success d-flex justify-content-between align-items-center flex-wrap gap-2" role="status">
-        <span>@L["Adicionado ao carrinho!"]</span>
+        <span>@L["Added to cart!"]</span>
         <span>
-            <a href="cart" class="btn btn-primary btn-sm">@L["Ver carrinho"]</a>
-            <button type="button" class="btn btn-link btn-sm" @onclick="() => added = false">@L["Continuar comprando"]</button>
+            <a href="cart" class="btn btn-primary btn-sm">@L["View cart"]</a>
+            <button type="button" class="btn btn-link btn-sm" @onclick="() => added = false">@L["Continue shopping"]</button>
         </span>
     </div>
 }

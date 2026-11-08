@@ -5,8 +5,10 @@ using AtelieMarylu.Domain.Shipping;
 using AtelieMarylu.Domain.Payments;
 using AtelieMarylu.Domain.Orders;
 using AtelieMarylu.Web.Configuration;
+using AtelieMarylu.Web.Localization;
 using AtelieMarylu.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using Npgsql;
 
@@ -22,6 +24,7 @@ public class OrderService(
     OrderEvents events,
     IOptions<ShopOptions> store,
     TimeProvider clock,
+    IStringLocalizer<SharedResource> localizer,
     ILogger<OrderService> logger)
 {
     public const string ManualProvider = "manual";
@@ -84,8 +87,8 @@ public class OrderService(
     public async Task<Order> CreateAsync(string customerId, IReadOnlyList<CartItem> items, ShippingAddress address,
         string shippingCode, string? createdBy = null, CancellationToken ct = default)
     {
-        if (items.Count == 0) throw new OrderRuleException("O carrinho está vazio.");
-        var postalCode = PostalCode.Normalize(address.PostalCode) ?? throw new OrderRuleException("CEP inválido.");
+        if (items.Count == 0) throw new OrderRuleException("The cart is empty.");
+        var postalCode = PostalCode.Normalize(address.PostalCode) ?? throw new OrderRuleException("Invalid postal code.");
         address.PostalCode = postalCode;
         var options = store.Value;
         var now = clock.GetUtcNow().UtcDateTime;
@@ -96,20 +99,20 @@ public class OrderService(
         {
             var pendingCount = await db.Orders.CountAsync(p => p.CustomerId == customerId && p.Status == OrderStatus.AwaitingPayment, ct);
             if (pendingCount >= options.MaxPendingOrdersPerCustomer)
-                throw new OrderRuleException("Você já tem pedidos aguardando pagamento. Pague ou aguarde o cancelamento deles antes de fazer outro.");
+                throw new OrderRuleException("You already have orders awaiting payment. Pay them or wait for their cancellation before placing another.");
         }
 
         var products = await LoadProductsAsync(db, items.Select(i => i.ProductId), ct);
         var orderItems = items.Select(i =>
         {
             if (!products.TryGetValue(i.ProductId, out var p) || !p.IsActive)
-                throw new OrderRuleException("Um dos produtos do carrinho não está mais disponível.");
+                throw new OrderRuleException("One of the products in the cart is no longer available.");
             return new OrderItem(p.Id, p.Name, p.Price, i.Quantity);
         }).ToList();
 
         var quote = await shipping.QuoteAsync(postalCode, BuildPackages(items, products), ct);
         var option = quote.FirstOrDefault(o => o.Code == shippingCode)
-            ?? throw new OrderRuleException("Opção de frete inválida. Calcule o frete novamente.");
+            ?? throw new OrderRuleException("Invalid shipping option. Calculate shipping again.");
 
         var deadline = createdBy is null ? TimeSpan.FromMinutes(options.PaymentDeadlineMinutes) : TimeSpan.FromHours(options.AdminPaymentDeadlineHours);
         var order = new Order(customerId, orderItems, address, option, now + deadline, options.PixDiscountPercent, createdBy);
@@ -134,7 +137,7 @@ public class OrderService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var order = await LoadOrderAsync(db, orderId, ct);
         if (order.IsPaymentOverdue(clock.GetUtcNow().UtcDateTime))
-            throw new OrderRuleException("O prazo de pagamento deste pedido terminou.");
+            throw new OrderRuleException("The payment deadline for this order has ended.");
         var customer = await db.Users.AsNoTracking().FirstAsync(u => u.Id == order.CustomerId, ct);
 
         var payment = order.StartPayment(method, gateway.Name);
@@ -204,7 +207,8 @@ public class OrderService(
                 // O dinheiro entrou: fica registrado na auditoria como "pagamento.divergente",
                 // que aparece em destaque no resumo do painel para a loja estornar ou resolver.
                 payment.UpdateStatus(PaymentStatus.Approved);
-                alert = $"Pagamento {notification.ExternalId} aprovado no pedido {order.Code}, mas: {ex.Message} Verifique e, se for o caso, estorne.";
+                // O alerta fica gravado na auditoria: vai inteiro no idioma da loja, com o motivo traduzido
+                alert = $"Pagamento {notification.ExternalId} aprovado no pedido {order.Code}, mas: {localizer.TranslateToStoreLanguage(ex)} Verifique e, se for o caso, estorne.";
             }
         }
         else if (payment.Status != PaymentStatus.Approved || notification.Status == PaymentStatus.Refunded)
@@ -292,7 +296,7 @@ public class OrderService(
         ChangeAsync(orderId, AuditActions.OrderItemsChanged, async (order, db) =>
         {
             var product = await db.Products.FirstOrDefaultAsync(p => p.Id == productId && p.IsActive, ct)
-                ?? throw new OrderRuleException("Produto não encontrado.");
+                ?? throw new OrderRuleException("Product not found.");
             order.AddItem(new OrderItem(product.Id, product.Name, product.Price, quantity));
             await ReduceStockAsync(db, product.Id, quantity, product.Name, ct);
             await RequoteShippingAsync(db, order, ct);
@@ -302,7 +306,7 @@ public class OrderService(
     public Task ChangeDeliveryAsync(int orderId, ShippingAddress address, string? notes, CancellationToken ct = default) =>
         ChangeAsync(orderId, AuditActions.OrderDeliveryChanged, async (order, db) =>
         {
-            address.PostalCode = PostalCode.Normalize(address.PostalCode) ?? throw new OrderRuleException("CEP inválido.");
+            address.PostalCode = PostalCode.Normalize(address.PostalCode) ?? throw new OrderRuleException("Invalid postal code.");
             var postalCodeChanged = address.PostalCode != order.Address.PostalCode;
             order.ChangeAddress(address);
             order.Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
@@ -365,7 +369,7 @@ public class OrderService(
 
     private static async Task<Order> LoadOrderAsync(ApplicationDbContext db, int orderId, CancellationToken ct) =>
         await db.Orders.Include(p => p.Items).Include(p => p.Payments).FirstOrDefaultAsync(p => p.Id == orderId, ct)
-            ?? throw new OrderRuleException("Pedido não encontrado.");
+            ?? throw new OrderRuleException("Order not found.");
 
     private static async Task<Dictionary<int, Product>> LoadProductsAsync(ApplicationDbContext db, IEnumerable<int> ids, CancellationToken ct)
     {
@@ -389,7 +393,7 @@ public class OrderService(
             .Where(p => p.Id == productId && p.Stock >= quantity)
             .ExecuteUpdateAsync(s => s.SetProperty(p => p.Stock, p => p.Stock - quantity), ct);
         if (rows == 0)
-            throw new OrderRuleException("Estoque insuficiente para \"{0}\".", name);
+            throw new OrderRuleException("Not enough stock for \"{0}\".", name);
     }
 
     private static Task RestoreStockAsync(ApplicationDbContext db, int productId, int quantity, CancellationToken ct) =>

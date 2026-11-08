@@ -1,4 +1,4 @@
-@page "/painel/usuarios/{Id}"
+@page "/admin/users/{Id}"
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = AppRoles.Admin)]
 @using System.Security.Claims
@@ -6,11 +6,11 @@
 @inject CustomerService CustomerService
 @using Microsoft.AspNetCore.Identity
 
-<PageTitle>@L["Acessos · Painel"]</PageTitle>
+<PageTitle>@L["Access · Admin"]</PageTitle>
 
 @if (user is null)
 {
-    <p>@(loaded ? L["Usuário não encontrado."] : L["Carregando..."])</p>
+    <p>@(loaded ? L["User not found."] : L["Loading..."])</p>
 }
 else
 {
@@ -20,19 +20,19 @@ else
     <section class="panel-box mb-3">
         <div class="form-check">
             <input class="form-check-input" type="checkbox" id="admin" @bind="isAdmin" disabled="@(Id == myId)" />
-            <label class="form-check-label" for="admin"><strong>@L["Admin"]</strong>@L[": acesso total, inclusive a usuários e grupos"]</label>
+            <label class="form-check-label" for="admin"><strong>@L["Admin"]</strong>@L[": full access, including users and groups"]</label>
         </div>
         @if (Id == myId)
         {
-            <div class="small text-secondary">@L["Você não pode remover o seu próprio acesso de Admin."]</div>
+            <div class="small text-secondary">@L["You cannot remove your own Admin access."]</div>
         }
     </section>
 
     <section class="panel-box mb-3">
-        <h2 class="h5">@L["Grupos"]</h2>
+        <h2 class="h5">@L["Groups"]</h2>
         @if (groups.Count == 0)
         {
-            <p class="m-0">@L["Nenhum grupo criado."] <a href="painel/grupos">@L["Criar grupos"]</a></p>
+            <p class="m-0">@L["No groups created."] <a href="admin/groups">@L["Create groups"]</a></p>
         }
         @foreach (var g in groups)
         {
@@ -47,8 +47,8 @@ else
     </section>
 
     <section class="panel-box mb-3">
-        <h2 class="h5">@L["Permissões individuais"]</h2>
-        <p class="small text-secondary">@L["Somam-se às permissões dos grupos."]</p>
+        <h2 class="h5">@L["Individual permissions"]</h2>
+        <p class="small text-secondary">@L["Added to the group permissions."]</p>
         @foreach (var (permissionKey, description) in Permissions.All)
         {
             <div class="form-check">
@@ -61,9 +61,9 @@ else
 
     <Notice Message="@message" IsError="@isError" />
 
-    <button class="btn btn-primary" @onclick="SaveAsync" disabled="@saving">@L["Salvar acessos"]</button>
-    <a href="painel/usuarios" class="btn btn-outline-primary">@L["Voltar"]</a>
-    <p class="small text-secondary mt-2">@L["A pessoa precisará entrar novamente para as mudanças valerem."]</p>
+    <button class="btn btn-primary" @onclick="SaveAsync" disabled="@saving">@L["Save access"]</button>
+    <a href="admin/users" class="btn btn-outline-primary">@L["Back"]</a>
+    <p class="small text-secondary mt-2">@L["The person must sign in again for the changes to take effect."]</p>
 }
 
 @code {
@@ -104,7 +104,7 @@ else
         try
         {
             await Access.SaveAccessAsync(Id, myId, new UserAccessData(isAdmin, selectedGroups.ToList(), selectedPermissions.ToList()));
-            (message, isError) = (L["Acessos salvos."], false);
+            (message, isError) = (L["Access saved."], false);
         }
         catch (AccessException ex)
         {

@@ -1,12 +1,12 @@
 @* Menu lateral do painel: cada link só aparece para quem tem a permissão *@
-<nav class="admin-menu panel-box p-2 mb-3" aria-label="@L["Painel"]">
-    <NavLink href="painel" Match="NavLinkMatch.All">@L["Resumo"]</NavLink>
-    <AuthorizeView Policy="@Permissions.OrdersView"><NavLink href="painel/pedidos">@L["Pedidos"]</NavLink></AuthorizeView>
-    <AuthorizeView Policy="@Permissions.ProductsManage"><NavLink href="painel/produtos">@L["Produtos"]</NavLink></AuthorizeView>
-    <AuthorizeView Policy="@Permissions.CustomersView"><NavLink href="painel/clientes">@L["Clientes"]</NavLink></AuthorizeView>
+<nav class="admin-menu panel-box p-2 mb-3" aria-label="@L["Admin panel"]">
+    <NavLink href="admin" Match="NavLinkMatch.All">@L["Dashboard"]</NavLink>
+    <AuthorizeView Policy="@Permissions.OrdersView"><NavLink href="admin/orders">@L["Orders"]</NavLink></AuthorizeView>
+    <AuthorizeView Policy="@Permissions.ProductsManage"><NavLink href="admin/products">@L["Products"]</NavLink></AuthorizeView>
+    <AuthorizeView Policy="@Permissions.CustomersView"><NavLink href="admin/customers">@L["Customers"]</NavLink></AuthorizeView>
     <AuthorizeView Policy="@AppRoles.Admin">
-        <NavLink href="painel/usuarios">@L["Usuários e acessos"]</NavLink>
-        <NavLink href="painel/grupos">@L["Grupos de funcionários"]</NavLink>
-        <NavLink href="painel/auditoria">@L["Auditoria"]</NavLink>
+        <NavLink href="admin/users">@L["Users and access"]</NavLink>
+        <NavLink href="admin/groups">@L["Employee groups"]</NavLink>
+        <NavLink href="admin/audit">@L["Audit log"]</NavLink>
     </AuthorizeView>
 </nav>

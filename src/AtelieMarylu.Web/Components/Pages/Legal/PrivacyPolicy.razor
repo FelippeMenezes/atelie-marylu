@@ -1,4 +1,4 @@
-@page "/politica-de-privacidade"
+@page "/privacy-policy"
 @using AtelieMarylu.Web.Configuration
 @using Microsoft.Extensions.Options
 @inject IOptions<ShopOptions> Options
@@ -8,7 +8,7 @@
     var language = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     var controller = (string.IsNullOrEmpty(store.LegalName) ? store.Name : store.LegalName) + (string.IsNullOrEmpty(store.TaxDocument) ? "" : $", {store.TaxDocument}");
 }
-<PageTitle>@L["Política de privacidade"] · @store.Name</PageTitle>
+<PageTitle>@L["Privacy policy"] · @store.Name</PageTitle>
 
 @if (language == "es")
 {

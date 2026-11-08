@@ -9,16 +9,16 @@ public class LocalizedIdentityErrorDescriber(IStringLocalizer<SharedResource> lo
     private IdentityError Translate(IdentityError error, string message, params object[] args) =>
         new() { Code = error.Code, Description = localizer[message, args] };
 
-    public override IdentityError PasswordTooShort(int length) => Translate(base.PasswordTooShort(length), "A senha precisa ter pelo menos {0} caracteres.", length);
-    public override IdentityError PasswordRequiresDigit() => Translate(base.PasswordRequiresDigit(), "A senha precisa ter pelo menos um número.");
-    public override IdentityError PasswordRequiresLower() => Translate(base.PasswordRequiresLower(), "A senha precisa ter pelo menos uma letra minúscula.");
-    public override IdentityError PasswordRequiresUpper() => Translate(base.PasswordRequiresUpper(), "A senha precisa ter pelo menos uma letra maiúscula.");
-    public override IdentityError PasswordRequiresNonAlphanumeric() => Translate(base.PasswordRequiresNonAlphanumeric(), "A senha precisa ter pelo menos um símbolo.");
-    public override IdentityError PasswordMismatch() => Translate(base.PasswordMismatch(), "Senha incorreta.");
-    public override IdentityError DuplicateEmail(string email) => Translate(base.DuplicateEmail(email), "Este e-mail já está cadastrado.");
-    public override IdentityError DuplicateUserName(string userName) => Translate(base.DuplicateUserName(userName), "Este e-mail já está cadastrado.");
-    public override IdentityError InvalidEmail(string? email) => Translate(base.InvalidEmail(email), "E-mail inválido.");
-    public override IdentityError InvalidUserName(string? userName) => Translate(base.InvalidUserName(userName), "E-mail inválido.");
-    public override IdentityError LoginAlreadyAssociated() => Translate(base.LoginAlreadyAssociated(), "Esta conta já está conectada a outro cadastro da loja.");
-    public override IdentityError DefaultError() => Translate(base.DefaultError(), "Não foi possível concluir. Tente novamente.");
+    public override IdentityError PasswordTooShort(int length) => Translate(base.PasswordTooShort(length), "The password must have at least {0} characters.", length);
+    public override IdentityError PasswordRequiresDigit() => Translate(base.PasswordRequiresDigit(), "The password must have at least one number.");
+    public override IdentityError PasswordRequiresLower() => Translate(base.PasswordRequiresLower(), "The password must have at least one lowercase letter.");
+    public override IdentityError PasswordRequiresUpper() => Translate(base.PasswordRequiresUpper(), "The password must have at least one uppercase letter.");
+    public override IdentityError PasswordRequiresNonAlphanumeric() => Translate(base.PasswordRequiresNonAlphanumeric(), "The password must have at least one symbol.");
+    public override IdentityError PasswordMismatch() => Translate(base.PasswordMismatch(), "Wrong password.");
+    public override IdentityError DuplicateEmail(string email) => Translate(base.DuplicateEmail(email), "This email is already registered.");
+    public override IdentityError DuplicateUserName(string userName) => Translate(base.DuplicateUserName(userName), "This email is already registered.");
+    public override IdentityError InvalidEmail(string? email) => Translate(base.InvalidEmail(email), "Invalid email.");
+    public override IdentityError InvalidUserName(string? userName) => Translate(base.InvalidUserName(userName), "Invalid email.");
+    public override IdentityError LoginAlreadyAssociated() => Translate(base.LoginAlreadyAssociated(), "This account is already connected to another store account.");
+    public override IdentityError DefaultError() => Translate(base.DefaultError(), "Could not complete. Try again.");
 }

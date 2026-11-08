@@ -3,38 +3,38 @@
 @* Cabeçalho estático. O menu do celular abre com um checkbox + CSS (funciona sem JavaScript);
    só o contador do carrinho é interativo, porque lê o carrinho guardado no navegador. *@
 <header class="top-bar">
-    <nav class="container d-flex align-items-center gap-3 flex-wrap" aria-label="@L["Principal"]">
+    <nav class="container d-flex align-items-center gap-3 flex-wrap" aria-label="@L["Main"]">
         <a href="" class="brand">
             <img src="img/logo-nav.png" alt="" width="40" height="41" />
             <span>@L["Ateliê Marylu"]</span>
         </a>
 
-        <a href="cart" class="cart ms-auto d-lg-none" aria-label="@L["Carrinho"]">
-            @L["Carrinho"] <CartCounter @rendermode="InteractiveServer" />
+        <a href="cart" class="cart ms-auto d-lg-none" aria-label="@L["Cart"]">
+            @L["Cart"] <CartCounter @rendermode="InteractiveServer" />
         </a>
 
-        <input type="checkbox" id="menu-aberto" class="menu-toggle" aria-label="@L["Abrir menu"]" />
+        <input type="checkbox" id="menu-aberto" class="menu-toggle" aria-label="@L["Open menu"]" />
         <label for="menu-aberto" class="menu-button d-lg-none" aria-hidden="true"><span></span></label>
 
         <div class="links ms-lg-auto">
-            <a href="">@L["Loja"]</a>
+            <a href="">@L["Store"]</a>
 
             <AuthorizeView Policy="@Permissions.AccessAdmin">
-                <a href="painel">@L["Painel"]</a>
+                <a href="admin">@L["Admin panel"]</a>
             </AuthorizeView>
 
             <AuthorizeView>
                 <Authorized>
-                    <a href="meus-pedidos">@L["Meus pedidos"]</a>
-                    <a href="Account/Manage">@L["Minha conta"]</a>
+                    <a href="my-orders">@L["My orders"]</a>
+                    <a href="Account/Manage">@L["My account"]</a>
                     <form action="Account/Logout" method="post" class="d-inline">
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@NavigationManager.ToBaseRelativePath(NavigationManager.Uri)" />
-                        <button type="submit" class="btn btn-link p-0">@L["Sair"]</button>
+                        <button type="submit" class="btn btn-link p-0">@L["Sign out"]</button>
                     </form>
                 </Authorized>
                 <NotAuthorized>
-                    <a href="Account/Login">@L["Entrar"]</a>
+                    <a href="Account/Login">@L["Sign in"]</a>
                 </NotAuthorized>
             </AuthorizeView>
 
@@ -42,12 +42,15 @@
                 @foreach (var (language, name) in SupportedLanguages.All)
                 {
                     <a href="language/@language?returnUrl=@Uri.EscapeDataString("/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri))"
-                       data-enhance-nav="false" aria-label="@name" aria-current="@(language == CurrentLanguage ? "true" : null)">@language[..2].ToUpperInvariant()</a>
+                       data-enhance-nav="false" aria-label="@name" title="@name" aria-current="@(language == CurrentLanguage ? "true" : null)">
+                        @* Bandeiras da biblioteca flag-icons (MIT), copiadas para o site: emoji de bandeira não aparece no Windows *@
+                        <img src="img/flags/@(language).svg" alt="" width="24" height="18" />
+                    </a>
                 }
             </span>
 
             <a href="cart" class="cart d-none d-lg-inline">
-                @L["Carrinho"] <CartCounter @rendermode="InteractiveServer" />
+                @L["Cart"] <CartCounter @rendermode="InteractiveServer" />
             </a>
         </div>
     </nav>

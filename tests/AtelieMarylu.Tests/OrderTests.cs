@@ -119,7 +119,7 @@ public class OrderTests
 
         var isError = Assert.Throws<OrderRuleException>(() => order.ConfirmPayment(oldPayment));
 
-        Assert.Contains("diferente", isError.Message);
+        Assert.Contains("differs", isError.Message);
         Assert.Equal(OrderStatus.AwaitingPayment, order.Status);
     }
 

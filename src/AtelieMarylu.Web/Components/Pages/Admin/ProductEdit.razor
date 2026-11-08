@@ -1,5 +1,5 @@
-@page "/painel/produtos/novo"
-@page "/painel/produtos/{Id:int}"
+@page "/admin/products/new"
+@page "/admin/products/{Id:int}"
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Permissions.ProductsManage)]
 @using System.ComponentModel.DataAnnotations
@@ -10,13 +10,13 @@
 @inject ILogger<ProductEdit> Logger
 @implements IDisposable
 
-<PageTitle>@L["{0} · Painel", Id is null ? L["Novo produto"] : "Editar produto"]</PageTitle>
+<PageTitle>@L["{0} · Admin", Id is null ? L["New product"] : L["Edit product"]]</PageTitle>
 
-<h1>@(Id is null ? L["Novo produto"] : L["Editar produto"])</h1>
+<h1>@(Id is null ? L["New product"] : L["Edit product"])</h1>
 
 @if (Id is not null && !found)
 {
-    <p>@L["Produto não encontrado."]</p>
+    <p>@L["Product not found."]</p>
 }
 else
 {
@@ -25,42 +25,42 @@ else
         <div class="panel-box mb-3">
             <div class="row g-3">
                 <div class="col-md-8">
-                    <label class="form-label" for="nome">@L["Nome"]</label>
+                    <label class="form-label" for="nome">@L["Name"]</label>
                     <InputText id="nome" class="form-control" @bind-Value="form.Name" />
                     <ValidationMessage For="() => form.Name" />
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" for="preco">@L["Preço (R$)"]</label>
+                    <label class="form-label" for="preco">@L["Price (R$)"]</label>
                     <InputNumber id="preco" class="form-control" @bind-Value="form.Price" step="0.01" />
                     <ValidationMessage For="() => form.Price" />
                 </div>
                 <div class="col-12">
-                    <label class="form-label" for="descricao">@L["Descrição (inclua medidas e materiais)"]</label>
+                    <label class="form-label" for="descricao">@L["Description (include sizes and materials)"]</label>
                     <InputTextArea id="descricao" class="form-control" rows="5" @bind-Value="form.Description" />
                     <ValidationMessage For="() => form.Description" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="estoque">@L["Estoque"]</label>
+                    <label class="form-label" for="estoque">@L["Stock"]</label>
                     <InputNumber id="estoque" class="form-control" @bind-Value="form.Stock" />
                     <ValidationMessage For="() => form.Stock" />
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" for="prazo">@L["Prazo de produção (dias úteis)"]</label>
-                    <InputNumber id="prazo" class="form-control" @bind-Value="form.ProductionDays" placeholder="@L["Vazio = pronta entrega"]" />
+                    <label class="form-label" for="prazo">@L["Production time (business days)"]</label>
+                    <InputNumber id="prazo" class="form-control" @bind-Value="form.ProductionDays" placeholder="@L["Empty = ready to ship"]" />
                     <ValidationMessage For="() => form.ProductionDays" />
                 </div>
                 <div class="col-md-5 d-flex align-items-end">
                     <div class="form-check">
                         <InputCheckbox id="ativo" class="form-check-input" @bind-Value="form.IsActive" />
-                        <label class="form-check-label" for="ativo">@L["Ativo (aparece na loja)"]</label>
+                        <label class="form-check-label" for="ativo">@L["Active (shown in the store)"]</label>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="panel-box mb-3">
-            <h2 class="h5">@L["Fotos"]</h2>
-            <p class="small text-secondary">@L["A primeira foto é a capa. As fotos são reduzidas, convertidas para WEBP e têm os dados de localização (GPS) removidos."]</p>
+            <h2 class="h5">@L["Photos"]</h2>
+            <p class="small text-secondary">@L["The first photo is the cover. Photos are resized, converted to WEBP and have their location (GPS) data removed."]</p>
             <div class="d-flex gap-3 flex-wrap mb-3">
                 @for (var i = 0; i < photos.Count; i++)
                 {
@@ -69,38 +69,38 @@ else
                     <div style="width: 130px">
                         <ProductPhoto Url="@photo.ThumbnailUrl" Name="@form.Name" Class="rounded-3" />
                         <div class="d-flex justify-content-between mt-1">
-                            <button type="button" class="btn btn-link btn-sm p-0" disabled="@(index == 0)" @onclick="() => Move(index, -1)" aria-label="@L["Mover para a esquerda"]">◀</button>
-                            <button type="button" class="btn btn-link btn-sm p-0 text-danger" @onclick="() => Remove(index)">@L["Remover"]</button>
-                            <button type="button" class="btn btn-link btn-sm p-0" disabled="@(index == photos.Count - 1)" @onclick="() => Move(index, 1)" aria-label="@L["Mover para a direita"]">▶</button>
+                            <button type="button" class="btn btn-link btn-sm p-0" disabled="@(index == 0)" @onclick="() => Move(index, -1)" aria-label="@L["Move left"]">◀</button>
+                            <button type="button" class="btn btn-link btn-sm p-0 text-danger" @onclick="() => Remove(index)">@L["Remove"]</button>
+                            <button type="button" class="btn btn-link btn-sm p-0" disabled="@(index == photos.Count - 1)" @onclick="() => Move(index, 1)" aria-label="@L["Move right"]">▶</button>
                         </div>
-                        @if (index == 0) { <div class="small text-center tag d-block">@L["Capa"]</div> }
+                        @if (index == 0) { <div class="small text-center tag d-block">@L["Cover"]</div> }
                     </div>
                 }
             </div>
             <InputFile OnChange="UploadPhotosAsync" multiple accept="image/jpeg,image/png,image/webp" class="form-control" disabled="@uploading" />
-            <div class="small text-secondary mt-1">@(uploading ? L["Processando fotos..."] : L["JPG, PNG ou WEBP, até 8 MB cada, no máximo {0} fotos.", MaxPhotos])</div>
+            <div class="small text-secondary mt-1">@(uploading ? L["Processing photos..."] : L["JPG, PNG or WEBP, up to 8 MB each, {0} photos at most.", MaxPhotos])</div>
         </div>
 
         <div class="panel-box mb-3">
-            <h2 class="h5">@L["Embalagem (para cálculo de frete)"]</h2>
+            <h2 class="h5">@L["Packaging (for shipping calculation)"]</h2>
             <div class="row g-3">
                 <div class="col-6 col-md-3">
-                    <label class="form-label" for="peso">@L["Peso (g)"]</label>
+                    <label class="form-label" for="peso">@L["Weight (g)"]</label>
                     <InputNumber id="peso" class="form-control" @bind-Value="form.WeightGrams" />
                     <ValidationMessage For="() => form.WeightGrams" />
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label" for="altura">@L["Altura (cm)"]</label>
+                    <label class="form-label" for="altura">@L["Height (cm)"]</label>
                     <InputNumber id="altura" class="form-control" @bind-Value="form.HeightCm" />
                     <ValidationMessage For="() => form.HeightCm" />
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label" for="largura">@L["Largura (cm)"]</label>
+                    <label class="form-label" for="largura">@L["Width (cm)"]</label>
                     <InputNumber id="largura" class="form-control" @bind-Value="form.WidthCm" />
                     <ValidationMessage For="() => form.WidthCm" />
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label" for="comprimento">@L["Comprimento (cm)"]</label>
+                    <label class="form-label" for="comprimento">@L["Length (cm)"]</label>
                     <InputNumber id="comprimento" class="form-control" @bind-Value="form.LengthCm" />
                     <ValidationMessage For="() => form.LengthCm" />
                 </div>
@@ -110,11 +110,11 @@ else
         <Notice Message="@message" IsError="@isError" />
 
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary" disabled="@(saving || uploading)">@L["Salvar"]</button>
-            <a href="painel/produtos" class="btn btn-outline-primary">@L["Voltar"]</a>
+            <button type="submit" class="btn btn-primary" disabled="@(saving || uploading)">@L["Save"]</button>
+            <a href="admin/products" class="btn btn-outline-primary">@L["Back"]</a>
             @if (Id is not null && form.IsActive)
             {
-                <a href="@($"produto/{Id}")" target="_blank" class="btn btn-link ms-auto">@L["Ver na loja"]</a>
+                <a href="@($"product/{Id}")" target="_blank" class="btn btn-link ms-auto">@L["View in store"]</a>
             }
         </div>
     </EditForm>
@@ -162,14 +162,14 @@ else
             {
                 if (photos.Count >= MaxPhotos)
                 {
-                    (message, isError) = (L["Limite de {0} fotos.", MaxPhotos], true);
+                    (message, isError) = (L["Limit of {0} photos.", MaxPhotos], true);
                     break;
                 }
                 var saved = await Images.SaveAsync(file);
                 photos.Add(saved);
                 newPhotos.Add(saved);
             }
-            if (!isError) (message, isError) = (L["Fotos adicionadas. Clique em Salvar para confirmar."], false);
+            if (!isError) (message, isError) = (L["Photos added. Click Save to confirm."], false);
         }
         catch (InvalidOperationException ex)
         {
@@ -178,7 +178,7 @@ else
         catch (IOException ex)
         {
             Logger.LogWarning(ex, "Falha no upload de imagem");
-            (message, isError) = (L["Não foi possível enviar a foto (máximo 8 MB)."], true);
+            (message, isError) = (L["Could not upload the photo (8 MB maximum)."], true);
         }
         finally
         {
@@ -207,7 +207,7 @@ else
             var data = new ProductInput(form.Name, form.Description, form.Price, form.Stock, form.IsActive, form.ProductionDays,
                 form.WeightGrams, form.HeightCm, form.WidthCm, form.LengthCm, stockWhenOpened);
             var productId = await ProductService.SaveAsync(Id, data, photos);
-            if (productId is null) { (message, isError) = (L["Produto não encontrado."], true); return; }
+            if (productId is null) { (message, isError) = (L["Product not found."], true); return; }
 
             Images.Delete(removedPhotos.SelectMany(f => new[] { f.Url, f.ThumbnailUrl }).ToArray());
             removedPhotos.Clear();
@@ -215,11 +215,11 @@ else
 
             if (Id is null)
             {
-                Navigation.NavigateTo($"painel/produtos/{productId}");
+                Navigation.NavigateTo($"admin/products/{productId}");
                 return;
             }
             await LoadAsync();
-            (message, isError) = (L["Produto salvo."], false);
+            (message, isError) = (L["Product saved."], false);
         }
         catch (ProductRuleException ex)
         {
@@ -228,12 +228,12 @@ else
         catch (InvalidOperationException ex)
         {
             Logger.LogError(ex, "Falha ao salvar o produto {ProdutoId}", Id);
-            (message, isError) = (L["Não foi possível salvar. Tente novamente."], true);
+            (message, isError) = (L["Could not save. Try again."], true);
         }
         catch (IOException ex)
         {
             Logger.LogError(ex, "Falha ao salvar o produto {ProdutoId}", Id);
-            (message, isError) = (L["Não foi possível salvar. Tente novamente."], true);
+            (message, isError) = (L["Could not save. Try again."], true);
         }
         finally
         {
@@ -250,7 +250,7 @@ else
 
     private sealed class ProductForm
     {
-        [Required(ErrorMessage = "Informe o nome."), StringLength(120)]
+        [Required(ErrorMessage = "Enter the name."), StringLength(120)]
         public string Name { get; set; } = "";
 
         [StringLength(2000)]
@@ -258,27 +258,27 @@ else
 
         // Os limites estão escritos com ponto: sem ParseLimitsInInvariantCulture, a cultura pt-BR
         // (que usa vírgula) não consegue ler "0.01" e a validação derruba a página ao digitar o preço
-        [Range(typeof(decimal), "0.01", "99999", ErrorMessage = "Preço inválido.", ParseLimitsInInvariantCulture = true)]
+        [Range(typeof(decimal), "0.01", "99999", ErrorMessage = "Invalid price.", ParseLimitsInInvariantCulture = true)]
         public decimal Price { get; set; }
 
-        [Range(0, 100000, ErrorMessage = "Estoque inválido.")]
+        [Range(0, 100000, ErrorMessage = "Invalid stock.")]
         public int Stock { get; set; }
 
-        [Range(1, 120, ErrorMessage = "Entre 1 e 120 dias.")]
+        [Range(1, 120, ErrorMessage = "Between 1 and 120 days.")]
         public int? ProductionDays { get; set; }
 
         public bool IsActive { get; set; } = true;
 
-        [Range(1, 30000, ErrorMessage = "Entre 1 g e 30 kg.")]
+        [Range(1, 30000, ErrorMessage = "Between 1 g and 30 kg.")]
         public int WeightGrams { get; set; } = 300;
 
-        [Range(1, 100, ErrorMessage = "Entre 1 e 100 cm.")]
+        [Range(1, 100, ErrorMessage = "Between 1 and 100 cm.")]
         public int HeightCm { get; set; } = 5;
 
-        [Range(1, 100, ErrorMessage = "Entre 1 e 100 cm.")]
+        [Range(1, 100, ErrorMessage = "Between 1 and 100 cm.")]
         public int WidthCm { get; set; } = 20;
 
-        [Range(1, 100, ErrorMessage = "Entre 1 e 100 cm.")]
+        [Range(1, 100, ErrorMessage = "Between 1 and 100 cm.")]
         public int LengthCm { get; set; } = 25;
     }
 }

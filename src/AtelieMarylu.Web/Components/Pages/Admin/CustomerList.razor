@@ -1,28 +1,28 @@
-@page "/painel/clientes"
+@page "/admin/customers"
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Permissions.CustomersView)]
 @inject CustomerService CustomerService
 
-<PageTitle>@L["Clientes · Painel"]</PageTitle>
+<PageTitle>@L["Customers · Admin"]</PageTitle>
 
-<h1>@L["Clientes"]</h1>
+<h1>@L["Customers"]</h1>
 
-<input class="form-control mb-3" style="max-width: 320px" placeholder="@L["Buscar por nome ou e-mail"]"
+<input class="form-control mb-3" style="max-width: 320px" placeholder="@L["Search by name or email"]"
        @bind="search" @bind:event="oninput" @bind:after="LoadAsync" />
 
 @if (customers is null)
 {
-    <p>@L["Carregando..."]</p>
+    <p>@L["Loading..."]</p>
 }
 else if (customers.Count == 0)
 {
-    <p>@L["Nenhum cliente encontrado."]</p>
+    <p>@L["No customers found."]</p>
 }
 else
 {
     <div class="table-responsive panel-box p-0">
         <table class="table align-middle m-0">
-            <thead><tr><th>@L["Nome"]</th><th>@L["E-mail"]</th><th>@L["Telefone"]</th><th>@L["Cadastro"]</th><th class="text-end">@L["Pedidos"]</th><th></th></tr></thead>
+            <thead><tr><th>@L["Name"]</th><th>@L["Email"]</th><th>@L["Phone"]</th><th>@L["Signed up"]</th><th class="text-end">@L["Orders"]</th><th></th></tr></thead>
             <tbody>
                 @foreach (var c in customers)
                 {
@@ -32,7 +32,7 @@ else
                         <td>@c.Phone</td>
                         <td>@c.CreatedAt.FormatBrasilia("dd/MM/yyyy")</td>
                         <td class="text-end">@c.Orders</td>
-                        <td class="text-end"><a href="painel/clientes/@c.Id">@L["Ver"]</a></td>
+                        <td class="text-end"><a href="admin/customers/@c.Id">@L["View"]</a></td>
                     </tr>
                 }
             </tbody>

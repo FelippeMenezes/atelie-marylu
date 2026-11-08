@@ -1,34 +1,34 @@
-@page "/painel/usuarios"
+@page "/admin/users"
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = AppRoles.Admin)]
 @inject AccessService Access
 
-<PageTitle>@L["Usuários · Painel"]</PageTitle>
+<PageTitle>@L["Users · Admin"]</PageTitle>
 
-<h1>@L["Usuários e acessos"]</h1>
-<p class="text-secondary">@L["Para tornar alguém funcionário, a pessoa primeiro cria a conta no site. Depois, aqui, dê permissões individuais ou coloque-a em um grupo."]</p>
+<h1>@L["Users and access"]</h1>
+<p class="text-secondary">@L["To make someone an employee, they first create an account on the site. Then, here, give them individual permissions or add them to a group."]</p>
 
-<input class="form-control mb-3" style="max-width: 320px" placeholder="@L["Buscar por nome ou e-mail"]"
+<input class="form-control mb-3" style="max-width: 320px" placeholder="@L["Search by name or email"]"
        @bind="search" @bind:event="oninput" @bind:after="LoadAsync" />
 
 @if (users is null)
 {
-    <p>@L["Carregando..."]</p>
+    <p>@L["Loading..."]</p>
 }
 else
 {
     <div class="table-responsive panel-box p-0">
         <table class="table align-middle m-0">
-            <thead><tr><th>@L["Nome"]</th><th>@L["E-mail"]</th><th>@L["Perfil"]</th><th>@L["Grupos"]</th><th></th></tr></thead>
+            <thead><tr><th>@L["Name"]</th><th>@L["Email"]</th><th>@L["Profile"]</th><th>@L["Groups"]</th><th></th></tr></thead>
             <tbody>
                 @foreach (var u in users)
                 {
                     <tr>
                         <td>@u.Name</td>
                         <td>@u.Email</td>
-                        <td>@(u.IsAdmin ? "Admin" : u.IsEmployee ? L["Funcionário"] : L["Cliente"])</td>
+                        <td>@(u.IsAdmin ? "Admin" : u.IsEmployee ? L["Employee"] : L["Customer"])</td>
                         <td>@string.Join(", ", u.Groups)</td>
-                        <td class="text-end"><a href="painel/usuarios/@u.Id">@L["Acessos"]</a></td>
+                        <td class="text-end"><a href="admin/users/@u.Id">@L["Access"]</a></td>
                     </tr>
                 }
             </tbody>

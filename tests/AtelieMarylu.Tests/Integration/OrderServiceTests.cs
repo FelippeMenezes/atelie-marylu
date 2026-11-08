@@ -5,10 +5,12 @@ using AtelieMarylu.Domain.Payments;
 using AtelieMarylu.Domain.Orders;
 using AtelieMarylu.Web.Configuration;
 using AtelieMarylu.Infrastructure.Integrations;
+using AtelieMarylu.Web;
 using AtelieMarylu.Web.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -31,8 +33,13 @@ public class OrderServiceTests(TestDatabase database) : IClassFixture<TestDataba
     {
         var audit = new AuditService(new CurrentUserService(new ServiceCollection().BuildServiceProvider(), new HttpContextAccessor()), database);
         return new OrderService(database, new SimulatedShippingCalculator(), new SimulatedPaymentGateway(), audit, new OrderEvents(),
-            Options.Create(store), clock, NullLogger<OrderService>.Instance);
+            Options.Create(store), clock, Localizer(), NullLogger<OrderService>.Instance);
     }
+
+    // Localizador de verdade, lendo os .resx do projeto Web
+    private static IStringLocalizer<SharedResource> Localizer() =>
+        new ServiceCollection().AddLogging().AddLocalization(o => o.ResourcesPath = "Resources").BuildServiceProvider()
+            .GetRequiredService<IStringLocalizer<SharedResource>>();
 
     private static ShippingAddress Address() => new()
     {
@@ -173,7 +180,36 @@ public class OrderServiceTests(TestDatabase database) : IClassFixture<TestDataba
         await using var db = database.CreateDbContext();
         var stored = await db.Orders.SingleAsync(p => p.Id == order.Id);
         Assert.Equal(OrderStatus.AwaitingPayment, stored.Status);
-        Assert.True(await db.AuditEntries.AnyAsync(x => x.Action == AuditActions.PaymentMismatch && x.EntityId == order.Id.ToString()));
+        var alert = await db.AuditEntries.SingleAsync(x => x.Action == AuditActions.PaymentMismatch && x.EntityId == order.Id.ToString());
+        // O alerta é gravado inteiro em português, inclusive o motivo
+        Assert.Contains("diferente do valor do pedido", alert.Details);
+    }
+
+    [FactWithDatabase]
+    public async Task Payment_on_cancelled_order_alerts_with_translated_status()
+    {
+        var customer = await database.CreateCustomerAsync();
+        var product = await database.CreateProductAsync(stock: 5);
+        var service = Service();
+        var order = await service.CreateAsync(customer.Id, [new CartItem(product.Id, 1)], Address(), "pac");
+        var pix = await service.StartPaymentAsync(order.Id, PaymentMethod.Pix);
+        await service.CancelAsync(order.Id);
+
+        // Mesmo com o site em inglês na hora, o registro gravado fica no idioma da loja
+        var previous = System.Globalization.CultureInfo.CurrentUICulture;
+        System.Globalization.CultureInfo.CurrentUICulture = new System.Globalization.CultureInfo("en");
+        try
+        {
+            await service.ProcessNotificationAsync(new PaymentNotification("evt-cancelado", pix.ExternalId!, PaymentStatus.Approved, pix.Amount));
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = previous;
+        }
+
+        await using var db = database.CreateDbContext();
+        var alert = await db.AuditEntries.SingleAsync(x => x.Action == AuditActions.PaymentMismatch && x.EntityId == order.Id.ToString());
+        Assert.Contains("Pedido está Cancelado e não pode receber pagamento.", alert.Details);
     }
 
     [FactWithDatabase]

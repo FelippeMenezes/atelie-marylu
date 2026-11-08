@@ -1,8 +1,8 @@
 @* Seletor − / + (mais fácil de tocar no celular do que um campo numérico) *@
-<span class="quantity" role="group" aria-label="@L["Quantidade"]">
-    <button type="button" @onclick="() => ChangeValue(Value - 1)" disabled="@(Disabled || Value <= Min)" aria-label="@L["Diminuir"]">−</button>
+<span class="quantity" role="group" aria-label="@L["Quantity"]">
+    <button type="button" @onclick="() => ChangeValue(Value - 1)" disabled="@(Disabled || Value <= Min)" aria-label="@L["Decrease"]">−</button>
     <span aria-live="polite">@Value</span>
-    <button type="button" @onclick="() => ChangeValue(Value + 1)" disabled="@(Disabled || Value >= Max)" aria-label="@L["Aumentar"]">+</button>
+    <button type="button" @onclick="() => ChangeValue(Value + 1)" disabled="@(Disabled || Value >= Max)" aria-label="@L["Increase"]">+</button>
 </span>
 
 @code {

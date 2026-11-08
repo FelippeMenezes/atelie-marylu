@@ -2,22 +2,22 @@
 @inject ProductService ProductService
 @inject NavigationManager Navigation
 
-<PageTitle>@L["Ateliê Marylu · Costura criativa"]</PageTitle>
+<PageTitle>@L["Ateliê Marylu · Creative sewing"]</PageTitle>
 <HeadContent>
-    <meta name="description" content="@L["Bolsas, necessaires e acessórios costurados à mão no Ateliê Marylu. Compre online com PIX ou cartão."]" />
+    <meta name="description" content="@L["Bags, pouches and accessories sewn by hand at Ateliê Marylu. Buy online with PIX or card."]" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="@L["Ateliê Marylu · Costura criativa"]" />
-    <meta property="og:description" content="@L["Peças feitas à mão, ponto a ponto, com carinho."]" />
+    <meta property="og:title" content="@L["Ateliê Marylu · Creative sewing"]" />
+    <meta property="og:description" content="@L["Handmade pieces, stitch by stitch, with care."]" />
     <meta property="og:image" content="@(Navigation.BaseUri)img/logo.png" />
     <link rel="canonical" href="@Navigation.BaseUri" />
 </HeadContent>
 
-<h1>@L["Peças feitas à mão"]</h1>
-<p class="mb-4">@L["Bolsas, necessaires e acessórios costurados um a um no ateliê. Cada peça é única. Você pode montar o carrinho sem cadastro."]</p>
+<h1>@L["Handmade pieces"]</h1>
+<p class="mb-4">@L["Bags, pouches and accessories sewn one by one in our studio. Each piece is unique. You can fill your cart without signing up."]</p>
 
 @if (products.Count == 0)
 {
-    <p>@L["Nenhum produto disponível no momento. Acompanhe as novidades no Instagram."]</p>
+    <p>@L["No products available right now. Follow the news on Instagram."]</p>
 }
 else
 {
@@ -32,15 +32,15 @@ else
                     <a href="@p.Url"><h2 class="h6 m-0">@p.Name</h2></a>
                     @if (p.Stock == 0)
                     {
-                        <span class="tag align-self-start">@L["Esgotado"]</span>
+                        <span class="tag align-self-start">@L["Sold out"]</span>
                     }
                     else if (p.Stock <= 2)
                     {
-                        <span class="tag align-self-start">@L["Últimas unidades"]</span>
+                        <span class="tag align-self-start">@L["Last units"]</span>
                     }
                     else if (p.ProductionDays is not null)
                     {
-                        <span class="tag align-self-start">@L["Sob encomenda"]</span>
+                        <span class="tag align-self-start">@L["Made to order"]</span>
                     }
                     <ProductPrice Price="p.Price" />
                 </div>

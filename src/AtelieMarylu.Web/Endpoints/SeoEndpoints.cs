@@ -15,10 +15,10 @@ public static class SeoEndpoints
             var text = $"""
                 User-agent: *
                 Disallow: /Account/
-                Disallow: /painel
+                Disallow: /admin
                 Disallow: /checkout
                 Disallow: /cart
-                Disallow: /meus-pedidos
+                Disallow: /my-orders
                 Sitemap: {baseUrl}/sitemap.xml
                 """;
             return Results.Text(text, "text/plain", Encoding.UTF8);
@@ -34,7 +34,7 @@ public static class SeoEndpoints
             {
                 xml.WriteStartElement("urlset", "http://www.sitemaps.org/schemas/sitemap/0.9");
                 Url(xml, $"{baseUrl}/");
-                foreach (var url in new[] { "trocas-e-devolucoes", "politica-de-privacidade", "termos-de-uso" })
+                foreach (var url in new[] { "returns-policy", "privacy-policy", "terms-of-use" })
                     Url(xml, $"{baseUrl}/{url}");
                 foreach (var p in products)
                     Url(xml, $"{baseUrl}/{p.Url}");

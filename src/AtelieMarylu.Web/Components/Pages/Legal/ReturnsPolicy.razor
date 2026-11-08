@@ -1,4 +1,4 @@
-@page "/trocas-e-devolucoes"
+@page "/returns-policy"
 @using AtelieMarylu.Web.Configuration
 @using Microsoft.Extensions.Options
 @inject IOptions<ShopOptions> Options
@@ -7,7 +7,7 @@
     var store = Options.Value;
     var language = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 }
-<PageTitle>@L["Trocas e devoluções"] · @store.Name</PageTitle>
+<PageTitle>@L["Exchanges and returns"] · @store.Name</PageTitle>
 
 @if (language == "es")
 {

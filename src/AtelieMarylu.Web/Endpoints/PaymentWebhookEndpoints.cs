@@ -14,7 +14,7 @@ public static class PaymentWebhookEndpoints
         if (!app.Environment.IsDevelopment())
             return;
 
-        app.MapPost("/api/webhooks/pagamento", async (HttpRequest request, IPaymentGateway gateway, OrderService orders, CancellationToken ct) =>
+        app.MapPost("/api/webhooks/payment", async (HttpRequest request, IPaymentGateway gateway, OrderService orders, CancellationToken ct) =>
         {
             using var reader = new StreamReader(request.Body);
             var body = await reader.ReadToEndAsync(ct);

@@ -11,7 +11,20 @@ namespace AtelieMarylu.Tests;
 // Testes de componentes Blazor com bUnit: renderizam o componente em memória, sem navegador
 public class ComponentTests : BunitContext
 {
-    public ComponentTests() => Services.AddLocalization();
+    private readonly CultureInfo _previousUiCulture = CultureInfo.CurrentUICulture;
+
+    // As chaves das traduções são em inglês; os testes conferem o texto em português, o idioma padrão do site
+    public ComponentTests()
+    {
+        Services.AddLocalization(options => options.ResourcesPath = "Resources");
+        CultureInfo.CurrentUICulture = new CultureInfo("pt-BR");
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        CultureInfo.CurrentUICulture = _previousUiCulture;
+        base.Dispose(disposing);
+    }
 
     [Fact]
     public void Quantity_respects_maximum()

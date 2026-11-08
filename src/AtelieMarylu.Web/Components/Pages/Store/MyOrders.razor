@@ -1,20 +1,20 @@
-@page "/meus-pedidos"
+@page "/my-orders"
 @attribute [Authorize]
 @using System.Security.Claims
 @inject OrderService Orders
 
-<PageTitle>@L["Meus pedidos · Ateliê Marylu"]</PageTitle>
+<PageTitle>@L["My orders · Ateliê Marylu"]</PageTitle>
 
-<h1>@L["Meus pedidos"]</h1>
+<h1>@L["My orders"]</h1>
 
 @if (orders.Count == 0)
 {
-    <p>@L["Você ainda não fez nenhum pedido."]</p>
-    <a href="" class="btn btn-primary">@L["Ver produtos"]</a>
+    <p>@L["You haven't placed any orders yet."]</p>
+    <a href="" class="btn btn-primary">@L["View products"]</a>
 }
 else
 {
-    <OrdersTable Orders="orders" Link="meus-pedidos" ByCode="true" />
+    <OrdersTable Orders="orders" Link="my-orders" ByCode="true" />
 }
 
 @code {

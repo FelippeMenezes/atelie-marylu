@@ -1,5 +1,5 @@
-@page "/produto/{Id:int}"
-@page "/produto/{Id:int}/{Slug}"
+@page "/product/{Id:int}"
+@page "/product/{Id:int}/{Slug}"
 @using System.Text.Json
 @inject ProductService ProductService
 @inject NavigationManager Navigation
@@ -7,9 +7,9 @@
 @* Página estática (rápida e indexável). Só "adicionar ao carrinho" e "calcular frete" são ilhas interativas. *@
 @if (product is null)
 {
-    <PageTitle>@L["Produto não encontrado"]</PageTitle>
-    <h1>@L["Produto não encontrado"]</h1>
-    <a href="">@L["Voltar para a loja"]</a>
+    <PageTitle>@L["Product not found"]</PageTitle>
+    <h1>@L["Product not found"]</h1>
+    <a href="">@L["Back to the store"]</a>
 }
 else
 {
@@ -33,7 +33,7 @@ else
         @((MarkupString)$"<script type=\"application/ld+json\">{StructuredData(productUrl, image)}</script>")
     </HeadContent>
 
-    <nav aria-label="@L["Navegação"]" class="small mb-3"><a href="">@L["Loja"]</a> › @product.Name</nav>
+    <nav aria-label="@L["Navigation"]" class="small mb-3"><a href="">@L["Store"]</a> › @product.Name</nav>
 
     <div class="row g-4">
         <div class="col-md-6">
@@ -44,10 +44,10 @@ else
             else
             {
                 var photos = product.Images.OrderBy(i => i.SortOrder).ToList();
-                <div class="gallery" tabindex="0" aria-label="@L["Fotos do produto"]">
+                <div class="gallery" tabindex="0" aria-label="@L["Product photos"]">
                     @for (var i = 0; i < photos.Count; i++)
                     {
-                        <img id="foto-@i" class="product-photo" src="@photos[i].Url" alt="@L["{0}, foto {1} de {2}", product.Name, i + 1, photos.Count]" loading="@(i == 0 ? "eager" : "lazy")" />
+                        <img id="foto-@i" class="product-photo" src="@photos[i].Url" alt="@L["{0}, photo {1} of {2}", product.Name, i + 1, photos.Count]" loading="@(i == 0 ? "eager" : "lazy")" />
                     }
                 </div>
                 @if (photos.Count > 1)
@@ -55,7 +55,7 @@ else
                     <div class="gallery-thumbs">
                         @for (var i = 0; i < photos.Count; i++)
                         {
-                            <a href="@($"{product.Url}#foto-{i}")" aria-label="@L["Ver foto {0}", i + 1]"><img class="product-photo rounded-2" src="@photos[i].ThumbnailUrl" alt="" /></a>
+                            <a href="@($"{product.Url}#foto-{i}")" aria-label="@L["View photo {0}", i + 1]"><img class="product-photo rounded-2" src="@photos[i].ThumbnailUrl" alt="" /></a>
                         }
                     </div>
                 }
@@ -70,32 +70,32 @@ else
             <p class="small">
                 @if (product.ProductionDays is int days)
                 {
-                    <strong>@L["Sob encomenda:"]</strong> <text>@L["produzida em até {0} dias úteis após a confirmação do pagamento, mais o prazo do frete.", days]</text>
+                    <strong>@L["Made to order:"]</strong> <text>@L["made within {0} business days after payment confirmation, plus shipping time.", days]</text>
                 }
                 else
                 {
-                    <strong>@L["Pronta entrega:"]</strong> <text>@L["enviamos em até 2 dias úteis após a confirmação do pagamento."]</text>
+                    <strong>@L["Ready to ship:"]</strong> <text>@L["we ship within 2 business days after payment confirmation."]</text>
                 }
-                <br /><span class="text-secondary">@L["Peça feita à mão: pequenas variações de corte e estampa fazem parte do charme."]</span>
+                <br /><span class="text-secondary">@L["Handmade piece: small variations in cut and print are part of its charm."]</span>
             </p>
 
             @if (product.IsAvailableForSale)
             {
                 @if (product.Stock <= 2)
                 {
-                    <p class="tag mb-2">@L["Últimas {0} unidade(s)", product.Stock]</p>
+                    <p class="tag mb-2">@L["Last {0} unit(s)", product.Stock]</p>
                 }
                 <AddToCart @rendermode="InteractiveServer" ProductId="product.Id" Stock="product.Stock" />
             }
             else
             {
-                <div class="alert alert-secondary">@L["Esgotado no momento. Chame no WhatsApp ou no Instagram para encomendar."]</div>
+                <div class="alert alert-secondary">@L["Sold out for now. Message us on WhatsApp or Instagram to order one."]</div>
             }
 
             <div class="mt-3">
                 <ShippingCalculator @rendermode="InteractiveServer" ProductId="product.Id" />
             </div>
-            <p class="small mt-3"><a href="trocas-e-devolucoes">@L["Trocas e devoluções"]</a> @L["· 7 dias para desistir da compra."]</p>
+            <p class="small mt-3"><a href="returns-policy">@L["Exchanges and returns"]</a> @L["· 7 days to withdraw from the purchase."]</p>
         </div>
     </div>
 }

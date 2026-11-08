@@ -9,9 +9,9 @@
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>@L["Perfil"]</PageTitle>
+<PageTitle>@L["Profile"]</PageTitle>
 
-<h3>@L["Perfil"]</h3>
+<h3>@L["Profile"]</h3>
 <StatusMessage />
 
 <div class="row">
@@ -20,15 +20,15 @@
             <LocalizedDataAnnotationsValidator />
             <ValidationSummary class="text-danger" role="alert" />
             <div class="form-floating mb-3">
-                <input type="text" value="@username" id="username" class="form-control" placeholder="@L["E-mail"]" disabled />
-                <label for="username" class="form-label">@L["E-mail"]</label>
+                <input type="text" value="@username" id="username" class="form-control" placeholder="@L["Email"]" disabled />
+                <label for="username" class="form-label">@L["Email"]</label>
             </div>
             <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-control" placeholder="@L["Telefone"]" />
-                <label for="Input.PhoneNumber" class="form-label">@L["Telefone (opcional)"]</label>
+                <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-control" placeholder="@L["Phone"]" />
+                <label for="Input.PhoneNumber" class="form-label">@L["Phone (optional)"]</label>
                 <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
             </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">@L["Salvar"]</button>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">@L["Save"]</button>
         </EditForm>
     </div>
 </div>
@@ -74,19 +74,19 @@
             var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
             if (!setPhoneResult.Succeeded)
             {
-                RedirectManager.RedirectToCurrentPageWithStatus(L["Erro: não foi possível salvar o telefone."], HttpContext);
+                RedirectManager.RedirectToCurrentPageWithStatus(L["Error: could not save the phone number."], HttpContext);
                 return;
             }
         }
 
         await SignInManager.RefreshSignInAsync(user);
-        RedirectManager.RedirectToCurrentPageWithStatus(L["Perfil atualizado."], HttpContext);
+        RedirectManager.RedirectToCurrentPageWithStatus(L["Profile updated."], HttpContext);
     }
 
     private sealed class InputModel
     {
-        [OptionalPhone(ErrorMessage = "Telefone inválido.")]
-        [Display(Name = "Telefone")]
+        [OptionalPhone(ErrorMessage = "Invalid phone number.")]
+        [Display(Name = "Phone")]
         public string? PhoneNumber { get; set; }
     }
 }
