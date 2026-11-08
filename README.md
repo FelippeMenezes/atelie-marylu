@@ -12,9 +12,9 @@ A solution tem três projetos de código e dois de testes:
 - `tests/AtelieMarylu.Tests`: testes automáticos.
 - `tests/AtelieMarylu.E2E`: teste ponta a ponta, no navegador.
 
-O caminho é sempre **tela → serviço → banco**: as telas não acessam o banco direto. O [guia do projeto](docs/GUIA-DO-PROJETO.md) explica cada parte para quem está começando em C# e .NET.
+O caminho é sempre **tela → serviço → banco**: as telas não acessam o banco direto.
 
-O site está em português do Brasil, espanhol e inglês. O guia explica como acrescentar traduções.
+O site está em português do Brasil, espanhol e inglês. Para acrescentar um texto na tela, use `@L["Texto em português"]` e coloque a tradução em `Resources/SharedResource.es.resx` e `SharedResource.en.resx`. Os testes de `LocalizationTests` falham se faltar tradução.
 
 ## Pré-requisitos
 
@@ -97,7 +97,12 @@ Até a integração com o Mercado Pago, o pagamento é simulado. Na página do p
 
 ## Produção
 
-A loja roda num único servidor com Docker: Caddy (HTTPS automático), a aplicação e o Postgres, definidos em `docker-compose.prod.yml`. O passo a passo para publicar num VPS (hoje na Hostinger, em https://www.ateliemarylu.com.br) está em [docs/DEPLOY.md](docs/DEPLOY.md).
+A loja está no ar em https://www.ateliemarylu.com.br, num VPS da Hostinger. Roda num único servidor com Docker: Caddy (HTTPS automático), a aplicação e o Postgres, definidos em `docker-compose.prod.yml`.
+
+- **Configuração:** fica no `.env.producao`, só no servidor. O modelo, sem valores reais, é o `.env.producao.example`.
+- **Migrations:** em produção, são aplicadas quando a aplicação sobe.
+- **Publicação:** é feita à mão no servidor. O workflow `deploy-hostinger.yml` existe, mas só roda quando é disparado manualmente.
+- **Backup:** o dia a dia fica com o backup automático semanal da Hostinger. Antes de cada publicação, o `deploy/backup.sh` salva o banco e as fotos.
 
 ## CI
 

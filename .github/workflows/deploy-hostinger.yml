@@ -2,7 +2,7 @@
 #
 # Por enquanto só roda à mão (aba Actions → Deploy Hostinger → Run workflow).
 # Depois da primeira publicação conferida, descomente o "push" abaixo para publicar a cada merge.
-# Veja docs/DEPLOY.md, seção "Deploy pela Hostinger".
+# Antes da primeira vez: crie os secrets HOSTINGER_API_KEY e ENV_PRODUCAO e a variable HOSTINGER_VM_ID.
 name: Deploy Hostinger
 
 on:

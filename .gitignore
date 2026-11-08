@@ -15,8 +15,11 @@ Thumbs.db
 # Fotos enviadas pelo painel (ficam no servidor, não no Git)
 src/AtelieMarylu.Web/wwwroot/uploads/
 
-# Plano do projeto (documento pessoal, fica só na máquina local)
+# Documentos pessoais: manual, plano, guia e passo a passo do servidor ficam só na máquina local
+docs/MANUAL.md
 docs/PLANO.md
+docs/DEPLOY.md
+docs/GUIA-DO-PROJETO.md
 
 # Produção: variáveis e backups ficam só no servidor
 .env.producao
