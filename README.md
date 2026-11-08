@@ -106,4 +106,4 @@ A loja está no ar em https://www.ateliemarylu.com.br, num VPS da Hostinger. Rod
 
 ## CI
 
-A cada PR, o GitHub Actions faz o build (avisos viram erro), roda os testes com Postgres e bloqueia pacotes com vulnerabilidade conhecida. O CodeQL analisa a segurança do código, e o Dependabot abre PRs de atualização.
+A cada PR, o GitHub Actions faz o build (avisos viram erro), roda os testes com Postgres e bloqueia pacotes com vulnerabilidade conhecida. O CodeQL analisa a segurança do código.
