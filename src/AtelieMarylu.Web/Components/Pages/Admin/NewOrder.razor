@@ -1,4 +1,4 @@
-@page "/painel/pedidos/novo"
+@page "/admin/orders/new"
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Permissions.OrdersCreate)]
 @using System.Security.Claims
@@ -10,18 +10,18 @@
 @inject NavigationManager Navigation
 @inject ILogger<NewOrder> Logger
 
-<PageTitle>@L["Novo pedido · Painel"]</PageTitle>
+<PageTitle>@L["New order · Admin"]</PageTitle>
 
-<h1>@L["Novo pedido"]</h1>
-<p class="text-secondary">@L["Para vendas feitas pelo Instagram, WhatsApp ou pessoalmente. O cliente precisa ter cadastro."]</p>
+<h1>@L["New order"]</h1>
+<p class="text-secondary">@L["For sales made on Instagram, WhatsApp or in person. The customer must have an account."]</p>
 
 <EditForm Model="address" OnValidSubmit="CreateAsync" FormName="isNew-order">
     <LocalizedDataAnnotationsValidator />
 
     <section class="panel-box mb-3">
-        <h2 class="h5">@L["Cliente"]</h2>
-        <select class="form-select" @bind="customerId" @bind:after="OnCustomerSelectedAsync" aria-label="@L["Cliente"]">
-            <option value="">@L["Escolha o cliente..."]</option>
+        <h2 class="h5">@L["Customer"]</h2>
+        <select class="form-select" @bind="customerId" @bind:after="OnCustomerSelectedAsync" aria-label="@L["Customer"]">
+            <option value="">@L["Choose the customer..."]</option>
             @foreach (var c in customers)
             {
                 <option value="@c.Id">@c.FullName (@c.Email)</option>
@@ -30,7 +30,7 @@
     </section>
 
     <section class="panel-box mb-3">
-        <h2 class="h5">@L["Itens"]</h2>
+        <h2 class="h5">@L["Items"]</h2>
         @foreach (var item in cart.Items)
         {
             var p = products.First(x => x.Id == item.ProductId);
@@ -38,34 +38,34 @@
                 <span>@item.Quantity× @p.Name</span>
                 <span>
                     @((p.Price * item.Quantity).ToBrl())
-                    <button type="button" class="btn btn-link text-danger btn-sm" @onclick="() => { cart.Remove(item.ProductId); ClearShipping(); }">@L["Remover"]</button>
+                    <button type="button" class="btn btn-link text-danger btn-sm" @onclick="() => { cart.Remove(item.ProductId); ClearShipping(); }">@L["Remove"]</button>
                 </span>
             </div>
         }
         <div class="d-flex gap-2 mt-2 flex-wrap">
-            <select class="form-select w-auto" @bind="productId" aria-label="@L["Produto"]">
-                <option value="0">@L["Escolha o produto..."]</option>
+            <select class="form-select w-auto" @bind="productId" aria-label="@L["Product"]">
+                <option value="0">@L["Choose the product..."]</option>
                 @foreach (var p in products.Where(p => p.Stock > 0))
                 {
-                    <option value="@p.Id">@L["{0} · {1} ({2} em estoque)", p.Name, p.Price.ToBrl(), p.Stock]</option>
+                    <option value="@p.Id">@L["{0} · {1} ({2} in stock)", p.Name, p.Price.ToBrl(), p.Stock]</option>
                 }
             </select>
-            <input type="number" class="form-control" style="max-width: 90px" min="1" @bind="quantity" aria-label="@L["Quantidade"]" />
-            <button type="button" class="btn btn-outline-primary" disabled="@(productId == 0)" @onclick="AddItem">@L["Adicionar"]</button>
+            <input type="number" class="form-control" style="max-width: 90px" min="1" @bind="quantity" aria-label="@L["Quantity"]" />
+            <button type="button" class="btn btn-outline-primary" disabled="@(productId == 0)" @onclick="AddItem">@L["Add"]</button>
         </div>
     </section>
 
     <section class="panel-box mb-3">
-        <h2 class="h5">@L["Entrega"]</h2>
+        <h2 class="h5">@L["Delivery"]</h2>
         <AddressFields Address="address" OnPostalCodeChanged="ClearShipping" />
         <div class="mt-3">
             @if (shippingOptions is null)
             {
-                <button type="button" class="btn btn-outline-primary" @onclick="CalculateShippingAsync" disabled="@(cart.IsEmpty || processing)">@L["Calcular frete"]</button>
+                <button type="button" class="btn btn-outline-primary" @onclick="CalculateShippingAsync" disabled="@(cart.IsEmpty || processing)">@L["Calculate shipping"]</button>
             }
             else
             {
-                <select class="form-select w-auto" @bind="shippingCode" aria-label="@L["Frete"]">
+                <select class="form-select w-auto" @bind="shippingCode" aria-label="@L["Shipping"]">
                     @foreach (var o in shippingOptions)
                     {
                         <option value="@o.Code">@L[o.Name] · @o.Amount.ToBrl()</option>
@@ -76,28 +76,28 @@
     </section>
 
     <section class="panel-box mb-3">
-        <h2 class="h5">@L["Pagamento"]</h2>
+        <h2 class="h5">@L["Payment"]</h2>
         <div class="form-check">
             <input class="form-check-input" type="checkbox" id="pago" @bind="alreadyPaid" />
-            <label class="form-check-label" for="pago">@L["O cliente já pagou (registrar pagamento manual)"]</label>
+            <label class="form-check-label" for="pago">@L["The customer already paid (record manual payment)"]</label>
         </div>
         @if (alreadyPaid)
         {
-            <select class="form-select w-auto mt-2" @bind="method" aria-label="@L["Forma de pagamento"]">
+            <select class="form-select w-auto mt-2" @bind="method" aria-label="@L["Payment method"]">
                 <option value="@PaymentMethod.Pix">PIX</option>
-                <option value="@PaymentMethod.CreditCard">@L["Cartão"]</option>
+                <option value="@PaymentMethod.CreditCard">@L["Card"]</option>
             </select>
         }
         else
         {
-            <p class="small text-secondary mt-2 mb-0">@L["O pedido fica \"Aguardando pagamento\" e o cliente pode pagar pela área \"Meus pedidos\"."]</p>
+            <p class="small text-secondary mt-2 mb-0">@L["The order stays \"Awaiting payment\" and the customer can pay from \"My orders\"."]</p>
         }
     </section>
 
     <Notice Message="@errorMessage" IsError="true" />
 
-    <button type="submit" class="btn btn-primary" disabled="@(processing || shippingCode is null || customerId == "" || cart.IsEmpty)">@L["Criar pedido"]</button>
-    <a href="painel/pedidos" class="btn btn-outline-primary">@L["Voltar"]</a>
+    <button type="submit" class="btn btn-primary" disabled="@(processing || shippingCode is null || customerId == "" || cart.IsEmpty)">@L["Create order"]</button>
+    <a href="admin/orders" class="btn btn-outline-primary">@L["Back"]</a>
 </EditForm>
 
 @code {
@@ -147,7 +147,7 @@
     private async Task CalculateShippingAsync()
     {
         errorMessage = null;
-        if (PostalCode.Normalize(address.PostalCode) is not { } postalCode) { errorMessage = L["Informe um CEP válido."]; return; }
+        if (PostalCode.Normalize(address.PostalCode) is not { } postalCode) { errorMessage = L["Enter a valid postal code."]; return; }
         try
         {
             shippingOptions = await Orders.QuoteShippingAsync(postalCode, cart.Items);
@@ -156,12 +156,12 @@
         catch (OrderRuleException ex)
         {
             Logger.LogWarning(ex, "Regra de negócio ao cotar frete");
-            errorMessage = L[ex.Template, ex.Arguments];
+            errorMessage = L.Translate(ex);
         }
         catch (OperationCanceledException ex)
         {
             Logger.LogWarning(ex, "Cotação de frete cancelada");
-            errorMessage = L["A cotação de frete foi cancelada."];
+            errorMessage = L["The shipping quote was cancelled."];
         }
     }
 
@@ -180,18 +180,18 @@
         }
         catch (OrderRuleException ex)
         {
-            errorMessage = L[ex.Template, ex.Arguments];
+            errorMessage = L.Translate(ex);
         }
         catch (Exception ex) when (ex is InvalidOperationException or System.IO.IOException or TaskCanceledException)
         {
             Logger.LogError(ex, "Falha ao criar pedido pelo painel");
-            errorMessage = L["Não foi possível criar o pedido."];
+            errorMessage = L["Could not create the order."];
         }
         finally
         {
             processing = false;
         }
 
-        if (orderId is not null) Navigation.NavigateTo($"painel/pedidos/{orderId}");
+        if (orderId is not null) Navigation.NavigateTo($"admin/orders/{orderId}");
     }
 }

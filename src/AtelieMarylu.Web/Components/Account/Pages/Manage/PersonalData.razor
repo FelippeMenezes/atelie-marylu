@@ -6,23 +6,23 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>@L["Dados pessoais"]</PageTitle>
+<PageTitle>@L["Personal data"]</PageTitle>
 
 <StatusMessage />
-<h3>@L["Dados pessoais"]</h3>
+<h3>@L["Personal data"]</h3>
 
 <div class="row">
     <div class="col-md-6">
-        <p>@L["Sua conta guarda os dados pessoais que você nos informou. Aqui você pode baixar ou excluir esses dados."]</p>
+        <p>@L["Your account stores the personal data you gave us. Here you can download or delete that data."]</p>
         <p>
-            <strong>@L["Excluir estes dados remove a sua conta para sempre. Não é possível desfazer."]</strong>
+            <strong>@L["Deleting this data removes your account forever. This cannot be undone."]</strong>
         </p>
         <form action="Account/Manage/DownloadPersonalData" method="post">
             <AntiforgeryToken />
-            <button class="btn btn-primary" type="submit">@L["Baixar meus dados"]</button>
+            <button class="btn btn-primary" type="submit">@L["Download my data"]</button>
         </form>
         <p>
-            <a href="Account/Manage/DeletePersonalData" class="btn btn-danger">@L["Excluir conta"]</a>
+            <a href="Account/Manage/DeletePersonalData" class="btn btn-danger">@L["Delete account"]</a>
         </p>
     </div>
 </div>

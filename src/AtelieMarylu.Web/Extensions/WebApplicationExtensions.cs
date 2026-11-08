@@ -63,9 +63,7 @@ public static class WebApplicationExtensions
         app.MapSeo();
         app.MapLanguageEndpoints();
         app.MapHealthChecks("/health");
-
-        // Endereço antigo do carrinho: links salvos e o Google continuam funcionando
-        app.MapGet("/carrinho", () => Results.Redirect("/cart", permanent: true));
+        app.MapOldAddressRedirects();
 
         return app;
     }

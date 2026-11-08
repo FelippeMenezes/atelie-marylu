@@ -12,9 +12,9 @@
 @inject IOptions<ShopOptions> Store
 @inject ILogger<Checkout> Logger
 
-<PageTitle>@L["Finalizar compra · Ateliê Marylu"]</PageTitle>
+<PageTitle>@L["Checkout · Ateliê Marylu"]</PageTitle>
 
-<h1>@L["Finalizar compra"]</h1>
+<h1>@L["Checkout"]</h1>
 
 @if (!ready)
 {
@@ -22,8 +22,8 @@
 }
 else if (Cart.Current.IsEmpty)
 {
-    <p>@L["Seu carrinho está vazio."]</p>
-    <a href="" class="btn btn-primary">@L["Ver produtos"]</a>
+    <p>@L["Your cart is empty."]</p>
+    <a href="" class="btn btn-primary">@L["View products"]</a>
 }
 else
 {
@@ -32,15 +32,15 @@ else
         <div class="row g-4">
             <div class="col-lg-7">
                 <section class="panel-box mb-3">
-                    <h2 class="h4">@L["1. Endereço de entrega"]</h2>
+                    <h2 class="h4">@L["1. Delivery address"]</h2>
                     <AddressFields Address="address" OnPostalCodeChanged="ClearShipping" />
                 </section>
 
                 <section class="panel-box mb-3">
-                    <h2 class="h4">@L["2. Frete"]</h2>
+                    <h2 class="h4">@L["2. Shipping"]</h2>
                     @if (shippingOptions is null)
                     {
-                        <button type="button" class="btn btn-outline-primary" @onclick="CalculateShippingAsync" disabled="@processing">@L["Calcular frete"]</button>
+                        <button type="button" class="btn btn-outline-primary" @onclick="CalculateShippingAsync" disabled="@processing">@L["Calculate shipping"]</button>
                     }
                     else
                     {
@@ -50,8 +50,8 @@ else
                                 <div class="form-check">
                                     <InputRadio class="form-check-input" id="@($"frete-{o.Code}")" Value="o.Code" />
                                     <label class="form-check-label" for="@($"frete-{o.Code}")">
-                                        @L[o.Name]: <strong>@(o.Amount == 0 ? L["Grátis"] : o.Amount.ToBrl())</strong>
-                                        @if (o.DeliveryDays is int days) { <span class="text-secondary"> @L["(até {0} dias úteis)", days]</span> }
+                                        @L[o.Name]: <strong>@(o.Amount == 0 ? L["Free"] : o.Amount.ToBrl())</strong>
+                                        @if (o.DeliveryDays is int days) { <span class="text-secondary"> @L["(up to {0} business days)", days]</span> }
                                     </label>
                                 </div>
                             }
@@ -60,7 +60,7 @@ else
                 </section>
 
                 <section class="panel-box">
-                    <h2 class="h4">@L["3. Pagamento"]</h2>
+                    <h2 class="h4">@L["3. Payment"]</h2>
                     <InputRadioGroup @bind-Value="method">
                         <div class="form-check">
                             <InputRadio class="form-check-input" id="pg-pix" Value="PaymentMethod.Pix" />
@@ -70,21 +70,21 @@ else
                         </div>
                         <div class="form-check">
                             <InputRadio class="form-check-input" id="pg-cartao" Value="PaymentMethod.CreditCard" />
-                            <label class="form-check-label" for="pg-cartao">@L["Cartão de crédito (até {0}x sem juros)", Store.Value.InterestFreeInstallments]</label>
+                            <label class="form-check-label" for="pg-cartao">@L["Credit card (up to {0} interest-free installments)", Store.Value.InterestFreeInstallments]</label>
                         </div>
                     </InputRadioGroup>
-                    <p class="small text-secondary mt-2 mb-0">@L["Os dados do cartão nunca passam pelo nosso site: o pagamento é feito no ambiente seguro do provedor."]</p>
+                    <p class="small text-secondary mt-2 mb-0">@L["Card details never pass through our site: payment happens in the provider's secure environment."]</p>
                 </section>
             </div>
 
             <div class="col-lg-5">
                 <section class="panel-box position-sticky" style="top: 80px">
-                    <h2 class="h4">@L["Resumo do pedido"]</h2>
+                    <h2 class="h4">@L["Order summary"]</h2>
                     @foreach (var item in Cart.Current.Items)
                     {
                         var p = products.GetValueOrDefault(item.ProductId);
                         <div class="d-flex justify-content-between small py-1">
-                            <span>@item.Quantity× @(p?.Name ?? L["Produto indisponível"])</span>
+                            <span>@item.Quantity× @(p?.Name ?? L["Product unavailable"])</span>
                             <span>@(((p?.Price ?? 0) * item.Quantity).ToBrl())</span>
                         </div>
                     }
@@ -92,35 +92,35 @@ else
                     <div class="d-flex justify-content-between"><span>@L["Subtotal"]</span><span>@Subtotal.ToBrl()</span></div>
                     @if (Discount > 0)
                     {
-                        <div class="d-flex justify-content-between text-success"><span>@L["Desconto PIX"]</span><span>− @Discount.ToBrl()</span></div>
+                        <div class="d-flex justify-content-between text-success"><span>@L["PIX discount"]</span><span>− @Discount.ToBrl()</span></div>
                     }
-                    <div class="d-flex justify-content-between"><span>@L["Frete"]</span><span>@(SelectedShipping?.Amount.ToBrl() ?? "—")</span></div>
+                    <div class="d-flex justify-content-between"><span>@L["Shipping"]</span><span>@(SelectedShipping?.Amount.ToBrl() ?? "—")</span></div>
                     <div class="d-flex justify-content-between fs-5 mt-2"><strong>@L["Total"]</strong><strong>@Total.ToBrl()</strong></div>
                     @if (method == PaymentMethod.CreditCard && Store.Value.InterestFreeInstallments > 1)
                     {
-                        <div class="text-end small text-secondary">@L["ou {0}x de {1}", Store.Value.InterestFreeInstallments, (Total / Store.Value.InterestFreeInstallments).ToBrl()]</div>
+                        <div class="text-end small text-secondary">@L["or {0} installments of {1}", Store.Value.InterestFreeInstallments, (Total / Store.Value.InterestFreeInstallments).ToBrl()]</div>
                     }
 
                     <p class="small text-secondary mt-3 mb-2">
-                        @L["Após confirmar, você tem {0} para pagar. Depois disso o pedido é cancelado e as peças voltam para a loja.", DeadlineText]
+                        @L["After confirming, you have {0} to pay. After that, the order is cancelled and the items go back to the store.", DeadlineText]
                     </p>
 
                     <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" id="aceite" @bind="acceptedTerms" />
                         <label class="form-check-label small" for="aceite">
-                            @L["Li e aceito"] <a href="termos-de-uso" target="_blank">@L["os termos de uso"]</a> @L["e"]
-                            <a href="trocas-e-devolucoes" target="_blank">@L["a política de trocas"]</a>.
+                            @L["I have read and accept"] <a href="terms-of-use" target="_blank">@L["the terms of use"]</a> @L["and"]
+                            <a href="returns-policy" target="_blank">@L["the exchange policy"]</a>.
                         </label>
                     </div>
 
                     <Notice Message="@errorMessage" IsError="true" />
 
                     <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@(processing || SelectedShipping is null || !acceptedTerms)">
-                        @(processing ? L["Processando..."] : L["Confirmar pedido"])
+                        @(processing ? L["Processing..."] : L["Confirm order"])
                     </button>
                     @if (SelectedShipping is null)
                     {
-                        <p class="small text-secondary text-center mt-2 mb-0">@L["Calcule o frete para continuar."]</p>
+                        <p class="small text-secondary text-center mt-2 mb-0">@L["Calculate shipping to continue."]</p>
                     }
                 </section>
             </div>
@@ -151,7 +151,7 @@ else
         get
         {
             var minutes = Store.Value.PaymentDeadlineMinutes;
-            return minutes % 60 == 0 ? L["{0} hora(s)", minutes / 60] : L["{0} minutos", minutes];
+            return minutes % 60 == 0 ? L["{0} hour(s)", minutes / 60] : L["{0} minutes", minutes];
         }
     }
 
@@ -184,7 +184,7 @@ else
         errorMessage = null;
         if (PostalCode.Normalize(address.PostalCode) is not { } postalCode)
         {
-            errorMessage = L["Informe um CEP válido para calcular o frete."];
+            errorMessage = L["Enter a valid postal code to calculate shipping."];
             return;
         }
         processing = true;
@@ -196,7 +196,7 @@ else
         catch (OrderRuleException ex)
         {
             Logger.LogError(ex, "Falha ao cotar frete");
-            errorMessage = L["Não foi possível calcular o frete agora. Tente novamente."];
+            errorMessage = L["Could not calculate shipping right now. Try again."];
         }
         finally
         {
@@ -219,21 +219,21 @@ else
         }
         catch (OrderRuleException ex)
         {
-            errorMessage = L[ex.Template, ex.Arguments];
+            errorMessage = L.Translate(ex);
         }
         catch (InvalidOperationException ex)
         {
             Logger.LogError(ex, "Falha ao finalizar pedido");
             errorMessage = orderCode is null
-                ? L["Não foi possível concluir o pedido. Tente novamente."]
-                : L["O pedido foi criado, mas houve um problema ao iniciar o pagamento. Tente pagar pela página do pedido."];
+                ? L["Could not complete the order. Try again."]
+                : L["The order was created, but there was a problem starting the payment. Try paying from the order page."];
         }
         catch (TimeoutException ex)
         {
             Logger.LogError(ex, "Falha ao finalizar pedido");
             errorMessage = orderCode is null
-                ? L["Não foi possível concluir o pedido. Tente novamente."]
-                : L["O pedido foi criado, mas houve um problema ao iniciar o pagamento. Tente pagar pela página do pedido."];
+                ? L["Could not complete the order. Try again."]
+                : L["The order was created, but there was a problem starting the payment. Try paying from the order page."];
         }
         finally
         {
@@ -241,6 +241,6 @@ else
         }
 
         if (orderCode is not null)
-            Navigation.NavigateTo($"meus-pedidos/{orderCode}?new=1");
+            Navigation.NavigateTo($"my-orders/{orderCode}?new=1");
     }
 }

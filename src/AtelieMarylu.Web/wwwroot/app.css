@@ -171,13 +171,26 @@ a, .btn-link {
 /* Seletor de idioma */
 .language-switcher {
     display: inline-flex;
-    gap: .35rem;
-    font-size: .8rem;
+    align-items: center;
+    gap: .5rem;
 }
 
+.language-switcher a {
+    display: inline-flex;
+    line-height: 0;
+    opacity: .55;
+    transition: opacity .15s;
+}
+
+.language-switcher a:hover,
+.language-switcher a:focus-visible,
 .language-switcher a[aria-current="true"] {
-    font-weight: 700;
-    text-decoration: underline;
+    opacity: 1;
+}
+
+.language-switcher img {
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .15);
 }
 
 /* Botões */

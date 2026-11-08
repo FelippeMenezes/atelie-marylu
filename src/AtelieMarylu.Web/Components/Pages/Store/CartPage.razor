@@ -4,9 +4,9 @@
 @inject ProductService ProductService
 @inject CartService Cart
 
-<PageTitle>@L["Carrinho · Ateliê Marylu"]</PageTitle>
+<PageTitle>@L["Cart · Ateliê Marylu"]</PageTitle>
 
-<h1>@L["Carrinho"]</h1>
+<h1>@L["Cart"]</h1>
 
 @if (!ready)
 {
@@ -18,8 +18,8 @@
 }
 else if (Cart.Current.IsEmpty)
 {
-    <p>@L["Seu carrinho está vazio."]</p>
-    <a href="" class="btn btn-primary">@L["Ver produtos"]</a>
+    <p>@L["Your cart is empty."]</p>
+    <a href="" class="btn btn-primary">@L["View products"]</a>
 }
 else
 {
@@ -39,32 +39,32 @@ else
                             }
                             else
                             {
-                                <strong>@L["Produto indisponível"]</strong>
+                                <strong>@L["Product unavailable"]</strong>
                             }
                             @if (!available)
                             {
-                                <div class="text-danger small">@L["Indisponível: remova do carrinho."]</div>
+                                <div class="text-danger small">@L["Unavailable: remove it from your cart."]</div>
                             }
                             else if (p!.Stock < item.Quantity)
                             {
-                                <div class="text-danger small">@L["Só restam {0} unidade(s).", p.Stock]</div>
+                                <div class="text-danger small">@L["Only {0} unit(s) left.", p.Stock]</div>
                             }
                             else
                             {
-                                <div class="small">@L["{0} cada", p.Price.ToBrl()]</div>
+                                <div class="small">@L["{0} each", p.Price.ToBrl()]</div>
                             }
                         </div>
                         <QuantityPicker Value="item.Quantity" Max="@Math.Max(1, Math.Min(p?.Stock ?? 1, AtelieMarylu.Domain.Carts.Cart.MaxQuantityPerItem))"
                                     Disabled="!available" ValueChanged="q => Cart.ChangeQuantityAsync(item.ProductId, q)" />
                         <strong style="min-width: 90px" class="text-end">@(((p?.Price ?? 0) * item.Quantity).ToBrl())</strong>
-                        <button class="btn btn-link text-danger btn-sm" @onclick="() => Cart.RemoveAsync(item.ProductId)">@L["Remover"]</button>
+                        <button class="btn btn-link text-danger btn-sm" @onclick="() => Cart.RemoveAsync(item.ProductId)">@L["Remove"]</button>
                     </div>
                 }
                 <div class="d-flex justify-content-end pt-3 fs-5">
                     @L["Subtotal:"] <strong>@Subtotal.ToBrl()</strong>
                 </div>
             </div>
-            <a href="" class="btn btn-outline-primary mt-3">@L["Continuar comprando"]</a>
+            <a href="" class="btn btn-outline-primary mt-3">@L["Continue shopping"]</a>
         </div>
 
         <div class="col-lg-4">
@@ -72,13 +72,13 @@ else
             <div class="panel-box mt-3">
                 @if (HasProblem)
                 {
-                    <button class="btn btn-primary btn-lg w-100" disabled>@L["Ajuste o carrinho para continuar"]</button>
+                    <button class="btn btn-primary btn-lg w-100" disabled>@L["Adjust your cart to continue"]</button>
                 }
                 else
                 {
                     @* Se não estiver logado, /checkout leva ao login/cadastro e volta para cá depois *@
-                    <a href="checkout" class="btn btn-primary btn-lg w-100">@L["Finalizar compra"]</a>
-                    <p class="small text-secondary mt-2 mb-0">@L["Para finalizar, você entra ou cria sua conta (leva menos de 1 minuto)."]</p>
+                    <a href="checkout" class="btn btn-primary btn-lg w-100">@L["Checkout"]</a>
+                    <p class="small text-secondary mt-2 mb-0">@L["To finish, sign in or create your account (it takes less than 1 minute)."]</p>
                 }
             </div>
         </div>

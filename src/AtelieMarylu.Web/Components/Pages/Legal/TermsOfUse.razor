@@ -1,4 +1,4 @@
-@page "/termos-de-uso"
+@page "/terms-of-use"
 @using AtelieMarylu.Web.Configuration
 @using Microsoft.Extensions.Options
 @inject IOptions<ShopOptions> Options
@@ -8,7 +8,7 @@
     var language = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     var operatorText = (string.IsNullOrEmpty(store.LegalName) ? store.Name : store.LegalName) + (string.IsNullOrEmpty(store.TaxDocument) ? "" : $", {store.TaxDocument}") + (string.IsNullOrEmpty(store.Address) ? "" : $", {store.Address}");
 }
-<PageTitle>@L["Termos de uso"] · @store.Name</PageTitle>
+<PageTitle>@L["Terms of use"] · @store.Name</PageTitle>
 
 @if (language == "es")
 {
@@ -31,13 +31,13 @@
         <p>El plazo de envío lo estima el transportista y empieza a contar tras el despacho. El código de seguimiento está disponible en "Mis pedidos".</p>
 
         <h2 class="h5">Cambios, devoluciones y cancelación</h2>
-        <p>Consulta la <a href="trocas-e-devolucoes">política de cambios y devoluciones</a>, que incluye el derecho de desistimiento de 7 días.</p>
+        <p>Consulta la <a href="returns-policy">política de cambios y devoluciones</a>, que incluye el derecho de desistimiento de 7 días.</p>
 
         <h2 class="h5">Cuenta</h2>
         <p>Eres responsable de mantener tu contraseña en secreto. Las cuentas usadas para fraude pueden ser bloqueadas.</p>
 
         <h2 class="h5">Privacidad</h2>
-        <p>El uso de tus datos sigue la <a href="politica-de-privacidade">política de privacidad</a>.</p>
+        <p>El uso de tus datos sigue la <a href="privacy-policy">política de privacidad</a>.</p>
     </article>
 }
 else if (language == "en")
@@ -61,13 +61,13 @@ else if (language == "en")
         <p>The shipping time is estimated by the carrier and starts after dispatch. The tracking code is available in "My orders".</p>
 
         <h2 class="h5">Exchanges, returns and cancellation</h2>
-        <p>See the <a href="trocas-e-devolucoes">exchanges and returns policy</a>, which includes the 7-day right of withdrawal.</p>
+        <p>See the <a href="returns-policy">exchanges and returns policy</a>, which includes the 7-day right of withdrawal.</p>
 
         <h2 class="h5">Account</h2>
         <p>You are responsible for keeping your password secret. Accounts used for fraud may be blocked.</p>
 
         <h2 class="h5">Privacy</h2>
-        <p>The use of your data follows the <a href="politica-de-privacidade">privacy policy</a>.</p>
+        <p>The use of your data follows the <a href="privacy-policy">privacy policy</a>.</p>
     </article>
 }
 else
@@ -93,12 +93,12 @@ else
         <p>O prazo do frete é estimado pela transportadora e começa a contar após o envio. O código de rastreio fica disponível em "Meus pedidos".</p>
 
         <h2 class="h5">Trocas, devoluções e cancelamento</h2>
-        <p>Veja a <a href="trocas-e-devolucoes">política de trocas e devoluções</a>, que inclui o direito de arrependimento de 7 dias.</p>
+        <p>Veja a <a href="returns-policy">política de trocas e devoluções</a>, que inclui o direito de arrependimento de 7 dias.</p>
 
         <h2 class="h5">Conta</h2>
         <p>Você é responsável por manter sua senha em sigilo. Contas usadas para fraude podem ser bloqueadas.</p>
 
         <h2 class="h5">Privacidade</h2>
-        <p>O uso dos seus dados segue a <a href="politica-de-privacidade">política de privacidade</a>.</p>
+        <p>O uso dos seus dados segue a <a href="privacy-policy">política de privacidade</a>.</p>
     </article>
 }

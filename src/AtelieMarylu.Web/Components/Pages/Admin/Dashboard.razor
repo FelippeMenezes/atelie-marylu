@@ -1,20 +1,20 @@
-@page "/painel"
+@page "/admin"
 @inject DashboardService Painel
 
-<PageTitle>@L["Painel · Ateliê Marylu"]</PageTitle>
+<PageTitle>@L["Admin · Ateliê Marylu"]</PageTitle>
 
-<h1>@L["Painel"]</h1>
+<h1>@L["Admin panel"]</h1>
 
 <AuthorizeView Policy="@Permissions.OrdersView">
     @if (alerts.Count > 0)
     {
         <section class="alert alert-danger">
-            <h2 class="h5">@L["Pagamentos que precisam de atenção"]</h2>
-            <p class="small">@L["Pagamentos aprovados em pedidos cancelados ou com valor diferente. Verifique e, se for o caso, estorne no provedor."]</p>
+            <h2 class="h5">@L["Payments that need attention"]</h2>
+            <p class="small">@L["Payments approved on cancelled orders or with a different amount. Check them and, if needed, refund at the provider."]</p>
             <ul class="mb-0">
                 @foreach (var a in alerts)
                 {
-                    <li><a href="painel/pedidos/@a.EntityId">@a.OccurredAt.FormatBrasilia()</a>: @a.Details</li>
+                    <li><a href="admin/orders/@a.EntityId">@a.OccurredAt.FormatBrasilia()</a>: @a.Details</li>
                 }
             </ul>
         </section>
@@ -24,23 +24,23 @@
 <div class="row g-3">
     <AuthorizeView Policy="@Permissions.OrdersView">
         <div class="col-sm-6">
-            <a href="painel/pedidos?status=@OrderStatus.Paid" class="panel-box d-block text-decoration-none">
+            <a href="admin/orders?status=@OrderStatus.Paid" class="panel-box d-block text-decoration-none">
                 <div class="fs-2 fw-bold">@paid</div>
-                @L["Pedidos pagos aguardando preparo"]
+                @L["Paid orders awaiting preparation"]
             </a>
         </div>
         <div class="col-sm-6">
-            <a href="painel/pedidos?status=@OrderStatus.AwaitingPayment" class="panel-box d-block text-decoration-none">
+            <a href="admin/orders?status=@OrderStatus.AwaitingPayment" class="panel-box d-block text-decoration-none">
                 <div class="fs-2 fw-bold">@awaitingPayment</div>
-                @L["Pedidos aguardando pagamento"]
+                @L["Orders awaiting payment"]
             </a>
         </div>
     </AuthorizeView>
     <AuthorizeView Policy="@Permissions.ProductsManage">
         <div class="col-sm-6">
-            <a href="painel/produtos" class="panel-box d-block text-decoration-none">
+            <a href="admin/products" class="panel-box d-block text-decoration-none">
                 <div class="fs-2 fw-bold">@outOfStock</div>
-                @L["Produtos ativos esgotados"]
+                @L["Active products sold out"]
             </a>
         </div>
     </AuthorizeView>

@@ -70,7 +70,7 @@ public class PurchaseFlowTests
         await using var browser = await playwright.Chromium.LaunchAsync();
         var page = await (await browser.NewContextAsync(new() { IgnoreHTTPSErrors = true })).NewPageAsync();
 
-        foreach (var path in new[] { "/checkout", "/meus-pedidos", "/painel" })
+        foreach (var path in new[] { "/checkout", "/my-orders", "/admin" })
         {
             await page.GotoAsync(Url + path);
             Assert.Contains("/Account/Login", page.Url);

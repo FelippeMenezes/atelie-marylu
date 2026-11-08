@@ -1,29 +1,29 @@
-@page "/painel/produtos"
+@page "/admin/products"
 @attribute [Authorize(Policy = Permissions.ProductsManage)]
 @inject ProductService ProductService
 
-<PageTitle>@L["Produtos · Painel"]</PageTitle>
+<PageTitle>@L["Products · Admin"]</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="m-0">@L["Produtos"]</h1>
-    <a href="painel/produtos/novo" class="btn btn-primary">@L["Novo produto"]</a>
+    <h1 class="m-0">@L["Products"]</h1>
+    <a href="admin/products/new" class="btn btn-primary">@L["New product"]</a>
 </div>
 
 <div class="table-responsive panel-box p-0">
     <table class="table align-middle m-0">
         <thead>
-            <tr><th></th><th>@L["Nome"]</th><th class="text-end">@L["Preço"]</th><th class="text-end">@L["Estoque"]</th><th>@L["Situação"]</th><th></th></tr>
+            <tr><th></th><th>@L["Name"]</th><th class="text-end">@L["Price"]</th><th class="text-end">@L["Stock"]</th><th>@L["Status"]</th><th></th></tr>
         </thead>
         <tbody>
             @foreach (var p in products)
             {
                 <tr>
                     <td style="width: 56px"><ProductPhoto Url="@p.Cover?.ThumbnailUrl" Name="@p.Name" Class="rounded-2" /></td>
-                    <td>@p.Name @if (p.ProductionDays is not null) { <span class="tag">@L["Sob encomenda"]</span> }</td>
+                    <td>@p.Name @if (p.ProductionDays is not null) { <span class="tag">@L["Made to order"]</span> }</td>
                     <td class="text-end">@p.Price.ToBrl()</td>
                     <td class="text-end @(p.Stock == 0 ? "text-danger fw-bold" : "")">@p.Stock</td>
-                    <td>@(p.IsActive ? L["Ativo"] : L["Inativo"])</td>
-                    <td class="text-end"><a href="painel/produtos/@p.Id">@L["Editar"]</a></td>
+                    <td>@(p.IsActive ? L["Active"] : L["Inactive"])</td>
+                    <td class="text-end"><a href="admin/products/@p.Id">@L["Edit"]</a></td>
                 </tr>
             }
         </tbody>

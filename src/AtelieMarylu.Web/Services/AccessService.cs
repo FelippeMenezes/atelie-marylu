@@ -64,7 +64,7 @@ public class AccessService(
         var currentRoles = await userManager.GetRolesAsync(user);
 
         if (userId == loggedAdminId && !access.IsAdmin)
-            throw new AccessException("Você não pode remover o seu próprio acesso de Admin.");
+            throw new AccessException("You cannot remove your own Admin access.");
 
         // Papéis desejados: Admin (se marcado) + grupos. "Cliente" nunca é mexido aqui.
         var validGroups = roleManager.Roles.Select(role => role.Name!).ToList().Where(n => !AppRoles.IsSystemRole(n)).ToHashSet();
@@ -102,9 +102,9 @@ public class AccessService(
     public async Task CreateGroupAsync(string name)
     {
         name = name.Trim();
-        if (string.IsNullOrWhiteSpace(name)) throw new AccessException("Informe o nome do grupo.");
+        if (string.IsNullOrWhiteSpace(name)) throw new AccessException("Enter the group name.");
         if (AppRoles.IsSystemRole(name) || await roleManager.RoleExistsAsync(name))
-            throw new AccessException("Já existe um grupo com esse nome.");
+            throw new AccessException("A group with that name already exists.");
         EnsureSucceeded(await roleManager.CreateAsync(new IdentityRole(name)));
         await RecordAsync(AuditActions.GroupCreated, AuditEntities.Group, name);
     }
@@ -148,12 +148,12 @@ public class AccessService(
     }
 
     private async Task<ApplicationUser> FindAsync(string userId) =>
-        await userManager.FindByIdAsync(userId) ?? throw new AccessException("Usuário não encontrado.");
+        await userManager.FindByIdAsync(userId) ?? throw new AccessException("User not found.");
 
     private async Task<IdentityRole> FindGroupAsync(string name)
     {
-        if (AppRoles.IsSystemRole(name)) throw new AccessException("Papéis do sistema não podem ser alterados aqui.");
-        return await roleManager.FindByNameAsync(name) ?? throw new AccessException("Grupo não encontrado.");
+        if (AppRoles.IsSystemRole(name)) throw new AccessException("System roles cannot be changed here.");
+        return await roleManager.FindByNameAsync(name) ?? throw new AccessException("Group not found.");
     }
 
     private static void EnsureSucceeded(IdentityResult result)

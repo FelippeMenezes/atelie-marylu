@@ -27,6 +27,6 @@ public class Product
 
     public bool IsAvailableForSale => IsActive && Stock > 0;
     public string Slug => SlugGenerator.Create(Name);
-    public string Url => $"produto/{Id}/{Slug}";
+    public string Url => $"product/{Id}/{Slug}";
     public ProductImage? Cover => Images.OrderBy(i => i.SortOrder).FirstOrDefault();
 }

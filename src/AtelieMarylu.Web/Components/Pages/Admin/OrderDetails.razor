@@ -1,4 +1,4 @@
-@page "/painel/pedidos/{Id:int}"
+@page "/admin/orders/{Id:int}"
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Permissions.OrdersView)]
 @inject CustomerService CustomerService
@@ -10,22 +10,22 @@
 @inject OrderEvents Events
 @implements IDisposable
 
-<PageTitle>@L["Pedido · Painel"]</PageTitle>
+<PageTitle>@L["Order · Admin"]</PageTitle>
 
 @if (loaded && order is null)
 {
-    <h1>@L["Pedido não encontrado"]</h1>
+    <h1>@L["Order not found"]</h1>
 }
 else if (order is not null)
 {
-    <h1>@L["Pedido {0}", order.Code]</h1>
+    <h1>@L["Order {0}", order.Code]</h1>
     <p>
         <OrderStatusBadge Status="order.Status" />
-        <span class="ms-2">@L["Cliente:"] <a href="painel/clientes/@order.CustomerId">@customerName</a></span>
+        <span class="ms-2">@L["Customer:"] <a href="admin/customers/@order.CustomerId">@customerName</a></span>
         <span class="text-secondary ms-2">· @order.CreatedAt.FormatBrasilia()</span>
         @if (order.Status == OrderStatus.AwaitingPayment)
         {
-            <span class="text-secondary ms-2">@L["· pagar até {0}", order.PayBy.FormatBrasilia()]</span>
+            <span class="text-secondary ms-2">@L["· pay by {0}", order.PayBy.FormatBrasilia()]</span>
         }
     </p>
 
@@ -34,62 +34,62 @@ else if (order is not null)
     @if (canEdit || canCancel)
     {
         <section class="panel-box mb-3">
-            <h2 class="h5">@L["Ações"]</h2>
+            <h2 class="h5">@L["Actions"]</h2>
             <div class="d-flex gap-2 flex-wrap align-items-center">
                 @if (canEdit && order.Status == OrderStatus.AwaitingPayment)
                 {
-                    <select class="form-select w-auto" @bind="manualMethod" aria-label="@L["Forma do pagamento manual"]">
+                    <select class="form-select w-auto" @bind="manualMethod" aria-label="@L["Manual payment method"]">
                         <option value="@PaymentMethod.Pix">PIX</option>
-                        <option value="@PaymentMethod.CreditCard">@L["Cartão"]</option>
+                        <option value="@PaymentMethod.CreditCard">@L["Card"]</option>
                     </select>
                     <button class="btn btn-primary btn-sm" disabled="@processing"
-                            @onclick='() => RunActionAsync(() => Orders.RecordManualPaymentAsync(Id, manualMethod), Permissions.OrdersEdit, L["Pagamento registrado."])'>
-                        @L["Registrar pagamento recebido"]
+                            @onclick='() => RunActionAsync(() => Orders.RecordManualPaymentAsync(Id, manualMethod), Permissions.OrdersEdit, L["Payment recorded."])'>
+                        @L["Record received payment"]
                     </button>
                 }
                 @if (canEdit && order.Status == OrderStatus.Paid)
                 {
                     <button class="btn btn-primary btn-sm" disabled="@processing"
-                            @onclick='() => RunActionAsync(() => Orders.StartPreparationAsync(Id), Permissions.OrdersEdit, L["Pedido em preparo."])'>
-                        @L["Iniciar preparo"]
+                            @onclick='() => RunActionAsync(() => Orders.StartPreparationAsync(Id), Permissions.OrdersEdit, L["Order in preparation."])'>
+                        @L["Start preparation"]
                     </button>
                 }
                 @if (canEdit && order.Status is OrderStatus.Paid or OrderStatus.Preparing)
                 {
-                    <input class="form-control w-auto" placeholder="@L["Código de rastreio"]" @bind="trackingCode" maxlength="50" />
+                    <input class="form-control w-auto" placeholder="@L["Tracking code"]" @bind="trackingCode" maxlength="50" />
                     <button class="btn btn-primary btn-sm" disabled="@processing"
-                            @onclick='() => RunActionAsync(() => Orders.MarkShippedAsync(Id, trackingCode), Permissions.OrdersEdit, L["Pedido marcado como enviado."])'>
-                        @L["Marcar como enviado"]
+                            @onclick='() => RunActionAsync(() => Orders.MarkShippedAsync(Id, trackingCode), Permissions.OrdersEdit, L["Order marked as shipped."])'>
+                        @L["Mark as shipped"]
                     </button>
                 }
                 @if (canEdit && order.Status == OrderStatus.Shipped)
                 {
                     <button class="btn btn-primary btn-sm" disabled="@processing"
-                            @onclick='() => RunActionAsync(() => Orders.MarkDeliveredAsync(Id), Permissions.OrdersEdit, L["Pedido entregue."])'>
-                        @L["Marcar como entregue"]
+                            @onclick='() => RunActionAsync(() => Orders.MarkDeliveredAsync(Id), Permissions.OrdersEdit, L["Order delivered."])'>
+                        @L["Mark as delivered"]
                     </button>
                 }
                 @if (canCancel && order.CanCancel)
                 {
                     @if (confirmCancellation)
                     {
-                        <span>@L["Confirma o cancelamento? O estoque será devolvido."]</span>
-                        <input class="form-control form-control-sm w-auto" placeholder="@L["Motivo (opcional)"]" @bind="cancellationReason" maxlength="200" />
+                        <span>@L["Confirm cancellation? The stock will be returned."]</span>
+                        <input class="form-control form-control-sm w-auto" placeholder="@L["Reason (optional)"]" @bind="cancellationReason" maxlength="200" />
                         <button class="btn btn-danger btn-sm" disabled="@processing"
-                                @onclick='() => RunActionAsync(() => Orders.CancelAsync(Id, cancellationReason), Permissions.OrdersCancel, L["Pedido cancelado."])'>
-                            @L["Sim, cancelar"]
+                                @onclick='() => RunActionAsync(() => Orders.CancelAsync(Id, cancellationReason), Permissions.OrdersCancel, L["Order cancelled."])'>
+                            @L["Yes, cancel"]
                         </button>
-                        <button class="btn btn-link btn-sm" @onclick="() => confirmCancellation = false">@L["Não"]</button>
+                        <button class="btn btn-link btn-sm" @onclick="() => confirmCancellation = false">@L["No"]</button>
                     }
                     else
                     {
-                        <button class="btn btn-outline-danger btn-sm ms-auto" @onclick="() => confirmCancellation = true">@L["Cancelar pedido"]</button>
+                        <button class="btn btn-outline-danger btn-sm ms-auto" @onclick="() => confirmCancellation = true">@L["Cancel order"]</button>
                     }
                 }
             </div>
             @if (order.Status == OrderStatus.Cancelled && order.Payments.Any(p => p.Status == PaymentStatus.Approved))
             {
-                <div class="alert alert-warning mt-3 mb-0">@L["Este pedido tinha pagamento aprovado: faça o estorno no provedor de pagamento."]</div>
+                <div class="alert alert-warning mt-3 mb-0">@L["This order had an approved payment: refund it at the payment provider."]</div>
             }
         </section>
     }
@@ -97,30 +97,30 @@ else if (order is not null)
     @if (canEdit && order.CanChangeItems)
     {
         <section class="panel-box mb-3">
-            <h2 class="h5">@L["Editar itens"]</h2>
+            <h2 class="h5">@L["Edit items"]</h2>
             @foreach (var item in order.Items)
             {
                 <div class="d-flex align-items-center gap-2 py-1 flex-wrap">
                     <span class="flex-grow-1">@item.ProductName (@item.UnitPrice.ToBrl())</span>
-                    <input type="number" class="form-control" style="max-width: 90px" min="0" value="@item.Quantity" aria-label="@L["Quantidade"]"
+                    <input type="number" class="form-control" style="max-width: 90px" min="0" value="@item.Quantity" aria-label="@L["Quantity"]"
                            @onchange="e => ChangeQuantity(item.ProductId, e.Value)" />
                 </div>
             }
             <div class="d-flex gap-2 mt-2 flex-wrap">
-                <select class="form-select w-auto" @bind="newProductId" aria-label="@L["Produto para adicionar"]">
-                    <option value="0">@L["Adicionar produto..."]</option>
+                <select class="form-select w-auto" @bind="newProductId" aria-label="@L["Product to add"]">
+                    <option value="0">@L["Add product..."]</option>
                     @foreach (var p in availableProducts)
                     {
-                        <option value="@p.Id">@L["{0} ({1} em estoque)", p.Name, p.Stock]</option>
+                        <option value="@p.Id">@L["{0} ({1} in stock)", p.Name, p.Stock]</option>
                     }
                 </select>
-                <input type="number" class="form-control" style="max-width: 90px" min="1" @bind="newQuantity" aria-label="@L["Quantidade"]" />
+                <input type="number" class="form-control" style="max-width: 90px" min="1" @bind="newQuantity" aria-label="@L["Quantity"]" />
                 <button class="btn btn-outline-primary btn-sm" disabled="@(processing || newProductId == 0)"
-                        @onclick='() => RunActionAsync(() => Orders.AddItemAsync(Id, newProductId, newQuantity), Permissions.OrdersEdit, L["Item adicionado."])'>
-                    @L["Adicionar"]
+                        @onclick='() => RunActionAsync(() => Orders.AddItemAsync(Id, newProductId, newQuantity), Permissions.OrdersEdit, L["Item added."])'>
+                    @L["Add"]
                 </button>
             </div>
-            <p class="small text-secondary mt-2 mb-0">@L["Zerar a quantidade remove o item. O estoque e o frete são ajustados automaticamente."]</p>
+            <p class="small text-secondary mt-2 mb-0">@L["Setting the quantity to zero removes the item. Stock and shipping are adjusted automatically."]</p>
         </section>
     }
 
@@ -129,34 +129,34 @@ else if (order is not null)
     @if (canEdit && order.CanChangeDelivery)
     {
         <section class="panel-box mb-3">
-            <h2 class="h5">@L["Editar entrega"]</h2>
+            <h2 class="h5">@L["Edit delivery"]</h2>
             <EditForm Model="address" OnValidSubmit="SaveDeliveryAsync" FormName="delivery">
                 <LocalizedDataAnnotationsValidator />
                 <AddressFields Address="address" />
-                <label class="form-label mt-2" for="obs">@L["Observação"]</label>
+                <label class="form-label mt-2" for="obs">@L["Note"]</label>
                 <InputTextArea id="obs" class="form-control" rows="2" @bind-Value="notes" maxlength="500" />
-                <button type="submit" class="btn btn-outline-primary btn-sm mt-2" disabled="@processing">@L["Salvar entrega"]</button>
+                <button type="submit" class="btn btn-outline-primary btn-sm mt-2" disabled="@processing">@L["Save delivery"]</button>
             </EditForm>
         </section>
     }
 
     <section class="panel-box mb-3">
-        <h2 class="h5">@L["Pagamentos"]</h2>
+        <h2 class="h5">@L["Payments"]</h2>
         @if (order.Payments.Count == 0)
         {
-            <p class="m-0">@L["Nenhum pagamento iniciado."]</p>
+            <p class="m-0">@L["No payment started."]</p>
         }
         @foreach (var paymentEntry in order.Payments.OrderByDescending(p => p.CreatedAt))
         {
             <div class="small py-1">
-                @paymentEntry.CreatedAt.FormatBrasilia("dd/MM HH:mm") · @(paymentEntry.Method == PaymentMethod.Pix ? "PIX" : L["Cartão"]) ·
+                @paymentEntry.CreatedAt.FormatBrasilia("dd/MM HH:mm") · @(paymentEntry.Method == PaymentMethod.Pix ? "PIX" : L["Card"]) ·
                 @paymentEntry.Amount.ToBrl() · <strong>@L[Payment.Describe(paymentEntry.Status)]</strong> @L["· via {0}", paymentEntry.Provider]
             </div>
         }
     </section>
 
     <section class="panel-box mb-3">
-        <h2 class="h5">@L["Histórico"]</h2>
+        <h2 class="h5">@L["History"]</h2>
         @foreach (var entry in history)
         {
             <div class="small py-1 @(entry.Action == AuditActions.PaymentMismatch ? "text-danger fw-bold" : "")">
@@ -165,7 +165,7 @@ else if (order is not null)
         }
     </section>
 
-    <a href="painel/pedidos">@L["← Voltar para pedidos"]</a>
+    <a href="admin/orders">@L["← Back to orders"]</a>
 }
 
 @code {
@@ -224,11 +224,11 @@ else if (order is not null)
 
     private Task ChangeQuantity(int productId, object? amount) =>
         int.TryParse(amount?.ToString(), out var quantity)
-            ? RunActionAsync(() => Orders.ChangeQuantityAsync(Id, productId, quantity), Permissions.OrdersEdit, L["Quantidade alterada."])
+            ? RunActionAsync(() => Orders.ChangeQuantityAsync(Id, productId, quantity), Permissions.OrdersEdit, L["Quantity changed."])
             : Task.CompletedTask;
 
     private Task SaveDeliveryAsync() =>
-        RunActionAsync(() => Orders.ChangeDeliveryAsync(Id, address.ToAddress(), notes), Permissions.OrdersEdit, L["Entrega atualizada."]);
+        RunActionAsync(() => Orders.ChangeDeliveryAsync(Id, address.ToAddress(), notes), Permissions.OrdersEdit, L["Delivery updated."]);
 
     // Toda ação confere a permissão de novo no servidor antes de executar
     private async Task RunActionAsync(Func<Task> action, string permission, string successMessage)
@@ -236,7 +236,7 @@ else if (order is not null)
         if (processing) return;
         if (!await HasPermissionAsync(permission))
         {
-            (message, isError) = (L["Você não tem permissão para esta ação."], true);
+            (message, isError) = (L["You do not have permission for this action."], true);
             return;
         }
         processing = true;
@@ -250,17 +250,17 @@ else if (order is not null)
         }
         catch (OrderRuleException ex)
         {
-            (message, isError) = (L[ex.Template, ex.Arguments], true);
+            (message, isError) = (L.Translate(ex), true);
         }
         catch (InvalidOperationException ex)
         {
             Logger.LogError(ex, "Falha na ação do pedido {PedidoId}", Id);
-            (message, isError) = (L["Não foi possível concluir. Tente novamente."], true);
+            (message, isError) = (L["Could not complete. Try again."], true);
         }
         catch (OperationCanceledException ex)
         {
             Logger.LogError(ex, "Falha na ação do pedido {PedidoId}", Id);
-            (message, isError) = (L["Não foi possível concluir. Tente novamente."], true);
+            (message, isError) = (L["Could not complete. Try again."], true);
         }
         finally
         {

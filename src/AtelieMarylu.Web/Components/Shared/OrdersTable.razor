@@ -3,11 +3,11 @@
     <table class="table align-middle m-0">
         <thead>
             <tr>
-                <th>@L["Pedido"]</th>
-                <th>@L["Data"]</th>
+                <th>@L["Order"]</th>
+                <th>@L["Date"]</th>
                 @if (CustomerNames is not null)
                 {
-                    <th>@L["Cliente"]</th>
+                    <th>@L["Customer"]</th>
                 }
                 <th>@L["Status"]</th>
                 <th class="text-end">@L["Total"]</th>
@@ -26,7 +26,7 @@
                     }
                     <td><OrderStatusBadge Status="p.Status" /></td>
                     <td class="text-end">@p.Total.ToBrl()</td>
-                    <td class="text-end"><a href="@Link/@(ByCode ? p.Code : p.Id.ToString())">@L["Ver"]</a></td>
+                    <td class="text-end"><a href="@Link/@(ByCode ? p.Code : p.Id.ToString())">@L["View"]</a></td>
                 </tr>
             }
         </tbody>

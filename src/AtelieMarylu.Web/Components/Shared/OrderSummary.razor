@@ -1,49 +1,49 @@
 @* Itens, totais e entrega de um pedido. Usado na tela do cliente e no painel. *@
 @using AtelieMarylu.Web.Configuration
 <section class="panel-box mb-3">
-    <h2 class="h5">@L["Itens"]</h2>
+    <h2 class="h5">@L["Items"]</h2>
     @foreach (var item in Order.Items)
     {
         <div class="d-flex justify-content-between py-1">
-            <span>@item.Quantity× @item.ProductName <span class="text-secondary small">@L["({0} cada)", item.UnitPrice.ToBrl()]</span></span>
+            <span>@item.Quantity× @item.ProductName <span class="text-secondary small">@L["({0} each)", item.UnitPrice.ToBrl()]</span></span>
             <span>@item.Subtotal.ToBrl()</span>
         </div>
     }
     <hr />
     <div class="d-flex justify-content-between"><span>@L["Subtotal"]</span><span>@Order.Subtotal.ToBrl()</span></div>
-    <div class="d-flex justify-content-between"><span>@L["Frete ({0})", Order.ShippingName]</span><span>@Order.ShippingCost.ToBrl()</span></div>
+    <div class="d-flex justify-content-between"><span>@L["Shipping ({0})", L[Order.ShippingName]]</span><span>@Order.ShippingCost.ToBrl()</span></div>
     <div class="d-flex justify-content-between fs-5"><strong>@L["Total"]</strong><strong>@Order.Total.ToBrl()</strong></div>
     @if (Order.PixDiscount > 0)
     {
         <div class="d-flex justify-content-between small text-secondary">
-            <span>@L["No PIX ({0}% off nos produtos)", Order.PixDiscountPercent.ToString("0.#")]</span>
+            <span>@L["With PIX ({0}% off products)", Order.PixDiscountPercent.ToString("0.#")]</span>
             <span>@Order.AmountFor(PaymentMethod.Pix).ToBrl()</span>
         </div>
     }
 </section>
 
 <section class="panel-box mb-3">
-    <h2 class="h5">@L["Entrega"]</h2>
+    <h2 class="h5">@L["Delivery"]</h2>
     @{ var e = Order.Address; }
     <p class="m-0">
         @e.Street, @e.Number @(e.Complement is null ? "" : $"- {e.Complement}")<br />
-        @L["{0} · {1}/{2} · CEP {3}", e.District, e.City, e.State, e.PostalCode.Length == 8 ? $"{e.PostalCode[..5]}-{e.PostalCode[5..]}" : e.PostalCode]
+        @L["{0} · {1}/{2} · Postal code {3}", e.District, e.City, e.State, e.PostalCode.Length == 8 ? $"{e.PostalCode[..5]}-{e.PostalCode[5..]}" : e.PostalCode]
     </p>
     @if (Order.ShippingDays is int days)
     {
-        <p class="small text-secondary m-0">@L["Prazo de entrega: até {0} dias úteis após o envio.", days]</p>
+        <p class="small text-secondary m-0">@L["Delivery time: up to {0} business days after shipping.", days]</p>
     }
     @if (Order.TrackingCode is not null)
     {
-        <p class="mt-2 mb-0">@L["Código de rastreio:"] <strong>@Order.TrackingCode</strong></p>
+        <p class="mt-2 mb-0">@L["Tracking code:"] <strong>@Order.TrackingCode</strong></p>
     }
     @if (Order.Notes is not null)
     {
-        <p class="mt-2 mb-0">@L["Observação: {0}", Order.Notes]</p>
+        <p class="mt-2 mb-0">@L["Note: {0}", Order.Notes]</p>
     }
     @if (Order.CancellationReason is not null)
     {
-        <p class="mt-2 mb-0">@L["Motivo do cancelamento: {0}", Order.CancellationReason]</p>
+        <p class="mt-2 mb-0">@L["Cancellation reason: {0}", Order.CancellationReason]</p>
     }
 </section>
 

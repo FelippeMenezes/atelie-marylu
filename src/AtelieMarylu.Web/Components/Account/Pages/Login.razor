@@ -12,33 +12,33 @@
 @inject IdentityRedirectManager RedirectManager
 @inject AtelieMarylu.Infrastructure.Integrations.Turnstile Turnstile
 
-<PageTitle>@L["Entrar · Ateliê Marylu"]</PageTitle>
+<PageTitle>@L["Sign in · Ateliê Marylu"]</PageTitle>
 
-<h1>@L["Entrar"]</h1>
+<h1>@L["Sign in"]</h1>
 <div class="row">
     <div class="col-lg-6">
         <section>
             <StatusMessage Message="@errorMessage" />
-            <GoogleButton ReturnUrl="@ReturnUrl" Divider="@L["ou entre com e-mail e senha"]" />
+            <GoogleButton ReturnUrl="@ReturnUrl" Divider="@L["or sign in with email and password"]" />
             <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
                 <LocalizedDataAnnotationsValidator />
-                <p>@L["Entre com seu e-mail e senha. Ainda não tem conta? É rapidinho, veja o link abaixo."]</p>
+                <p>@L["Sign in with your email and password. No account yet? It's quick, see the link below."]</p>
                 <hr />
                 <ValidationSummary class="text-danger" role="alert" />
                 <div class="form-floating mb-3">
                     <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                    <label for="Input.Email" class="form-label">@L["E-mail"]</label>
+                    <label for="Input.Email" class="form-label">@L["Email"]</label>
                     <ValidationMessage For="() => Input.Email" class="text-danger" />
                 </div>
                 <div class="form-floating mb-3">
-                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="@L["Senha"]" />
-                    <label for="Input.Password" class="form-label">@L["Senha"]</label>
+                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="@L["Password"]" />
+                    <label for="Input.Password" class="form-label">@L["Password"]</label>
                     <ValidationMessage For="() => Input.Password" class="text-danger" />
                 </div>
                 <div class="checkbox mb-3">
                     <label class="form-label">
                         <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" />
-                        @L["Manter conectado"]
+                        @L["Keep me signed in"]
                     </label>
                 </div>
                 @if (Turnstile.IsActive)
@@ -46,14 +46,14 @@
                     <div class="cf-turnstile mb-3" data-sitekey="@Turnstile.SiteKey"></div>
                 }
                 <div>
-                    <button type="submit" class="w-100 btn btn-lg btn-primary">@L["Entrar"]</button>
+                    <button type="submit" class="w-100 btn btn-lg btn-primary">@L["Sign in"]</button>
                 </div>
                 <hr />
                 <div>
                     @* "Esqueci minha senha" volta quando houver serviço de e-mail. Até lá, a loja redefine pelo painel/suporte. *@
-                    <p class="small text-secondary">@L["Esqueceu a senha? Fale com a loja pelo WhatsApp ou Instagram."]</p>
+                    <p class="small text-secondary">@L["Forgot your password? Contact the store on WhatsApp or Instagram."]</p>
                     <p>
-                        <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))"><strong>@L["Criar uma conta"]</strong></a>
+                        <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))"><strong>@L["Create an account"]</strong></a>
                     </p>
                 </div>
             </EditForm>
@@ -91,7 +91,7 @@
     {
         if (!await Turnstile.ValidateAsync(HttpContext.Request.Form[AtelieMarylu.Infrastructure.Integrations.Turnstile.FormField], HttpContext.Connection.RemoteIpAddress?.ToString()))
         {
-            errorMessage = L["Erro: confirme que você não é um robô."];
+            errorMessage = L["Error: confirm that you are not a robot."];
             return;
         }
 
@@ -115,21 +115,21 @@
         }
         else
         {
-            errorMessage = L["Erro: e-mail ou senha inválidos."];
+            errorMessage = L["Error: invalid email or password."];
         }
     }
 
     private sealed class InputModel
     {
-        [Required(ErrorMessage = "Informe o e-mail.")]
-        [EmailAddress(ErrorMessage = "E-mail inválido.")]
+        [Required(ErrorMessage = "Enter your email.")]
+        [EmailAddress(ErrorMessage = "Invalid email.")]
         public string Email { get; set; } = "";
 
-        [Required(ErrorMessage = "Informe a senha.")]
+        [Required(ErrorMessage = "Enter your password.")]
         [DataType(DataType.Password)]
         public string Password { get; set; } = "";
 
-        [Display(Name = "Manter conectado")]
+        [Display(Name = "Keep me signed in")]
         public bool RememberMe { get; set; }
     }
 }

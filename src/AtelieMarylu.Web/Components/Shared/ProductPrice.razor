@@ -9,11 +9,11 @@
 <span class="price @(Large ? "fs-3" : "")">@Price.ToBrl()</span>
 @if (store.PixDiscountPercent > 0)
 {
-    <span class="price-extra d-block"><strong>@pixPrice.ToBrl()</strong> @L["no PIX ({0}% off)", store.PixDiscountPercent.ToString("0.#")]</span>
+    <span class="price-extra d-block"><strong>@pixPrice.ToBrl()</strong> @L["with PIX ({0}% off)", store.PixDiscountPercent.ToString("0.#")]</span>
 }
 @if (store.InterestFreeInstallments > 1)
 {
-    <span class="price-extra d-block text-secondary">@L["ou {0}x de {1} sem juros", store.InterestFreeInstallments, (Price / store.InterestFreeInstallments).ToBrl()]</span>
+    <span class="price-extra d-block text-secondary">@L["or {0} interest-free installments of {1}", store.InterestFreeInstallments, (Price / store.InterestFreeInstallments).ToBrl()]</span>
 }
 
 @code {

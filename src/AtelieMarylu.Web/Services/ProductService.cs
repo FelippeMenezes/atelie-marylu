@@ -121,7 +121,7 @@ public class ProductService(IDbContextFactory<ApplicationDbContext> dbFactory, A
                 .Where(p => p.Id == productId && p.Stock + adjustment >= 0)
                 .ExecuteUpdateAsync(s => s.SetProperty(p => p.Stock, p => p.Stock + adjustment), ct);
             if (rows == 0)
-                throw new ProductRuleException("O estoque mudou enquanto você editava. Recarregue a página e confira o valor.");
+                throw new ProductRuleException("The stock changed while you were editing. Reload the page and check the value.");
         }
         return await db.Products.Where(p => p.Id == productId).Select(p => p.Stock).SingleAsync(ct);
     }
@@ -134,7 +134,7 @@ public class ProductService(IDbContextFactory<ApplicationDbContext> dbFactory, A
         }
         catch (DbUpdateConcurrencyException)
         {
-            throw new ProductRuleException("O produto foi alterado por outra pessoa ao mesmo tempo. Recarregue a página e tente de novo.");
+            throw new ProductRuleException("Someone else changed the product at the same time. Reload the page and try again.");
         }
     }
 }

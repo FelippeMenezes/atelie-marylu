@@ -1,22 +1,22 @@
-@page "/painel/pedidos"
+@page "/admin/orders"
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Permissions.OrdersView)]
 @inject OrderService OrderService
 @inject CustomerService CustomerService
 @inject NavigationManager Navigation
 
-<PageTitle>@L["Pedidos · Painel"]</PageTitle>
+<PageTitle>@L["Orders · Admin"]</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h1 class="m-0">@L["Pedidos"]</h1>
+    <h1 class="m-0">@L["Orders"]</h1>
     <AuthorizeView Policy="@Permissions.OrdersCreate">
-        <a href="painel/pedidos/novo" class="btn btn-primary">@L["Novo pedido"]</a>
+        <a href="admin/orders/new" class="btn btn-primary">@L["New order"]</a>
     </AuthorizeView>
 </div>
 
 <div class="mb-3" style="max-width: 260px">
-    <select class="form-select" value="@Status" @onchange="FilterByStatus" aria-label="@L["Filtrar por status"]">
-        <option value="">@L["Todos os status"]</option>
+    <select class="form-select" value="@Status" @onchange="FilterByStatus" aria-label="@L["Filter by status"]">
+        <option value="">@L["All statuses"]</option>
         @foreach (var s in Enum.GetValues<OrderStatus>())
         {
             <option value="@s">@L[Order.Describe(s)]</option>
@@ -26,15 +26,15 @@
 
 @if (orders is null)
 {
-    <p>@L["Carregando..."]</p>
+    <p>@L["Loading..."]</p>
 }
 else if (orders.Count == 0)
 {
-    <p>@L["Nenhum pedido encontrado."]</p>
+    <p>@L["No orders found."]</p>
 }
 else
 {
-    <OrdersTable Orders="orders" Link="painel/pedidos" CustomerNames="names" />
+    <OrdersTable Orders="orders" Link="admin/orders" CustomerNames="names" />
 }
 
 @code {

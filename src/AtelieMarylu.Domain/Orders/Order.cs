@@ -13,10 +13,10 @@ public class Order
     public Order(string customerId, IEnumerable<OrderItem> items, ShippingAddress address, ShippingOption shipping,
         DateTime payBy, decimal pixDiscountPercent = 0, string? createdBy = null)
     {
-        if (pixDiscountPercent is < 0 or >= 100) throw new OrderRuleException("Desconto PIX inválido.");
+        if (pixDiscountPercent is < 0 or >= 100) throw new OrderRuleException("Invalid PIX discount.");
         CustomerId = customerId;
         _items.AddRange(items);
-        if (_items.Count == 0) throw new OrderRuleException("O pedido precisa ter pelo menos um item.");
+        if (_items.Count == 0) throw new OrderRuleException("The order must have at least one item.");
         Address = address;
         SetShipping(shipping);
         PayBy = payBy;
@@ -71,8 +71,8 @@ public class Order
 
     public void SetShipping(ShippingOption shipping)
     {
-        if (!CanChangeItems) throw new OrderRuleException("O frete só pode ser alterado antes do pagamento.");
-        if (shipping.Amount < 0) throw new OrderRuleException("O frete não pode ser negativo.");
+        if (!CanChangeItems) throw new OrderRuleException("Shipping can only be changed before payment.");
+        if (shipping.Amount < 0) throw new OrderRuleException("Shipping cannot be negative.");
         var amountChanged = shipping.Amount != ShippingCost;
         ShippingCode = shipping.Code;
         ShippingName = shipping.Name;
@@ -83,21 +83,21 @@ public class Order
 
     public void ChangeAddress(ShippingAddress address)
     {
-        if (!CanChangeDelivery) throw new OrderRuleException("O endereço não pode mais ser alterado.");
+        if (!CanChangeDelivery) throw new OrderRuleException("The address can no longer be changed.");
         Address = address;
     }
 
     // Retorna a diferença de quantidade (positiva = precisa baixar estoque; negativa = devolver)
     public int ChangeQuantity(int productId, int newQuantity)
     {
-        if (!CanChangeItems) throw new OrderRuleException("Os itens só podem ser alterados antes do pagamento.");
+        if (!CanChangeItems) throw new OrderRuleException("Items can only be changed before payment.");
         var item = _items.FirstOrDefault(i => i.ProductId == productId)
-            ?? throw new OrderRuleException("Item não encontrado no pedido.");
+            ?? throw new OrderRuleException("Item not found in the order.");
 
         int difference;
         if (newQuantity <= 0)
         {
-            if (_items.Count == 1) throw new OrderRuleException("O pedido precisa ter pelo menos um item. Cancele o pedido.");
+            if (_items.Count == 1) throw new OrderRuleException("The order must have at least one item. Cancel the order instead.");
             _items.Remove(item);
             difference = -item.Quantity;
         }
@@ -113,7 +113,7 @@ public class Order
 
     public void AddItem(OrderItem isNew)
     {
-        if (!CanChangeItems) throw new OrderRuleException("Os itens só podem ser alterados antes do pagamento.");
+        if (!CanChangeItems) throw new OrderRuleException("Items can only be changed before payment.");
         var existing = _items.FirstOrDefault(i => i.ProductId == isNew.ProductId);
         if (existing is not null) existing.Quantity += isNew.Quantity;
         else _items.Add(isNew);
@@ -123,7 +123,7 @@ public class Order
     public Payment StartPayment(PaymentMethod method, string provider)
     {
         if (Status != OrderStatus.AwaitingPayment)
-            throw new OrderRuleException("Este pedido não está aguardando pagamento.");
+            throw new OrderRuleException("This order is not awaiting payment.");
 
         CancelPendingPayments();
         var payment = new Payment(method, AmountFor(method), provider);
@@ -134,16 +134,16 @@ public class Order
     // Chamado pelo webhook do provedor (ou pelo admin, para pagamento manual)
     public void ConfirmPayment(Payment payment, decimal? amountPaid = null)
     {
-        if (!_payments.Contains(payment)) throw new OrderRuleException("Pagamento não pertence a este pedido.");
+        if (!_payments.Contains(payment)) throw new OrderRuleException("The payment does not belong to this order.");
         // Webhooks podem chegar repetidos: confirmar duas vezes não deve dar erro
         if (payment.Status == PaymentStatus.Approved && Status != OrderStatus.AwaitingPayment) return;
         if (Status != OrderStatus.AwaitingPayment)
-            throw new OrderRuleException("Pedido está {0} e não pode receber pagamento.", Describe(Status));
+            throw new OrderRuleException("The order is {0} and cannot receive payment.", Status);
 
         // Protege contra pagar um valor antigo (ex.: PIX gerado antes de o pedido ser editado)
         var expected = AmountFor(payment.Method);
         if (payment.Amount != expected || (amountPaid is not null && amountPaid != payment.Amount))
-            throw new OrderRuleException("Valor pago ({0}) diferente do valor do pedido ({1}).", (amountPaid ?? payment.Amount).ToBrl(), expected.ToBrl());
+            throw new OrderRuleException("Amount paid ({0}) differs from the order amount ({1}).", (amountPaid ?? payment.Amount).ToBrl(), expected.ToBrl());
 
         payment.UpdateStatus(PaymentStatus.Approved);
         Status = OrderStatus.Paid;
@@ -152,27 +152,27 @@ public class Order
 
     public void StartPreparation()
     {
-        if (Status != OrderStatus.Paid) throw new OrderRuleException("Só pedidos pagos podem entrar em preparo.");
+        if (Status != OrderStatus.Paid) throw new OrderRuleException("Only paid orders can go into preparation.");
         Status = OrderStatus.Preparing;
     }
 
     public void MarkShipped(string? trackingCode)
     {
         if (Status is not (OrderStatus.Paid or OrderStatus.Preparing))
-            throw new OrderRuleException("Só pedidos pagos ou em preparo podem ser enviados.");
+            throw new OrderRuleException("Only paid or in-preparation orders can be shipped.");
         TrackingCode = string.IsNullOrWhiteSpace(trackingCode) ? null : trackingCode.Trim();
         Status = OrderStatus.Shipped;
     }
 
     public void MarkDelivered()
     {
-        if (Status != OrderStatus.Shipped) throw new OrderRuleException("Só pedidos enviados podem ser marcados como entregues.");
+        if (Status != OrderStatus.Shipped) throw new OrderRuleException("Only shipped orders can be marked as delivered.");
         Status = OrderStatus.Delivered;
     }
 
     public void Cancel(string? reason = null)
     {
-        if (!CanCancel) throw new OrderRuleException("Este pedido não pode mais ser cancelado.");
+        if (!CanCancel) throw new OrderRuleException("This order can no longer be cancelled.");
         CancelPendingPayments();
         Status = OrderStatus.Cancelled;
         CancelledAt = DateTime.UtcNow;
@@ -188,12 +188,12 @@ public class Order
 
     public static string Describe(OrderStatus status) => status switch
     {
-        OrderStatus.AwaitingPayment => "Aguardando pagamento",
-        OrderStatus.Paid => "Pago",
-        OrderStatus.Preparing => "Em preparo",
-        OrderStatus.Shipped => "Enviado",
-        OrderStatus.Delivered => "Entregue",
-        OrderStatus.Cancelled => "Cancelado",
+        OrderStatus.AwaitingPayment => "Awaiting payment",
+        OrderStatus.Paid => "Paid",
+        OrderStatus.Preparing => "In preparation",
+        OrderStatus.Shipped => "Shipped",
+        OrderStatus.Delivered => "Delivered",
+        OrderStatus.Cancelled => "Cancelled",
         _ => status.ToString(),
     };
 }

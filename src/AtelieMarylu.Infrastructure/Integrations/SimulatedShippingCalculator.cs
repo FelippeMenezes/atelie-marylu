@@ -10,16 +10,16 @@ public class SimulatedShippingCalculator : IShippingCalculator
     public Task<IReadOnlyList<ShippingOption>> QuoteAsync(string destinationPostalCode, IReadOnlyList<ShippingPackage> packages, CancellationToken ct = default)
     {
         if (PostalCode.Normalize(destinationPostalCode) is null)
-            throw new ArgumentException("CEP inválido.", nameof(destinationPostalCode));
+            throw new ArgumentException("Invalid postal code.", nameof(destinationPostalCode));
 
         var kilos = Math.Ceiling(packages.Sum(p => p.WeightGrams * p.Quantity) / 1000m);
         if (kilos < 1) kilos = 1;
 
         IReadOnlyList<ShippingOption> options =
         [
-            new(PickupCode, "Retirada no ateliê", 0m, null),
-            new("pac", "PAC (simulado)", 20m + 5m * (kilos - 1), 8),
-            new("sedex", "SEDEX (simulado)", 35m + 8m * (kilos - 1), 3),
+            new(PickupCode, "Pickup at the studio", 0m, null),
+            new("pac", "PAC (simulated)", 20m + 5m * (kilos - 1), 8),
+            new("sedex", "SEDEX (simulated)", 35m + 8m * (kilos - 1), 3),
         ];
         return Task.FromResult(options);
     }

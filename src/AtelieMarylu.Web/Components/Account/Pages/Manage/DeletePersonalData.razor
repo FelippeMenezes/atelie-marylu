@@ -10,15 +10,15 @@
 @inject ILogger<DeletePersonalData> Logger
 @inject AtelieMarylu.Web.Services.PersonalDataService DadosPessoais
 
-<PageTitle>@L["Excluir dados pessoais"]</PageTitle>
+<PageTitle>@L["Delete personal data"]</PageTitle>
 
 <StatusMessage Message="@message" />
 
-<h3>@L["Excluir dados pessoais"]</h3>
+<h3>@L["Delete personal data"]</h3>
 
 <div class="alert alert-warning" role="alert">
     <p>
-        <strong>@L["Excluir estes dados remove a sua conta para sempre. Não é possível desfazer."]</strong>
+        <strong>@L["Deleting this data removes your account forever. This cannot be undone."]</strong>
     </p>
 </div>
 
@@ -29,12 +29,12 @@
         @if (requirePassword)
         {
             <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="@L["Senha"]" />
-                <label for="Input.Password" class="form-label">@L["Senha"]</label>
+                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="@L["Password"]" />
+                <label for="Input.Password" class="form-label">@L["Password"]</label>
                 <ValidationMessage For="() => Input.Password" class="text-danger" />
             </div>
         }
-        <button class="w-100 btn btn-lg btn-danger" type="submit">@L["Excluir dados e encerrar minha conta"]</button>
+        <button class="w-100 btn btn-lg btn-danger" type="submit">@L["Delete data and close my account"]</button>
     </EditForm>
 </div>
 
@@ -72,7 +72,7 @@
 
         if (requirePassword && !await UserManager.CheckPasswordAsync(user, Input.Password))
         {
-            message = L["Erro: senha incorreta."];
+            message = L["Error: wrong password."];
             return;
         }
 

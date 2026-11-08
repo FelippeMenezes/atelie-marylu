@@ -8,7 +8,7 @@ public class OrderItem
 
     public OrderItem(int productId, string productName, decimal unitPrice, int quantity)
     {
-        if (quantity <= 0) throw new OrderRuleException("A quantidade deve ser maior que zero.");
+        if (quantity <= 0) throw new OrderRuleException("Quantity must be greater than zero.");
         ProductId = productId;
         ProductName = productName;
         UnitPrice = unitPrice;

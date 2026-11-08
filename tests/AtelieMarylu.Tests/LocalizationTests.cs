@@ -50,10 +50,10 @@ public partial class LocalizationTests
         }
     }
 
-    // Texto novo na tela sem tradução apareceria em português para quem escolheu outro idioma
+    // A chave é o texto em inglês. Sem tradução, quem escolheu português ou espanhol veria o inglês.
     [Theory]
+    [InlineData("pt-BR")]
     [InlineData("es")]
-    [InlineData("en")]
     public void Every_text_on_screen_has_translation(string language)
     {
         var resource = ReadResource(language);
@@ -69,13 +69,13 @@ public partial class LocalizationTests
     [Fact]
     public void Languages_have_the_same_texts()
     {
-        Assert.Equal(ReadResource("es").Keys.Order(), ReadResource("en").Keys.Order());
+        Assert.Equal(ReadResource("pt-BR").Keys.Order(), ReadResource("es").Keys.Order());
     }
 
     // Se uma tradução perder o {0}, o valor some da frase
     [Theory]
+    [InlineData("pt-BR")]
     [InlineData("es")]
-    [InlineData("en")]
     public void Translations_keep_the_placeholders(string language)
     {
         foreach (var (key, value) in ReadResource(language))

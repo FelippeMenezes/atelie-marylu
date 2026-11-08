@@ -14,7 +14,7 @@ A solution tem três projetos de código e dois de testes:
 
 O caminho é sempre **tela → serviço → banco**: as telas não acessam o banco direto.
 
-O site está em português do Brasil, espanhol e inglês. Para acrescentar um texto na tela, use `@L["Texto em português"]` e coloque a tradução em `Resources/SharedResource.es.resx` e `SharedResource.en.resx`. Os testes de `LocalizationTests` falham se faltar tradução.
+O site está em português do Brasil, espanhol e inglês. Para acrescentar um texto na tela, use `@L["Text in English"]`: o texto em inglês é a própria chave. Coloque a tradução em `Resources/SharedResource.pt-BR.resx` e `SharedResource.es.resx`. Os testes de `LocalizationTests` falham se faltar tradução.
 
 ## Pré-requisitos
 

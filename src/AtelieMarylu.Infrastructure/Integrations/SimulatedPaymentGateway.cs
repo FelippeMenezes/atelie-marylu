@@ -5,7 +5,7 @@ namespace AtelieMarylu.Infrastructure.Integrations;
 
 // Provedor de pagamento de mentira, para o fluxo inteiro funcionar antes do Mercado Pago.
 // O pagamento fica "Pendente" até alguém aprovar pela tela do pedido (botão só em desenvolvimento)
-// ou mandar um POST para /api/webhooks/pagamento, imitando o que o provedor real faz.
+// ou mandar um POST para /api/webhooks/payment, imitando o que o provedor real faz.
 public class SimulatedPaymentGateway : IPaymentGateway
 {
     public const string ProviderName = "simulated";
