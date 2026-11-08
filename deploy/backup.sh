@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Backup diário do banco e das fotos dos produtos.
+# Backup do banco e das fotos dos produtos.
 # Uso (na pasta do projeto, no servidor): ./deploy/backup.sh
-# Agendado pelo cron: veja docs/DEPLOY.md.
+# Roda à mão antes de cada publicação. O backup do dia a dia é o automático da Hostinger.
 #
 # Guarda os últimos 14 dias em ./backups. Se a variável RCLONE_DESTINO estiver definida
 # (ex.: "nuvem:atelie-backups"), copia também para fora do servidor com o rclone:
