@@ -31,7 +31,7 @@ public partial class LoggingEmailClient(ILogger<LoggingEmailClient> logger, IHos
 
         logger.LogInformation(
             "[E-mail simulado] Para {To} | {Subject} | {Links}",
-            MaskEmail(message.To),
+            "[redacted]",
             message.Subject,
             string.Join(" ", links));
 
