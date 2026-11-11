@@ -21,6 +21,7 @@ public class PasswordResetTests(TestDatabase database) : IClassFixture<TestDatab
         using var scope = database.Services.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var user = await CreateUserAsync(users);
+        await users.AccessFailedAsync(user);
         await users.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddMinutes(15));
         var oldStamp = user.SecurityStamp;
 
@@ -32,6 +33,7 @@ public class PasswordResetTests(TestDatabase database) : IClassFixture<TestDatab
         Assert.True(saved.MustChangePassword);
         Assert.NotEqual(oldStamp, saved.SecurityStamp);
         Assert.False(await users.IsLockedOutAsync(saved));
+        Assert.Equal(0, saved.AccessFailedCount);
 
         await using var db = database.CreateDbContext();
         var entry = await db.AuditEntries.SingleAsync(a => a.Action == AuditActions.PasswordReset && a.EntityId == user.Email);

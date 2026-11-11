@@ -383,6 +383,7 @@
   <data name="Sign in with your email and password. No account yet? It's quick, see the link below." xml:space="preserve"><value>Entre com seu e-mail e senha. Ainda não tem conta? É rapidinho, veja o link abaixo.</value></data>
   <data name="Sign in · Ateliê Marylu" xml:space="preserve"><value>Entrar · Ateliê Marylu</value></data>
   <data name="Sign out" xml:space="preserve"><value>Sair</value></data>
+  <data name="Sign-in and registration are protected by" xml:space="preserve"><value>Login e cadastro protegidos pelo</value></data>
   <data name="Signed up" xml:space="preserve"><value>Cadastro</value></data>
   <data name="Simulate approved payment" xml:space="preserve"><value>Simular pagamento aprovado</value></data>
   <data name="Skip to content" xml:space="preserve"><value>Pular para o conteúdo</value></data>
