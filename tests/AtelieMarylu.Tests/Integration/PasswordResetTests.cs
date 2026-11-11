@@ -78,11 +78,13 @@ public class PasswordResetTests(TestDatabase database) : IClassFixture<TestDatab
         Assert.False(await users.HasPasswordAsync((await users.FindByIdAsync(user.Id))!));
     }
 
-    private AccessService Service(IServiceScope scope) => new(
-        scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>(),
-        scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>(),
-        database,
-        new AuditService(new CurrentUserService(new ServiceCollection().BuildServiceProvider(), new HttpContextAccessor()), database));
+    private AccessService Service(IServiceScope scope)
+    {
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var audit = new AuditService(new CurrentUserService(new ServiceCollection().BuildServiceProvider(), new HttpContextAccessor()), database);
+        return new AccessService(users, scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>(), database, audit,
+            new PersonalDataService(users, database, audit), Microsoft.Extensions.Logging.Abstractions.NullLogger<AccessService>.Instance);
+    }
 
     private static async Task<ApplicationUser> CreateUserAsync(UserManager<ApplicationUser> users, bool withPassword = true)
     {

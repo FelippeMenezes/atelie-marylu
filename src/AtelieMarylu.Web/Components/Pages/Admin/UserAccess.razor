@@ -8,7 +8,12 @@
 
 <PageTitle>@L["Access · Admin"]</PageTitle>
 
-@if (user is null)
+@if (deleted)
+{
+    <div class="alert alert-success" role="status">@L["Customer removed. The email can be used for a new registration."]</div>
+    <a href="admin/users" class="btn btn-outline-primary">@L["Back"]</a>
+}
+else if (user is null)
 {
     <p>@(loaded ? L["User not found."] : L["Loading..."])</p>
 }
@@ -94,6 +99,32 @@ else
             }
         }
     </section>
+
+    @if (Id != myId && !isAdmin)
+    {
+        <section class="panel-box mt-4 border-danger">
+            <h2 class="h5 text-danger">@L["Delete customer"]</h2>
+            <p class="small text-secondary">@L["Use for fake registrations. Without orders, the account is deleted. With orders, the account is anonymized and the orders are kept. In both cases the email becomes free for a new registration. This cannot be undone."]</p>
+            @if (confirmingDelete)
+            {
+                <div class="mb-2">
+                    <label for="delete-reason" class="form-label">@L["Reason (goes to the audit log; do not write personal data)"]</label>
+                    <input id="delete-reason" class="form-control" maxlength="200" @bind="deleteReason" @bind:event="oninput" />
+                </div>
+                <div class="mb-2">
+                    <label for="delete-email" class="form-label">@L["Type the customer's email to confirm"]</label>
+                    <input id="delete-email" class="form-control" autocomplete="off" @bind="deleteEmail" @bind:event="oninput" />
+                </div>
+                <Notice Message="@deleteMessage" IsError="true" />
+                <button class="btn btn-danger" @onclick="DeleteAsync" disabled="@saving">@L["Delete customer permanently"]</button>
+                <button class="btn btn-outline-secondary" @onclick="CancelDelete" disabled="@saving">@L["Cancel"]</button>
+            }
+            else
+            {
+                <button class="btn btn-outline-danger" @onclick="() => confirmingDelete = true">@L["Delete customer"]</button>
+            }
+        </section>
+    }
 }
 
 @code {
@@ -109,6 +140,9 @@ else
     private string myId = "";
     private bool confirmingReset;
     private string? temporaryPassword, resetMessage;
+    private bool confirmingDelete, deleted;
+    private string deleteReason = "", deleteEmail = "";
+    private string? deleteMessage;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -146,6 +180,30 @@ else
         {
             (saving, confirmingReset) = (false, false);
         }
+    }
+
+    private async Task DeleteAsync()
+    {
+        saving = true;
+        deleteMessage = null;
+        try
+        {
+            await Access.DeleteCustomerAsync(Id, myId, deleteReason, deleteEmail);
+            deleted = true;
+        }
+        catch (AccessException ex)
+        {
+            deleteMessage = L[ex.Message];
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private void CancelDelete()
+    {
+        (confirmingDelete, deleteReason, deleteEmail, deleteMessage) = (false, "", "", null);
     }
 
     private async Task SaveAsync()

@@ -16,7 +16,9 @@ public class AccessService(
     UserManager<ApplicationUser> userManager,
     RoleManager<IdentityRole> roleManager,
     IDbContextFactory<ApplicationDbContext> dbFactory,
-    AuditService audit)
+    AuditService audit,
+    PersonalDataService personalData,
+    ILogger<AccessService> logger)
 {
     public async Task<IReadOnlyList<UserSummary>> ListUsersAsync(string? search)
     {
@@ -120,6 +122,47 @@ public class AccessService(
         // Nunca registre a senha na auditoria nem no log: quem lê a auditoria não pode conseguir entrar na conta
         await RecordAsync(AuditActions.PasswordReset, AuditEntities.User, user.Email ?? userId);
         return temporary;
+    }
+
+    // Exclui um cliente pelo painel (só o Admin, pela tela /admin/users/{id}), ex.: cadastro falso.
+    // Usa a mesma exclusão do botão "Excluir conta" do próprio cliente (PersonalDataService):
+    // sem pedidos, a conta é apagada; com pedidos, ela é anonimizada e os pedidos ficam (obrigação fiscal).
+    // Nos dois casos o e-mail fica livre para um cadastro novo.
+    public async Task DeleteCustomerAsync(string userId, string loggedAdminId, string reason, string typedEmail)
+    {
+        // A própria conta se exclui em Minha conta → Dados pessoais, que pede a senha
+        if (userId == loggedAdminId)
+            throw new AccessException("You cannot delete your own account here.");
+        // O motivo vai para a auditoria: sem ele, ninguém saberia depois por que o cliente sumiu
+        reason = reason.Trim();
+        if (reason.Length < 3)
+            throw new AccessException("Enter the reason for the deletion.");
+
+        var user = await FindAsync(userId);
+        // Digitar o e-mail evita excluir a pessoa errada por um clique distraído
+        if (!string.Equals(typedEmail.Trim(), user.Email, StringComparison.OrdinalIgnoreCase))
+            throw new AccessException("The email typed does not match this customer's email.");
+        // Uma conta de Admin roubada não pode servir para apagar os outros Admins
+        if (await userManager.IsInRoleAsync(user, AppRoles.Admin))
+            throw new AccessException("Admin accounts cannot be deleted here.");
+        // Funcionário com acesso ao painel: tire o acesso primeiro, para a exclusão ser uma decisão consciente
+        var access = await GetAccessAsync(userId);
+        if (access.Groups.Count > 0 || access.IndividualPermissions.Count > 0)
+            throw new AccessException("Remove this person's admin access before deleting the account.");
+
+        bool hadOrders;
+        await using (var db = await dbFactory.CreateDbContextAsync())
+            hadOrders = await db.Orders.AnyAsync(o => o.CustomerId == userId);
+
+        EnsureSucceeded(await personalData.DeleteAccountAsync(user));
+
+        // O registro usa o id, nunca o e-mail: guardar o e-mail desfaria a exclusão (LGPD).
+        // Quem fez e quando ficam nas colunas Author e OccurredAt da auditoria.
+        await RecordAsync(AuditActions.CustomerDeletedByStaff, AuditEntities.User, userId,
+            $"Cliente removido pela equipe de gestão técnica. Motivo: {reason}. " +
+            (hadOrders ? "Conta anonimizada; pedidos mantidos." : "Conta apagada."));
+        logger.LogInformation("Customer {UserId} deleted by the technical staff (admin {AdminId}). Had orders: {HadOrders}.",
+            userId, loggedAdminId, hadOrders);
     }
 
     public async Task<IReadOnlyList<GroupSummary>> ListGroupsAsync()
