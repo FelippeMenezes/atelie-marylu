@@ -10,7 +10,7 @@ using Microsoft.Extensions.Localization;
 
 namespace AtelieMarylu.Web.Services;
 
-// Monta os e-mails da conta (texto, idioma, HTML) e entrega ao IEmailClient (Resend ou log).
+// Monta os e-mails da conta (boas-vindas, redefinição de senha, troca de e-mail) e entrega ao IEmailClient (Resend ou log).
 // É o IEmailSender<ApplicationUser> que as telas do Identity usam.
 //
 // - O HTML vem de componentes Razor (Components/Emails), renderizados fora de uma tela pelo HtmlRenderer.
@@ -21,8 +21,10 @@ public sealed class AccountEmailSender(
     IEmailClient client,
     IStringLocalizer<SharedResource> L,
     IServiceProvider services,
-    ILoggerFactory loggerFactory) : IEmailSender<ApplicationUser>
+    ILoggerFactory loggerFactory,
+    ILogger<AccountEmailSender> logger) : IEmailSender<ApplicationUser>
 {
+    // Na loja, só a troca de e-mail usa este método: o link vai para o e-mail novo (Manage/Email.razor)
     public async Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
     {
         var html = await RenderAsync<ConfirmEmailMessage>(new()
@@ -43,6 +45,32 @@ public sealed class AccountEmailSender(
             [nameof(ResetPasswordMessage.Hours)] = (int)AccountTokenLifespans.PasswordReset.TotalHours,
         });
         await client.SendAsync(new EmailMessage(email, L["Create a new password · Ateliê Marylu"], html));
+    }
+
+    // Boas-vindas no cadastro. Não faz parte do IEmailSender<ApplicationUser> do Identity, por isso
+    // as telas de cadastro recebem o AccountEmailSender diretamente.
+    public async Task SendWelcomeAsync(ApplicationUser user, string email, string storeUrl)
+    {
+        var html = await RenderAsync<WelcomeMessage>(new()
+        {
+            [nameof(WelcomeMessage.Name)] = user.FullName,
+            [nameof(WelcomeMessage.StoreUrl)] = storeUrl,
+        });
+        await client.SendAsync(new EmailMessage(email, L["Welcome to Ateliê Marylu"], html));
+    }
+
+    // Usado logo depois de criar a conta (cadastro com senha e com Google). A conta já existe: uma falha
+    // no e-mail não pode impedir a pessoa de seguir com a compra, então ela fica só no log.
+    public async Task TrySendWelcomeAsync(ApplicationUser user, string email, string storeUrl)
+    {
+        try
+        {
+            await SendWelcomeAsync(user, email, storeUrl);
+        }
+        catch (EmailDeliveryException ex)
+        {
+            logger.LogError(ex, "Could not send the welcome email to user {UserId}.", user.Id);
+        }
     }
 
     // Só é usado pela API de Identity (MapIdentityApi), que a loja não usa

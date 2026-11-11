@@ -85,13 +85,14 @@ public static class ServiceCollectionExtensions
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {
-                // Sem serviço de e-mail por enquanto; quando houver, voltar para true
+                // Decisão do AML-0027: a loja não exige confirmar o e-mail (atrapalharia a compra e faria o
+                // cadastro depender do Resend). O cadastro só manda um e-mail de boas-vindas.
                 options.SignIn.RequireConfirmedAccount = false;
                 options.User.RequireUniqueEmail = true;
                 options.Password.RequiredLength = 8;
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
-                // Confirmação de conta e troca de e-mail usam um gerador com prazo próprio (veja AccountTokens.cs)
+                // A troca de e-mail usa um gerador com prazo próprio (veja AccountTokens.cs)
                 options.Tokens.EmailConfirmationTokenProvider = EmailConfirmationTokenProvider.ProviderName;
                 options.Tokens.ChangeEmailTokenProvider = EmailConfirmationTokenProvider.ProviderName;
                 // Version2: sem a tabela de passkeys (login sem senha), que a loja não usa
@@ -110,7 +111,8 @@ public static class ServiceCollectionExtensions
         services.Configure<EmailConfirmationTokenProviderOptions>(options => options.TokenLifespan = AccountTokenLifespans.EmailConfirmation);
 
         // Monta os e-mails da conta (texto, idioma) e entrega pelo IEmailClient registrado no AddInfrastructure
-        services.AddScoped<IEmailSender<ApplicationUser>, AccountEmailSender>();
+        services.AddScoped<AccountEmailSender>();
+        services.AddScoped<IEmailSender<ApplicationUser>>(sp => sp.GetRequiredService<AccountEmailSender>());
 
         // Substitui a fábrica padrão para incluir o claim de troca de senha obrigatória
         services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppUserClaimsPrincipalFactory>();

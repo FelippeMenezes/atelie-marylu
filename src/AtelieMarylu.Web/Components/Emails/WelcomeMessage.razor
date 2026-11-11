@@ -1,0 +1,15 @@
+@* E-mail de boas-vindas, enviado no cadastro (com senha ou com Google). Não tem link de confirmação:
+   a loja não exige confirmar o e-mail (decisão do AML-0027). Serve para a pessoa saber que a conta
+   existe e, se não foi ela quem criou, saber o que fazer. O nome é escrito pelo Razor, que codifica o HTML. *@
+<EmailLayout Title="@L["Welcome to Ateliê Marylu"]" ButtonText="@L["Visit the store"]" Link="@StoreUrl">
+    <p style="margin:0 0 16px;">@Greeting</p>
+    <p style="margin:0 0 16px;">@L["Your account was created with this email. Now you can follow your orders and buy faster."]</p>
+    <p style="margin:0;">@L["If you did not create this account, use \"Forgot your password?\" on the sign-in page to take control of it, or reply to this email to talk to us."]</p>
+</EmailLayout>
+
+@code {
+    [Parameter] public string? Name { get; set; }
+    [Parameter, EditorRequired] public string StoreUrl { get; set; } = "";
+
+    private string Greeting => string.IsNullOrWhiteSpace(Name) ? L["Hello!"] : L["Hello, {0}!", Name];
+}
