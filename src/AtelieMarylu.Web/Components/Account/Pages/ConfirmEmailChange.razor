@@ -1,0 +1,67 @@
+@page "/Account/ConfirmEmailChange"
+
+@using Microsoft.AspNetCore.Identity
+@using AtelieMarylu.Infrastructure.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IdentityRedirectManager RedirectManager
+@inject ILogger<ConfirmEmailChange> Logger
+
+<PageTitle>@L["Change email · Ateliê Marylu"]</PageTitle>
+
+<h1>@L["Change email"]</h1>
+<StatusMessage Message="@message" />
+
+@code {
+    private string? message;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? UserId { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Email { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Code { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = UserId is null ? null : await UserManager.FindByIdAsync(UserId);
+        var token = Code is null ? null : AccountEmailLinks.DecodeToken(Code);
+        if (user is null || Email is null || token is null)
+        {
+            message = L["Error: this confirmation link is invalid or has expired."];
+            return;
+        }
+
+        // O token foi gerado para este e-mail novo: se alguém trocar o ?email= do link, ele não vale
+        var result = await UserManager.ChangeEmailAsync(user, Email, token);
+        if (!result.Succeeded)
+        {
+            message = L["Error: this confirmation link is invalid or has expired."];
+            return;
+        }
+
+        // Na loja, o login é o próprio e-mail (UserName = Email). Sem isto, a pessoa trocaria
+        // o e-mail mas continuaria entrando com o antigo.
+        var setUserNameResult = await UserManager.SetUserNameAsync(user, Email);
+        if (!setUserNameResult.Succeeded)
+        {
+            Logger.LogError("Email changed but user name update failed for user {UserId}.", user.Id);
+            message = L["Error: {0}", string.Join(", ", setUserNameResult.Errors.Select(e => e.Description))];
+            return;
+        }
+
+        Logger.LogInformation("User {UserId} changed their email.", user.Id);
+
+        // Só atualiza o login se quem abriu o link é a própria pessoa (pode ter aberto em outro aparelho)
+        if (UserManager.GetUserId(HttpContext.User) == user.Id)
+            await SignInManager.RefreshSignInAsync(user);
+
+        message = L["Your email was changed. From now on, sign in with {0}.", Email];
+    }
+}

@@ -20,5 +20,7 @@ public class LocalizedIdentityErrorDescriber(IStringLocalizer<SharedResource> lo
     public override IdentityError InvalidEmail(string? email) => Translate(base.InvalidEmail(email), "Invalid email.");
     public override IdentityError InvalidUserName(string? userName) => Translate(base.InvalidUserName(userName), "Invalid email.");
     public override IdentityError LoginAlreadyAssociated() => Translate(base.LoginAlreadyAssociated(), "This account is already connected to another store account.");
+    // Link de redefinição de senha vencido, já usado ou adulterado
+    public override IdentityError InvalidToken() => Translate(base.InvalidToken(), "This link is invalid, has expired or has already been used. Ask for a new one.");
     public override IdentityError DefaultError() => Translate(base.DefaultError(), "Could not complete. Try again.");
 }

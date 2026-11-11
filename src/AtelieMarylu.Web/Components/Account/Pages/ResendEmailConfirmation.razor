@@ -1,0 +1,70 @@
+@page "/Account/ResendEmailConfirmation"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using AtelieMarylu.Infrastructure.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IEmailSender<ApplicationUser> EmailSender
+@inject AccountEmailLinks Links
+@inject ILogger<ResendEmailConfirmation> Logger
+
+<PageTitle>@L["Confirm email · Ateliê Marylu"]</PageTitle>
+
+<h1>@L["Send the confirmation email again"]</h1>
+<div class="row">
+    <div class="col-lg-6">
+        <StatusMessage Message="@message" />
+        <EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync" method="post">
+            <LocalizedDataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <label for="Input.Email" class="form-label">@L["Email"]</label>
+                <ValidationMessage For="() => Input.Email" class="text-danger" />
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">@L["Send"]</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private string? message;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        Input ??= new();
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        var user = await UserManager.FindByEmailAsync(Input.Email);
+
+        // Só envia se a conta existe e ainda não foi confirmada (não gasta a cota à toa).
+        // A mensagem é a mesma em todos os casos: não revela quem é cliente.
+        if (user is not null && !await UserManager.IsEmailConfirmedAsync(user))
+        {
+            try
+            {
+                await EmailSender.SendConfirmationLinkAsync(user, Input.Email, await Links.EmailConfirmationAsync(user));
+            }
+            catch (EmailDeliveryException ex)
+            {
+                // Mesma resposta mesmo com falha: um erro só para e-mails existentes revelaria quem é cliente
+                Logger.LogError(ex, "Could not resend the confirmation email to user {UserId}.", user.Id);
+            }
+        }
+
+        message = L["If this email belongs to an account that is not confirmed yet, you will receive a new link in a few minutes."];
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Enter your email.")]
+        [EmailAddress(ErrorMessage = "Invalid email.")]
+        public string Email { get; set; } = "";
+    }
+}

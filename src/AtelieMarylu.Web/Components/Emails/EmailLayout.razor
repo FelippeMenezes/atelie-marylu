@@ -1,0 +1,51 @@
+@* Moldura dos e-mails da loja. E-mail não é página web: os programas de e-mail ignoram CSS externo
+   e boa parte do moderno, por isso o estilo é inline e o layout é em tabela, o padrão de mercado. *@
+<!DOCTYPE html>
+<html lang="@System.Globalization.CultureInfo.CurrentUICulture.Name">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>@Title</title>
+</head>
+<body style="margin:0;padding:0;background:#fdf7fa;font-family:Arial,Helvetica,sans-serif;color:#4a2a3d;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fdf7fa;">
+        <tr>
+            <td align="center" style="padding:24px 12px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;">
+                    <tr>
+                        <td style="padding:24px 32px 0;font-size:20px;font-weight:bold;color:#a8357a;">Ateliê Marylu</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:16px 32px 8px;font-size:16px;line-height:1.5;">
+                            <h1 style="margin:0 0 16px;font-size:22px;color:#4a2a3d;">@Title</h1>
+                            @ChildContent
+                            <p style="margin:24px 0;">
+                                <a href="@Link" style="display:inline-block;background:#a8357a;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:6px;">@ButtonText</a>
+                            </p>
+                            <p style="margin:0 0 8px;font-size:13px;color:#6b5563;">@L["If the button does not work, copy and paste this address into your browser:"]</p>
+                            <p style="margin:0 0 16px;font-size:13px;word-break:break-all;"><a href="@Link" style="color:#a8357a;">@Link</a></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:16px 32px 24px;border-top:1px solid #efcfe3;font-size:12px;line-height:1.5;color:#6b5563;">
+                            @L["We never ask for your password by email."]<br />
+                            @L["Ateliê Marylu · Creative sewing"]
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter, EditorRequired] public string ButtonText { get; set; } = "";
+
+    // O link chega SEM codificação HTML: o Razor codifica uma vez só (codificar duas vezes quebra o link)
+    [Parameter, EditorRequired] public string Link { get; set; } = "";
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

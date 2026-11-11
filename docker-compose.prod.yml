@@ -53,6 +53,10 @@ services:
       GoogleLogin__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
       Turnstile__SiteKey: ${TURNSTILE_SITE_KEY:-}
       Turnstile__SecretKey: ${TURNSTILE_SECRET_KEY:-}
+      # E-mails da conta pelo Resend: sem eles a aplicação não sobe (veja ResendOptions)
+      Resend__ApiKey: ${RESEND_API_KEY:?Defina RESEND_API_KEY no .env.producao}
+      Resend__From: ${RESEND_FROM:?Defina RESEND_FROM no .env.producao}
+      Resend__ReplyTo: ${RESEND_REPLY_TO:-}
     volumes:
       - fotos:/app/wwwroot/uploads
     depends_on:

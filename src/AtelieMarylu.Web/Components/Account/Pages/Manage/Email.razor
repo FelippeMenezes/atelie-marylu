@@ -1,0 +1,139 @@
+@page "/Account/Manage/Email"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using AtelieMarylu.Infrastructure.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IEmailSender<ApplicationUser> EmailSender
+@inject AccountEmailLinks Links
+@inject IdentityRedirectManager RedirectManager
+@inject ILogger<Email> Logger
+
+<PageTitle>@L["Email"]</PageTitle>
+
+<h3>@L["Email"]</h3>
+
+<StatusMessage Message="@message" />
+<div class="row">
+    <div class="col-xl-6">
+        <form @onsubmit="OnSendEmailVerificationAsync" @formname="send-verification" id="send-verification-form" method="post">
+            <AntiforgeryToken />
+        </form>
+        <EditForm Model="Input" FormName="change-email" OnValidSubmit="OnValidSubmitAsync" method="post">
+            <LocalizedDataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+            <div class="form-floating mb-3">
+                <input type="text" value="@email" id="email" class="form-control" placeholder="@L["Email"]" disabled />
+                <label for="email" class="form-label">@L["Current email"]</label>
+            </div>
+            <p class="small">
+                @if (isEmailConfirmed)
+                {
+                    <span class="text-success">✓ @L["Email confirmed"]</span>
+                }
+                else
+                {
+                    <span class="text-secondary">@L["Email not confirmed yet."]</span>
+                    <button type="submit" class="btn btn-link btn-sm p-0 align-baseline" form="send-verification-form">@L["Send confirmation email"]</button>
+                }
+            </p>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.NewEmail" id="Input.NewEmail" class="form-control" autocomplete="email" aria-required="true" placeholder="@L["New email"]" />
+                <label for="Input.NewEmail" class="form-label">@L["New email"]</label>
+                <ValidationMessage For="() => Input.NewEmail" class="text-danger" />
+            </div>
+            <p class="small text-secondary">@L["We will send a link to the new email. The change only happens after you open it."]</p>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">@L["Change email"]</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private string? message;
+    private ApplicationUser? user;
+    private string? email;
+    private bool isEmailConfirmed;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm(FormName = "change-email")]
+    private InputModel Input { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+
+        user = await UserManager.GetUserAsync(HttpContext.User);
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        email = await UserManager.GetEmailAsync(user);
+        isEmailConfirmed = await UserManager.IsEmailConfirmedAsync(user);
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        var newEmail = Input.NewEmail.Trim();
+        if (string.Equals(newEmail, email, StringComparison.OrdinalIgnoreCase))
+        {
+            message = L["Your email is unchanged."];
+            return;
+        }
+
+        // Se o e-mail já é de outra conta, a mensagem é a mesma de sucesso: não revela quem é cliente.
+        // O ChangeEmailAsync recusaria depois de qualquer forma (RequireUniqueEmail).
+        try
+        {
+            if (await UserManager.FindByEmailAsync(newEmail) is null)
+                await EmailSender.SendConfirmationLinkAsync(user, newEmail, await Links.EmailChangeAsync(user, newEmail));
+        }
+        catch (EmailDeliveryException ex)
+        {
+            // Aqui a pessoa já está logada: pode saber que o envio falhou (não revela nada sobre outras contas)
+            Logger.LogError(ex, "Could not send the email change link for user {UserId}.", user.Id);
+            message = L["Error: could not send the email. Try again in a few minutes."];
+            return;
+        }
+
+        message = L["We sent a link to {0}. Open it to finish the change.", newEmail];
+    }
+
+    private async Task OnSendEmailVerificationAsync()
+    {
+        if (user is null || email is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        try
+        {
+            await EmailSender.SendConfirmationLinkAsync(user, email, await Links.EmailConfirmationAsync(user));
+        }
+        catch (EmailDeliveryException ex)
+        {
+            Logger.LogError(ex, "Could not send the confirmation email to user {UserId}.", user.Id);
+            message = L["Error: could not send the email. Try again in a few minutes."];
+            return;
+        }
+        message = L["We sent a link to {0}. Open it to confirm your email.", email];
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Enter your email.")]
+        [EmailAddress(ErrorMessage = "Invalid email.")]
+        public string NewEmail { get; set; } = "";
+    }
+}
