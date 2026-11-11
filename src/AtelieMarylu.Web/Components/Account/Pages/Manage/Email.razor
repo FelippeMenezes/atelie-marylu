@@ -1,7 +1,6 @@
 @page "/Account/Manage/Email"
 
 @using System.ComponentModel.DataAnnotations
-@using System.Net.Mail
 @using Microsoft.AspNetCore.Identity
 @using AtelieMarylu.Infrastructure.Data
 
@@ -99,14 +98,7 @@
             if (await UserManager.FindByEmailAsync(newEmail) is null)
                 await EmailSender.SendConfirmationLinkAsync(user, newEmail, await Links.EmailChangeAsync(user, newEmail));
         }
-        catch (SmtpException ex)
-        {
-            // Aqui a pessoa já está logada: pode saber que o envio falhou (não revela nada sobre outras contas)
-            Logger.LogError(ex, "Could not send the email change link for user {UserId}.", user.Id);
-            message = L["Error: could not send the email. Try again in a few minutes."];
-            return;
-        }
-        catch (InvalidOperationException ex)
+        catch (EmailDeliveryException ex)
         {
             // Aqui a pessoa já está logada: pode saber que o envio falhou (não revela nada sobre outras contas)
             Logger.LogError(ex, "Could not send the email change link for user {UserId}.", user.Id);
@@ -129,13 +121,7 @@
         {
             await EmailSender.SendConfirmationLinkAsync(user, email, await Links.EmailConfirmationAsync(user));
         }
-        catch (SmtpException ex)
-        {
-            Logger.LogError(ex, "Could not send the confirmation email to user {UserId}.", user.Id);
-            message = L["Error: could not send the email. Try again in a few minutes."];
-            return;
-        }
-        catch (InvalidOperationException ex)
+        catch (EmailDeliveryException ex)
         {
             Logger.LogError(ex, "Could not send the confirmation email to user {UserId}.", user.Id);
             message = L["Error: could not send the email. Try again in a few minutes."];

@@ -9,7 +9,7 @@ namespace AtelieMarylu.Infrastructure.Integrations;
 
 // Entrega o e-mail pela API HTTP do Resend (POST /emails). Só transporta: o texto e o idioma
 // são montados no projeto Web (AccountEmailSender). A API dispensa pacote de SMTP e segue o
-// mesmo padrão do Turnstile: HttpClient + Options.
+// mesmo padrão do Turnstile: HttpClient + Options. Qualquer falha de entrega vira EmailDeliveryException.
 public class ResendEmailClient(HttpClient http, IOptions<ResendOptions> options, ILogger<ResendEmailClient> logger) : IEmailClient
 {
     public async Task SendAsync(EmailMessage message, CancellationToken ct = default)
@@ -26,14 +26,27 @@ public class ResendEmailClient(HttpClient http, IOptions<ResendOptions> options,
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ApiKey);
 
-        using var response = await http.SendAsync(request, ct);
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            // O corpo da resposta explica o erro (ex.: domínio não verificado). O conteúdo do e-mail
-            // (que tem o link com token) e a chave nunca vão para o log.
-            var error = await response.Content.ReadAsStringAsync(ct);
-            logger.LogError("Resend recusou o envio do e-mail: {Status} {Error}", (int)response.StatusCode, error);
-            response.EnsureSuccessStatusCode();
+            using var response = await http.SendAsync(request, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                // O corpo da resposta explica o erro (ex.: domínio não verificado). O conteúdo do e-mail
+                // (que tem o link com token) e a chave nunca vão para o log.
+                var error = await response.Content.ReadAsStringAsync(ct);
+                logger.LogError("Resend recusou o envio do e-mail: {Status} {Error}", (int)response.StatusCode, error);
+                throw new EmailDeliveryException($"O Resend recusou o e-mail ({(int)response.StatusCode}).");
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            // Sem conexão, DNS, TLS: o Resend não foi alcançado
+            throw new EmailDeliveryException("Não foi possível falar com o Resend.", ex);
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            // Passou do Timeout do HttpClient (10 s). Se quem chamou cancelou, a exceção segue como está.
+            throw new EmailDeliveryException("O Resend demorou demais para responder.", ex);
         }
     }
 

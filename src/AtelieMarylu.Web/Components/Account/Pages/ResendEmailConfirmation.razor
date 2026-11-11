@@ -51,12 +51,7 @@
             {
                 await EmailSender.SendConfirmationLinkAsync(user, Input.Email, await Links.EmailConfirmationAsync(user));
             }
-            catch (InvalidOperationException ex)
-            {
-                // Mesma resposta mesmo com falha: um erro só para e-mails existentes revelaria quem é cliente
-                Logger.LogError(ex, "Could not resend the confirmation email to user {UserId}.", user.Id);
-            }
-            catch (System.Security.Cryptography.CryptographicException ex)
+            catch (EmailDeliveryException ex)
             {
                 // Mesma resposta mesmo com falha: um erro só para e-mails existentes revelaria quem é cliente
                 Logger.LogError(ex, "Could not resend the confirmation email to user {UserId}.", user.Id);

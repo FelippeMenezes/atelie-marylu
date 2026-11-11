@@ -21,17 +21,20 @@ public partial class LoggingEmailClient(ILogger<LoggingEmailClient> logger, IHos
         if (!environment.IsDevelopment())
             throw new InvalidOperationException("LoggingEmailClient só pode ser usado em Development: configure Resend:ApiKey e Resend:From.");
 
-        // O HTML traz os links codificados (&amp; no lugar de &). Para evitar expor dados privados no log,
-        // registramos somente versão redigida dos links e e-mail mascarado.
+        // O link vai INTEIRO para o log: é o motivo de esta classe existir (copiar do terminal e testar
+        // o fluxo). Isso é aceitável só porque ela se recusa a rodar fora de Development (acima) e a loja
+        // nem sobe fora de Development sem o Resend (ResendOptions). O CodeQL aponta "exposure of private
+        // information" aqui; o alerta foi dispensado no GitHub com esta justificativa.
+        // O destinatário não é necessário para o teste, então vai mascarado.
+        // O HTML traz os links codificados (&amp; no lugar de &): o log mostra a versão para colar no navegador.
         var links = Link()
             .Matches(message.Html)
             .Select(m => WebUtility.HtmlDecode(m.Groups[1].Value))
-            .Select(RedactLink)
             .Distinct();
 
         logger.LogInformation(
             "[E-mail simulado] Para {To} | {Subject} | {Links}",
-            "[redacted]",
+            MaskEmail(message.To),
             message.Subject,
             string.Join(" ", links));
 
@@ -54,13 +57,5 @@ public partial class LoggingEmailClient(ILogger<LoggingEmailClient> logger, IHos
             : "***";
 
         return $"{maskedLocal}@{maskedDomain}";
-    }
-
-    private static string RedactLink(string link)
-    {
-        if (!Uri.TryCreate(link, UriKind.Absolute, out var uri))
-            return "[invalid-link]";
-
-        return $"{uri.Scheme}://{uri.Host}{uri.AbsolutePath}";
     }
 }
