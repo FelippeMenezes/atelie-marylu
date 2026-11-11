@@ -116,7 +116,13 @@
         {
             await EmailSender.SendConfirmationLinkAsync(user, Input.Email, await Links.EmailConfirmationAsync(user));
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
+        {
+            // A conta já foi criada: uma falha no e-mail não pode impedir o cliente de seguir com a compra.
+            // Ele pode pedir outro link em Minha conta → E-mail.
+            Logger.LogError(ex, "Could not send the confirmation email to user {UserId}.", user.Id);
+        }
+        catch (System.Net.Mail.SmtpException ex)
         {
             // A conta já foi criada: uma falha no e-mail não pode impedir o cliente de seguir com a compra.
             // Ele pode pedir outro link em Minha conta → E-mail.
