@@ -9,8 +9,11 @@ namespace AtelieMarylu.Tests;
 // Toda falha de entrega do Resend vira EmailDeliveryException, que é a única exceção que as telas tratam.
 // Se alguma falha escapar com outro tipo, o "esqueci minha senha" mostraria erro só para e-mails que
 // têm conta (revelando quem é cliente) e o cadastro quebraria depois de criar a conta.
-public class ResendEmailClientTests
+public sealed class ResendEmailClientTests : IDisposable
 {
+    // O xUnit cria uma instância da classe por teste e chama Dispose no fim: os HttpClient criados são descartados
+    private readonly List<HttpClient> clients = [];
+
     private static readonly EmailMessage Message = new("cliente@teste.local", "Assunto", "<p>Olá</p>");
 
     [Fact]
@@ -62,10 +65,20 @@ public class ResendEmailClientTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.SendAsync(Message, cts.Token));
     }
 
-    private static ResendEmailClient Client(Func<HttpRequestMessage, HttpResponseMessage> respond) =>
-        new(new HttpClient(new FakeHandler(respond)) { BaseAddress = new Uri("https://api.resend.test/") },
+    private ResendEmailClient Client(Func<HttpRequestMessage, HttpResponseMessage> respond)
+    {
+        var http = new HttpClient(new FakeHandler(respond)) { BaseAddress = new Uri("https://api.resend.test/") };
+        clients.Add(http);
+        return new ResendEmailClient(http,
             Options.Create(new ResendOptions { ApiKey = "re_teste", From = "Loja <loja@teste.local>" }),
             NullLogger<ResendEmailClient>.Instance);
+    }
+
+    public void Dispose()
+    {
+        foreach (var http in clients)
+            http.Dispose();
+    }
 
     private sealed class FakeHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
     {

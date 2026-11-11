@@ -79,8 +79,14 @@ else
 
         if (RemoteError is not null)
         {
-            // Ex.: a pessoa clicou em "Cancelar" na tela do Google
-            Logger.LogInformation("Login com Google cancelado ou recusado: {Erro}", RemoteError);
+            // Ex.: a pessoa clicou em "Cancelar" na tela do Google.
+            // O RemoteError vem do endereço da página (?remoteError=...), então qualquer pessoa pode escrever
+            // nele. Sem quebras de linha, ninguém consegue forjar uma linha falsa no log; o tamanho é limitado
+            // para um texto enorme não encher o log.
+            var safeRemoteError = RemoteError.Replace("\r", " ").Replace("\n", " ");
+            if (safeRemoteError.Length > 200)
+                safeRemoteError = safeRemoteError[..200];
+            Logger.LogInformation("Login com Google cancelado ou recusado: {Erro}", safeRemoteError);
             RedirectManager.RedirectToWithStatus("Account/Login", L["Error: the Google sign-in was not completed. Try again."], HttpContext);
             return;
         }
