@@ -13,7 +13,7 @@ public class TemporaryPasswordTests
         // Mesmas regras do AddIdentityCore: padrão do Identity com mínimo de 8 caracteres
         var options = new IdentityOptions();
         options.Password.RequiredLength = 8;
-        var userManager = new UserManager<ApplicationUser>(new NoStore(), Options.Create(options),
+        using var userManager = new UserManager<ApplicationUser>(new NoStore(), Options.Create(options),
             null!, [], [], null!, new IdentityErrorDescriber(), null!, null!);
         var validator = new PasswordValidator<ApplicationUser>();
 
