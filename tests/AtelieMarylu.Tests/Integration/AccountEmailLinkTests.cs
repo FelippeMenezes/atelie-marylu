@@ -33,20 +33,6 @@ public class AccountEmailLinkTests(TestDatabase database) : IClassFixture<TestDa
     }
 
     [FactWithDatabase]
-    public async Task Email_confirmation_link_confirms_the_email()
-    {
-        using var scope = database.Services.CreateScope();
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var user = await CreateUserAsync(users);
-
-        var link = await new AccountEmailLinks(users, new FakeNavigation()).EmailConfirmationAsync(user);
-
-        Assert.Equal(user.Id, Query(link)["userId"]);
-        Assert.True((await users.ConfirmEmailAsync(user, TokenFrom(link))).Succeeded);
-        Assert.True(await users.IsEmailConfirmedAsync(user));
-    }
-
-    [FactWithDatabase]
     public async Task Email_change_link_only_works_for_the_requested_email()
     {
         using var scope = database.Services.CreateScope();

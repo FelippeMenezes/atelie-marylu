@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace AtelieMarylu.Web.Components.Account;
 
-// Monta os links que vão por e-mail (confirmação, redefinição de senha, troca de e-mail).
+// Monta os links que vão por e-mail (redefinição de senha, troca de e-mail) e o endereço da loja.
 // No modelo do .NET, esse código se repetia em cada tela. Aqui fica num lugar só.
 //
 // Segurança: o endereço do link vem da requisição (NavigationManager). Sem AllowedHosts,
@@ -15,16 +15,6 @@ namespace AtelieMarylu.Web.Components.Account;
 // É por isso que a loja não sobe em produção com AllowedHosts=*.
 public sealed class AccountEmailLinks(UserManager<ApplicationUser> userManager, NavigationManager navigation)
 {
-    public async Task<string> EmailConfirmationAsync(ApplicationUser user)
-    {
-        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-        return Build("Account/ConfirmEmail", new()
-        {
-            ["userId"] = await userManager.GetUserIdAsync(user),
-            ["code"] = Encode(token),
-        });
-    }
-
     public async Task<string> PasswordResetAsync(ApplicationUser user)
     {
         var token = await userManager.GeneratePasswordResetTokenAsync(user);
@@ -41,6 +31,10 @@ public sealed class AccountEmailLinks(UserManager<ApplicationUser> userManager, 
             ["code"] = Encode(token),
         });
     }
+
+    // Página inicial da loja, para o botão do e-mail de boas-vindas. Sem token e sem codificação HTML:
+    // quem escreve no HTML é o componente Razor, que codifica.
+    public string StoreHome() => navigation.ToAbsoluteUri("").AbsoluteUri;
 
     // Desfaz o Encode na tela que recebe o link. Devolve null se o código vier corrompido.
     public static string? DecodeToken(string code)

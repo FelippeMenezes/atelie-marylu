@@ -13,6 +13,8 @@
 @inject IUserStore<ApplicationUser> UserStore
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<GoogleLogin> Logger
+@inject AtelieMarylu.Web.Services.AccountEmailSender AccountEmails
+@inject AccountEmailLinks Links
 
 @* Volta do Google. Quem já tem a conta Google conectada entra direto; quem é novo confirma
    o nome e a conta é criada com o e-mail que o Google informou. *@
@@ -182,6 +184,7 @@ else
 
         await UserManager.AddToRoleAsync(user, AppRoles.Customer);
         Logger.LogInformation("Conta criada com Google.");
+        await AccountEmails.TrySendWelcomeAsync(user, email!, Links.StoreHome());
 
         await SignInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);

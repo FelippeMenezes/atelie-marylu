@@ -50,7 +50,7 @@ public class AccountEmailSenderTests
     }
 
     [Fact]
-    public async Task Confirmation_email_uses_its_own_lifespan()
+    public async Task Email_change_email_uses_its_own_lifespan()
     {
         using var services = BuildServices(out var client);
         var previous = CultureInfo.CurrentUICulture;
@@ -69,6 +69,41 @@ public class AccountEmailSenderTests
         Assert.Equal("Confirmar e-mail · Ateliê Marylu", sent.Subject);
         Assert.Contains("Olá!", Text(sent.Html)); // sem nome, cumprimento genérico
         Assert.Contains($"{(int)AccountTokenLifespans.EmailConfirmation.TotalHours} horas", sent.Html);
+    }
+
+    [Fact]
+    public async Task Welcome_email_has_no_token_and_explains_what_to_do()
+    {
+        using var services = BuildServices(out var client);
+        var previous = CultureInfo.CurrentUICulture;
+        CultureInfo.CurrentUICulture = new CultureInfo("pt-BR");
+        try
+        {
+            await services.GetRequiredService<AccountEmailSender>().SendWelcomeAsync(
+                new ApplicationUser { FullName = "Maria" }, "cliente@teste.local", "https://loja.teste/");
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previous;
+        }
+
+        var sent = Assert.Single(client.Sent);
+        Assert.Equal("Boas-vindas ao Ateliê Marylu", sent.Subject);
+        Assert.Contains("Olá, Maria!", Text(sent.Html));
+        Assert.Contains("href=\"https://loja.teste/\"", sent.Html);
+        // Boas-vindas não leva link com token (nem de confirmação, nem de senha)
+        Assert.DoesNotContain("code=", sent.Html);
+        Assert.Contains("Esqueceu sua senha?", Text(sent.Html));
+    }
+
+    [Fact]
+    public async Task Welcome_failure_does_not_reach_the_registration()
+    {
+        // A conta já foi criada quando o e-mail sai: uma falha no envio não pode derrubar o cadastro
+        using var services = BuildServices(out _, new FailingEmailClient());
+
+        await services.GetRequiredService<AccountEmailSender>().TrySendWelcomeAsync(
+            new ApplicationUser { FullName = "Maria" }, "cliente@teste.local", "https://loja.teste/");
     }
 
     [Fact]
@@ -100,15 +135,21 @@ public class AccountEmailSenderTests
         return (sent, sent.Html);
     }
 
-    private static ServiceProvider BuildServices(out FakeEmailClient client)
+    private static ServiceProvider BuildServices(out FakeEmailClient client, IEmailClient? replacement = null)
     {
         client = new FakeEmailClient();
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddLocalization(options => options.ResourcesPath = "Resources");
-        services.AddSingleton<IEmailClient>(client);
+        services.AddSingleton(replacement ?? client);
         services.AddTransient<AccountEmailSender>();
         return services.BuildServiceProvider();
+    }
+
+    private sealed class FailingEmailClient : IEmailClient
+    {
+        public Task SendAsync(EmailMessage message, CancellationToken ct = default) =>
+            throw new EmailDeliveryException("Resend fora do ar (simulado)");
     }
 
     private sealed class FakeEmailClient : IEmailClient

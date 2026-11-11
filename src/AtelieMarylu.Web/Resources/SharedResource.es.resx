@@ -158,7 +158,6 @@
   <data name="Description (include sizes and materials)" xml:space="preserve"><value>Descripción (incluye medidas y materiales)</value></data>
   <data name="Details" xml:space="preserve"><value>Detalles</value></data>
   <data name="Development environment:" xml:space="preserve"><value>Entorno de desarrollo:</value></data>
-  <data name="Didn't get it? Send the confirmation email again" xml:space="preserve"><value>¿No lo recibiste? Envía el correo de confirmación de nuevo</value></data>
   <data name="Disconnect Google account" xml:space="preserve"><value>Desconectar la cuenta de Google</value></data>
   <data name="District" xml:space="preserve"><value>Barrio</value></data>
   <data name="Don't want to wait? Create a new password and your account is unlocked right away." xml:space="preserve"><value>¿No quieres esperar? Crea una nueva contraseña y tu cuenta se desbloquea al instante.</value></data>
@@ -169,8 +168,6 @@
   <data name="Edit orders and change status" xml:space="preserve"><value>Editar pedidos y cambiar estado</value></data>
   <data name="Edit product" xml:space="preserve"><value>Editar producto</value></data>
   <data name="Email" xml:space="preserve"><value>Correo electrónico</value></data>
-  <data name="Email confirmed" xml:space="preserve"><value>Correo confirmado</value></data>
-  <data name="Email not confirmed yet." xml:space="preserve"><value>Correo aún no confirmado.</value></data>
   <data name="Email: {0}" xml:space="preserve"><value>Correo electrónico: {0}</value></data>
   <data name="Employee" xml:space="preserve"><value>Empleado</value></data>
   <data name="Employee groups" xml:space="preserve"><value>Grupos de empleados</value></data>
@@ -234,10 +231,10 @@
   <data name="History" xml:space="preserve"><value>Historial</value></data>
   <data name="I have read and accept" xml:space="preserve"><value>He leído y acepto</value></data>
   <data name="If the button does not work, copy and paste this address into your browser:" xml:space="preserve"><value>Si el botón no funciona, copia y pega esta dirección en tu navegador:</value></data>
-  <data name="If this email belongs to an account that is not confirmed yet, you will receive a new link in a few minutes." xml:space="preserve"><value>Si este correo pertenece a una cuenta aún no confirmada, recibirás un nuevo enlace en unos minutos.</value></data>
   <data name="If this email belongs to an account, you will receive a link to create a new password in a few minutes. Also check the spam folder." xml:space="preserve"><value>Si este correo pertenece a una cuenta, recibirás en unos minutos un enlace para crear una nueva contraseña. Revisa también la carpeta de spam.</value></data>
   <data name="If you did not ask for this, ignore this email: your password stays the same." xml:space="preserve"><value>Si no lo pediste, ignora este correo: tu contraseña sigue siendo la misma.</value></data>
   <data name="If you did not ask for this, just ignore this email. Nothing will change in any account." xml:space="preserve"><value>Si no lo pediste, simplemente ignora este correo. Ninguna cuenta será modificada.</value></data>
+  <data name="If you did not create this account, use &quot;Forgot your password?&quot; on the sign-in page to take control of it, or reply to this email to talk to us." xml:space="preserve"><value>Si no creaste esta cuenta, usa "¿Olvidaste tu contraseña?" en la página de inicio de sesión para tomar el control de ella, o responde este correo para hablar con nosotros.</value></data>
   <data name="In preparation" xml:space="preserve"><value>En preparación</value></data>
   <data name="Inactive" xml:space="preserve"><value>Inactivo</value></data>
   <data name="Increase" xml:space="preserve"><value>Aumentar</value></data>
@@ -402,11 +399,8 @@
   <data name="Search by name or email" xml:space="preserve"><value>Buscar por nombre o correo electrónico</value></data>
   <data name="seconds." xml:space="preserve"><value>segundos.</value></data>
   <data name="SEDEX (simulated)" xml:space="preserve"><value>SEDEX (simulado)</value></data>
-  <data name="Send" xml:space="preserve"><value>Enviar</value></data>
-  <data name="Send confirmation email" xml:space="preserve"><value>Enviar correo de confirmación</value></data>
   <data name="Send it to the person privately. It will not be shown again, and they must create a new password at the next sign-in." xml:space="preserve"><value>Envíala a la persona por un canal privado. No se mostrará de nuevo, y la persona tendrá que crear una contraseña nueva en el próximo acceso.</value></data>
   <data name="Send link" xml:space="preserve"><value>Enviar enlace</value></data>
-  <data name="Send the confirmation email again" xml:space="preserve"><value>Enviar el correo de confirmación de nuevo</value></data>
   <data name="Setting the quantity to zero removes the item. Stock and shipping are adjusted automatically." xml:space="preserve"><value>Poner la cantidad en cero quita el artículo. El stock y el envío se ajustan automáticamente.</value></data>
   <data name="Shipped" xml:space="preserve"><value>Enviado</value></data>
   <data name="Shipping" xml:space="preserve"><value>Envío</value></data>
@@ -435,7 +429,6 @@
   <data name="System roles cannot be changed here." xml:space="preserve"><value>Los roles del sistema no se pueden cambiar aquí.</value></data>
   <data name="Temporary password:" xml:space="preserve"><value>Contraseña temporal:</value></data>
   <data name="Terms of use" xml:space="preserve"><value>Términos de uso</value></data>
-  <data name="Thank you! Your email is confirmed." xml:space="preserve"><value>¡Gracias! Tu correo está confirmado.</value></data>
   <data name="The address can no longer be changed." xml:space="preserve"><value>La dirección ya no se puede cambiar.</value></data>
   <data name="The address may have changed or the product is no longer available." xml:space="preserve"><value>La dirección puede haber cambiado o el producto ya no está disponible.</value></data>
   <data name="The cart is empty." xml:space="preserve"><value>El carrito está vacío.</value></data>
@@ -494,14 +487,14 @@
   <data name="View photo {0}" xml:space="preserve"><value>Ver foto {0}</value></data>
   <data name="View products" xml:space="preserve"><value>Ver productos</value></data>
   <data name="View registered customers" xml:space="preserve"><value>Ver clientes registrados</value></data>
+  <data name="Visit the store" xml:space="preserve"><value>Visitar la tienda</value></data>
   <data name="We never ask for your password by email." xml:space="preserve"><value>Nunca pedimos tu contraseña por correo.</value></data>
   <data name="We received a request to create a new password for your Ateliê Marylu account. Click the button below to choose it." xml:space="preserve"><value>Recibimos una solicitud para crear una nueva contraseña en tu cuenta de Ateliê Marylu. Haz clic en el botón de abajo para elegirla.</value></data>
-  <data name="We sent a link to {0}. Open it to confirm your email." xml:space="preserve"><value>Enviamos un enlace a {0}. Ábrelo para confirmar tu correo.</value></data>
   <data name="We sent a link to {0}. Open it to finish the change." xml:space="preserve"><value>Enviamos un enlace a {0}. Ábrelo para terminar el cambio.</value></data>
-  <data name="We sent you a link to confirm your account. Also check the spam folder." xml:space="preserve"><value>Te enviamos un enlace para confirmar tu cuenta. Revisa también la carpeta de spam.</value></data>
   <data name="we ship within 2 business days after payment confirmation." xml:space="preserve"><value>enviamos en hasta 2 días hábiles tras confirmar el pago.</value></data>
   <data name="We will send a link to the new email. The change only happens after you open it." xml:space="preserve"><value>Enviaremos un enlace al nuevo correo. El cambio solo ocurre después de que lo abras.</value></data>
   <data name="Weight (g)" xml:space="preserve"><value>Peso (g)</value></data>
+  <data name="Welcome to Ateliê Marylu" xml:space="preserve"><value>Te damos la bienvenida a Ateliê Marylu</value></data>
   <data name="When" xml:space="preserve"><value>Cuándo</value></data>
   <data name="Who" xml:space="preserve"><value>Quién</value></data>
   <data name="Width (cm)" xml:space="preserve"><value>Ancho (cm)</value></data>
@@ -519,6 +512,7 @@
   <data name="You signed in with" xml:space="preserve"><value>Entraste con</value></data>
   <data name="Your account has no password yet. Create one so you can also sign in with email and password." xml:space="preserve"><value>Tu cuenta aún no tiene contraseña. Crea una para poder entrar también con correo electrónico y contraseña.</value></data>
   <data name="Your account stores the personal data you gave us. Here you can download or delete that data." xml:space="preserve"><value>Tu cuenta guarda los datos personales que nos diste. Aquí puedes descargarlos o eliminarlos.</value></data>
+  <data name="Your account was created with this email. Now you can follow your orders and buy faster." xml:space="preserve"><value>Tu cuenta fue creada con este correo. Ahora puedes seguir tus pedidos y comprar más rápido.</value></data>
   <data name="Your cart is empty." xml:space="preserve"><value>Tu carrito está vacío.</value></data>
   <data name="Your email is unchanged." xml:space="preserve"><value>Tu correo sigue siendo el mismo.</value></data>
   <data name="Your email was changed. From now on, sign in with {0}." xml:space="preserve"><value>Tu correo fue cambiado. A partir de ahora, inicia sesión con {0}.</value></data>
