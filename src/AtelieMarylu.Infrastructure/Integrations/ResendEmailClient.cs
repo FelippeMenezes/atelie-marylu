@@ -32,7 +32,7 @@ public class ResendEmailClient(HttpClient http, IOptions<ResendOptions> options,
             // O corpo da resposta explica o erro (ex.: domínio não verificado). O conteúdo do e-mail
             // (que tem o link com token) e a chave nunca vão para o log.
             var error = await response.Content.ReadAsStringAsync(ct);
-            logger.LogError("Resend recusou o e-mail \"{Subject}\": {Status} {Error}", message.Subject, (int)response.StatusCode, error);
+            logger.LogError("Resend recusou o envio do e-mail: {Status} {Error}", (int)response.StatusCode, error);
             response.EnsureSuccessStatusCode();
         }
     }
