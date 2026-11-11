@@ -96,6 +96,8 @@ public static class ServiceCollectionExtensions
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddSignInManager()
+            // Tokens de uso único do Identity (redefinição de senha). Serão usados também no "esqueci minha senha" da Fase 4.
+            .AddDefaultTokenProviders()
             .AddErrorDescriber<LocalizedIdentityErrorDescriber>();
 
         // Substitui a fábrica padrão para incluir o claim de troca de senha obrigatória

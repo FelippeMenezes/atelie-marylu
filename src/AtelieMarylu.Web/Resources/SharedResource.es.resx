@@ -37,6 +37,7 @@
   <data name="Adjust your cart to continue" xml:space="preserve"><value>Ajusta el carrito para continuar</value></data>
   <data name="Admin" xml:space="preserve"><value>Admin</value></data>
   <data name="Admin panel" xml:space="preserve"><value>Panel</value></data>
+  <data name="Admin passwords cannot be reset here." xml:space="preserve"><value>La contraseña de un Admin no se puede restablecer aquí.</value></data>
   <data name="Admin · Ateliê Marylu" xml:space="preserve"><value>Panel · Ateliê Marylu</value></data>
   <data name="After confirming, you have {0} to pay. After that, the order is cancelled and the items go back to the store." xml:space="preserve"><value>Tras confirmar, tienes {0} para pagar. Después, el pedido se cancela y las piezas vuelven a la tienda.</value></data>
   <data name="All" xml:space="preserve"><value>Todo</value></data>
@@ -70,6 +71,7 @@
   <data name="Calculate shipping" xml:space="preserve"><value>Calcular envío</value></data>
   <data name="Calculate shipping and delivery time" xml:space="preserve"><value>Calcular envío y plazo</value></data>
   <data name="Calculate shipping to continue." xml:space="preserve"><value>Calcula el envío para continuar.</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancelar</value></data>
   <data name="Cancel order" xml:space="preserve"><value>Cancelar pedido</value></data>
   <data name="Cancel orders" xml:space="preserve"><value>Cancelar pedidos</value></data>
   <data name="Cancellation reason: {0}" xml:space="preserve"><value>Motivo de la cancelación: {0}</value></data>
@@ -91,6 +93,7 @@
   <data name="Code copied!" xml:space="preserve"><value>¡Código copiado!</value></data>
   <data name="Confirm cancellation? The stock will be returned." xml:space="preserve"><value>¿Confirmas la cancelación? El stock será devuelto.</value></data>
   <data name="Confirm order" xml:space="preserve"><value>Confirmar pedido</value></data>
+  <data name="Confirm password reset" xml:space="preserve"><value>Confirmar restablecimiento de contraseña</value></data>
   <data name="Confirm that you are not a robot." xml:space="preserve"><value>Confirma que no eres un robot.</value></data>
   <data name="Confirm the new password" xml:space="preserve"><value>Confirma la nueva contraseña</value></data>
   <data name="Confirm your password" xml:space="preserve"><value>Confirma la contraseña</value></data>
@@ -119,6 +122,7 @@
   <data name="Create order" xml:space="preserve"><value>Crear pedido</value></data>
   <data name="Create orders from the admin" xml:space="preserve"><value>Crear pedidos desde el panel</value></data>
   <data name="Create password" xml:space="preserve"><value>Crear contraseña</value></data>
+  <data name="Creates a temporary password and signs the person out of all devices. They must create a new password at the next sign-in." xml:space="preserve"><value>Crea una contraseña temporal y cierra la sesión de la persona en todos los dispositivos. Tendrá que crear una contraseña nueva en el próximo acceso.</value></data>
   <data name="Credit card (up to {0} interest-free installments)" xml:space="preserve"><value>Tarjeta de crédito (hasta {0} cuotas sin interés)</value></data>
   <data name="Current password" xml:space="preserve"><value>Contraseña actual</value></data>
   <data name="Customer" xml:space="preserve"><value>Cliente</value></data>
@@ -186,7 +190,7 @@
   <data name="Filter by status" xml:space="preserve"><value>Filtrar por estado</value></data>
   <data name="Filter by type" xml:space="preserve"><value>Filtrar por tipo</value></data>
   <data name="For sales made on Instagram, WhatsApp or in person. The customer must have an account." xml:space="preserve"><value>Para ventas hechas por Instagram, WhatsApp o en persona. El cliente debe estar registrado.</value></data>
-  <data name="For security, create a new password before continuing. The current one came from the system setup." xml:space="preserve"><value>Por seguridad, crea una contraseña nueva antes de continuar. La actual vino de la configuración del sistema.</value></data>
+  <data name="For security, create a new password before continuing." xml:space="preserve"><value>Por seguridad, crea una contraseña nueva antes de continuar.</value></data>
   <data name="Forgot your password? Contact the store on WhatsApp or Instagram." xml:space="preserve"><value>¿Olvidaste tu contraseña? Habla con la tienda por WhatsApp o Instagram.</value></data>
   <data name="Free" xml:space="preserve"><value>Gratis</value></data>
   <data name="Full name" xml:space="preserve"><value>Nombre completo</value></data>
@@ -357,6 +361,7 @@
   <data name="Rejected" xml:space="preserve"><value>Rechazado</value></data>
   <data name="Reload" xml:space="preserve"><value>Recargar</value></data>
   <data name="Remove" xml:space="preserve"><value>Quitar</value></data>
+  <data name="Reset password" xml:space="preserve"><value>Restablecer contraseña</value></data>
   <data name="Resume" xml:space="preserve"><value>Reanudar</value></data>
   <data name="Save" xml:space="preserve"><value>Guardar</value></data>
   <data name="Save access" xml:space="preserve"><value>Guardar accesos</value></data>
@@ -367,6 +372,7 @@
   <data name="Search by name or email" xml:space="preserve"><value>Buscar por nombre o correo electrónico</value></data>
   <data name="seconds." xml:space="preserve"><value>segundos.</value></data>
   <data name="SEDEX (simulated)" xml:space="preserve"><value>SEDEX (simulado)</value></data>
+  <data name="Send it to the person privately. It will not be shown again, and they must create a new password at the next sign-in." xml:space="preserve"><value>Envíala a la persona por un canal privado. No se mostrará de nuevo, y la persona tendrá que crear una contraseña nueva en el próximo acceso.</value></data>
   <data name="Setting the quantity to zero removes the item. Stock and shipping are adjusted automatically." xml:space="preserve"><value>Poner la cantidad en cero quita el artículo. El stock y el envío se ajustan automáticamente.</value></data>
   <data name="Shipped" xml:space="preserve"><value>Enviado</value></data>
   <data name="Shipping" xml:space="preserve"><value>Envío</value></data>
@@ -392,6 +398,7 @@
   <data name="Subtotal" xml:space="preserve"><value>Subtotal</value></data>
   <data name="Subtotal:" xml:space="preserve"><value>Subtotal:</value></data>
   <data name="System roles cannot be changed here." xml:space="preserve"><value>Los roles del sistema no se pueden cambiar aquí.</value></data>
+  <data name="Temporary password:" xml:space="preserve"><value>Contraseña temporal:</value></data>
   <data name="Terms of use" xml:space="preserve"><value>Términos de uso</value></data>
   <data name="The address can no longer be changed." xml:space="preserve"><value>La dirección ya no se puede cambiar.</value></data>
   <data name="The address may have changed or the product is no longer available." xml:space="preserve"><value>La dirección puede haber cambiado o el producto ya no está disponible.</value></data>
@@ -420,11 +427,13 @@
   <data name="The stock changed while you were editing. Reload the page and check the value." xml:space="preserve"><value>El stock cambió mientras editabas. Recarga la página y revisa el valor.</value></data>
   <data name="the terms of use" xml:space="preserve"><value>los términos de uso</value></data>
   <data name="This account is already connected to another store account." xml:space="preserve"><value>Esta cuenta ya está conectada a otro registro de la tienda.</value></data>
+  <data name="This account signs in with Google and has no password to reset." xml:space="preserve"><value>Esta cuenta inicia sesión con Google y no tiene contraseña para restablecer.</value></data>
   <data name="This account was temporarily locked. Try again later." xml:space="preserve"><value>Esta cuenta fue bloqueada temporalmente. Inténtalo más tarde.</value></data>
   <data name="This email is already registered." xml:space="preserve"><value>Este correo electrónico ya está registrado.</value></data>
   <data name="This order can no longer be cancelled." xml:space="preserve"><value>Este pedido ya no se puede cancelar.</value></data>
   <data name="This order had an approved payment: refund it at the payment provider." xml:space="preserve"><value>Este pedido tenía un pago aprobado: haz el reembolso en el proveedor de pago.</value></data>
   <data name="This order is not awaiting payment." xml:space="preserve"><value>Este pedido no está pendiente de pago.</value></data>
+  <data name="To change your own password, use" xml:space="preserve"><value>Para cambiar tu propia contraseña, usa</value></data>
   <data name="To finish, sign in or create your account (it takes less than 1 minute)." xml:space="preserve"><value>Para finalizar, entras o creas tu cuenta (lleva menos de 1 minuto).</value></data>
   <data name="To make someone an employee, they first create an account on the site. Then, here, give them individual permissions or add them to a group." xml:space="preserve"><value>Para convertir a alguien en empleado, primero esa persona crea su cuenta en el sitio. Después, aquí, dale permisos individuales o ponla en un grupo.</value></data>
   <data name="Total" xml:space="preserve"><value>Total</value></data>
@@ -456,6 +465,7 @@
   <data name="Yes, cancel" xml:space="preserve"><value>Sí, cancelar</value></data>
   <data name="You already have orders awaiting payment. Pay them or wait for their cancellation before placing another." xml:space="preserve"><value>Ya tienes pedidos pendientes de pago. Págalos o espera su cancelación antes de hacer otro.</value></data>
   <data name="You cannot remove your own Admin access." xml:space="preserve"><value>No puedes quitar tu propio acceso de Admin.</value></data>
+  <data name="You cannot reset your own password here." xml:space="preserve"><value>No puedes restablecer tu propia contraseña aquí.</value></data>
   <data name="You do not have access to this page." xml:space="preserve"><value>No tienes acceso a esta página.</value></data>
   <data name="You do not have permission for this action." xml:space="preserve"><value>No tienes permiso para esta acción.</value></data>
   <data name="You haven't placed any orders yet." xml:space="preserve"><value>Aún no has hecho ningún pedido.</value></data>
