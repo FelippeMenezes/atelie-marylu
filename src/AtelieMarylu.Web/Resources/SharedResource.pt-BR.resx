@@ -52,6 +52,7 @@
   <data name="and" xml:space="preserve"><value>e</value></data>
   <data name="Approved" xml:space="preserve"><value>Aprovado</value></data>
   <data name="as" xml:space="preserve"><value>como</value></data>
+  <data name="Ask for a new link" xml:space="preserve"><value>Pedir um novo link</value></data>
   <data name="Ateliê Marylu" xml:space="preserve"><value>Ateliê Marylu</value></data>
   <data name="Ateliê Marylu · Creative sewing" xml:space="preserve"><value>Ateliê Marylu · Costura criativa</value></data>
   <data name="Audit log" xml:space="preserve"><value>Auditoria</value></data>
@@ -81,9 +82,12 @@
   <data name="Card payment started ({0}). As soon as the provider confirms, this page will update by itself." xml:space="preserve"><value>Pagamento com cartão iniciado ({0}). Assim que o provedor confirmar, esta página atualiza sozinha.</value></data>
   <data name="Cart" xml:space="preserve"><value>Carrinho</value></data>
   <data name="Cart · Ateliê Marylu" xml:space="preserve"><value>Carrinho · Ateliê Marylu</value></data>
+  <data name="Change email" xml:space="preserve"><value>Trocar e-mail</value></data>
+  <data name="Change email · Ateliê Marylu" xml:space="preserve"><value>Trocar e-mail · Ateliê Marylu</value></data>
   <data name="Change password" xml:space="preserve"><value>Trocar senha</value></data>
   <data name="Change your account details" xml:space="preserve"><value>Altere os dados da sua conta</value></data>
   <data name="Chat on WhatsApp" xml:space="preserve"><value>Falar no WhatsApp</value></data>
+  <data name="Check your email" xml:space="preserve"><value>Confira seu e-mail</value></data>
   <data name="Checkout" xml:space="preserve"><value>Finalizar compra</value></data>
   <data name="Checkout · Ateliê Marylu" xml:space="preserve"><value>Finalizar compra · Ateliê Marylu</value></data>
   <data name="Choose how to pay:" xml:space="preserve"><value>Escolha como pagar:</value></data>
@@ -92,10 +96,13 @@
   <data name="City" xml:space="preserve"><value>Cidade</value></data>
   <data name="Code copied!" xml:space="preserve"><value>Código copiado!</value></data>
   <data name="Confirm cancellation? The stock will be returned." xml:space="preserve"><value>Confirma o cancelamento? O estoque será devolvido.</value></data>
+  <data name="Confirm email" xml:space="preserve"><value>Confirmar e-mail</value></data>
+  <data name="Confirm email · Ateliê Marylu" xml:space="preserve"><value>Confirmar e-mail · Ateliê Marylu</value></data>
   <data name="Confirm order" xml:space="preserve"><value>Confirmar pedido</value></data>
   <data name="Confirm password reset" xml:space="preserve"><value>Confirmar redefinição de senha</value></data>
   <data name="Confirm that you are not a robot." xml:space="preserve"><value>Confirme que você não é um robô.</value></data>
   <data name="Confirm the new password" xml:space="preserve"><value>Confirme a nova senha</value></data>
+  <data name="Confirm your email" xml:space="preserve"><value>Confirme seu e-mail</value></data>
   <data name="Confirm your password" xml:space="preserve"><value>Confirme a senha</value></data>
   <data name="Connect Google account" xml:space="preserve"><value>Conectar conta Google</value></data>
   <data name="Connect your Google account to sign in with one click, without typing a password." xml:space="preserve"><value>Conecte sua conta Google para entrar na loja com um clique, sem digitar senha.</value></data>
@@ -113,6 +120,8 @@
   <data name="Could not save. Try again." xml:space="preserve"><value>Não foi possível salvar. Tente novamente.</value></data>
   <data name="Could not upload the photo (8 MB maximum)." xml:space="preserve"><value>Não foi possível enviar a foto (máximo 8 MB).</value></data>
   <data name="Cover" xml:space="preserve"><value>Capa</value></data>
+  <data name="Create a new password" xml:space="preserve"><value>Criar nova senha</value></data>
+  <data name="Create a new password · Ateliê Marylu" xml:space="preserve"><value>Criar nova senha · Ateliê Marylu</value></data>
   <data name="Create account" xml:space="preserve"><value>Criar conta</value></data>
   <data name="Create account · Ateliê Marylu" xml:space="preserve"><value>Criar conta · Ateliê Marylu</value></data>
   <data name="Create an account" xml:space="preserve"><value>Criar uma conta</value></data>
@@ -124,6 +133,7 @@
   <data name="Create password" xml:space="preserve"><value>Criar senha</value></data>
   <data name="Creates a temporary password and signs the person out of all devices. They must create a new password at the next sign-in." xml:space="preserve"><value>Cria uma senha temporária e desconecta a pessoa de todos os aparelhos. Ela terá de criar uma senha nova no próximo acesso.</value></data>
   <data name="Credit card (up to {0} interest-free installments)" xml:space="preserve"><value>Cartão de crédito (até {0}x sem juros)</value></data>
+  <data name="Current email" xml:space="preserve"><value>E-mail atual</value></data>
   <data name="Current password" xml:space="preserve"><value>Senha atual</value></data>
   <data name="Customer" xml:space="preserve"><value>Cliente</value></data>
   <data name="Customer not found" xml:space="preserve"><value>Cliente não encontrado</value></data>
@@ -148,8 +158,10 @@
   <data name="Description (include sizes and materials)" xml:space="preserve"><value>Descrição (inclua medidas e materiais)</value></data>
   <data name="Details" xml:space="preserve"><value>Detalhes</value></data>
   <data name="Development environment:" xml:space="preserve"><value>Ambiente de desenvolvimento:</value></data>
+  <data name="Didn't get it? Send the confirmation email again" xml:space="preserve"><value>Não recebeu? Envie o e-mail de confirmação de novo</value></data>
   <data name="Disconnect Google account" xml:space="preserve"><value>Desconectar a conta Google</value></data>
   <data name="District" xml:space="preserve"><value>Bairro</value></data>
+  <data name="Don't want to wait? Create a new password and your account is unlocked right away." xml:space="preserve"><value>Não quer esperar? Crie uma nova senha e sua conta é desbloqueada na hora.</value></data>
   <data name="Download my data" xml:space="preserve"><value>Baixar meus dados</value></data>
   <data name="Edit" xml:space="preserve"><value>Editar</value></data>
   <data name="Edit delivery" xml:space="preserve"><value>Editar entrega</value></data>
@@ -157,6 +169,8 @@
   <data name="Edit orders and change status" xml:space="preserve"><value>Editar pedidos e mudar status</value></data>
   <data name="Edit product" xml:space="preserve"><value>Editar produto</value></data>
   <data name="Email" xml:space="preserve"><value>E-mail</value></data>
+  <data name="Email confirmed" xml:space="preserve"><value>E-mail confirmado</value></data>
+  <data name="Email not confirmed yet." xml:space="preserve"><value>E-mail ainda não confirmado.</value></data>
   <data name="Email: {0}" xml:space="preserve"><value>E-mail: {0}</value></data>
   <data name="Employee" xml:space="preserve"><value>Funcionário</value></data>
   <data name="Employee groups" xml:space="preserve"><value>Grupos de funcionários</value></data>
@@ -165,6 +179,7 @@
   <data name="Enter a valid postal code." xml:space="preserve"><value>Informe um CEP válido.</value></data>
   <data name="Enter the city." xml:space="preserve"><value>Informe a cidade.</value></data>
   <data name="Enter the district." xml:space="preserve"><value>Informe o bairro.</value></data>
+  <data name="Enter the email of your account. We will send you a link to create a new password." xml:space="preserve"><value>Digite o e-mail da sua conta. Vamos enviar um link para você criar uma nova senha.</value></data>
   <data name="Enter the group name." xml:space="preserve"><value>Informe o nome do grupo.</value></data>
   <data name="Enter the name." xml:space="preserve"><value>Informe o nome.</value></data>
   <data name="Enter the number." xml:space="preserve"><value>Informe o número.</value></data>
@@ -180,18 +195,22 @@
   <data name="Error: could not disconnect the Google account." xml:space="preserve"><value>Erro: não foi possível desconectar a conta Google.</value></data>
   <data name="Error: could not load the Google data. Try again." xml:space="preserve"><value>Erro: não foi possível carregar os dados do Google. Tente de novo.</value></data>
   <data name="Error: could not save the phone number." xml:space="preserve"><value>Erro: não foi possível salvar o telefone.</value></data>
+  <data name="Error: could not send the email. Try again in a few minutes." xml:space="preserve"><value>Erro: não foi possível enviar o e-mail. Tente de novo em alguns minutos.</value></data>
   <data name="Error: create a password before disconnecting Google." xml:space="preserve"><value>Erro: crie uma senha antes de desconectar o Google.</value></data>
   <data name="Error: invalid email or password." xml:space="preserve"><value>Erro: e-mail ou senha inválidos.</value></data>
   <data name="Error: that Google account is already connected to another store account." xml:space="preserve"><value>Erro: essa conta Google já está conectada a outro cadastro da loja.</value></data>
   <data name="Error: the Google account did not provide a confirmed email. Use another account or sign up with email and password." xml:space="preserve"><value>Erro: a conta Google não informou um e-mail confirmado. Use outra conta ou crie um cadastro com e-mail e senha.</value></data>
   <data name="Error: the Google sign-in was not completed. Try again." xml:space="preserve"><value>Erro: o login com Google não foi concluído. Tente de novo.</value></data>
+  <data name="Error: this confirmation link is invalid or has expired." xml:space="preserve"><value>Erro: este link de confirmação é inválido ou já venceu.</value></data>
   <data name="Error: wrong password." xml:space="preserve"><value>Erro: senha incorreta.</value></data>
+  <data name="Error: {0}" xml:space="preserve"><value>Erro: {0}</value></data>
   <data name="Exchanges and returns" xml:space="preserve"><value>Trocas e devoluções</value></data>
   <data name="Filter by status" xml:space="preserve"><value>Filtrar por status</value></data>
   <data name="Filter by type" xml:space="preserve"><value>Filtrar por tipo</value></data>
   <data name="For sales made on Instagram, WhatsApp or in person. The customer must have an account." xml:space="preserve"><value>Para vendas feitas pelo Instagram, WhatsApp ou pessoalmente. O cliente precisa ter cadastro.</value></data>
   <data name="For security, create a new password before continuing." xml:space="preserve"><value>Por segurança, crie uma senha nova antes de continuar.</value></data>
-  <data name="Forgot your password? Contact the store on WhatsApp or Instagram." xml:space="preserve"><value>Esqueceu a senha? Fale com a loja pelo WhatsApp ou Instagram.</value></data>
+  <data name="Forgot password · Ateliê Marylu" xml:space="preserve"><value>Esqueci minha senha · Ateliê Marylu</value></data>
+  <data name="Forgot your password?" xml:space="preserve"><value>Esqueceu sua senha?</value></data>
   <data name="Free" xml:space="preserve"><value>Grátis</value></data>
   <data name="Full name" xml:space="preserve"><value>Nome completo</value></data>
   <data name="Google account" xml:space="preserve"><value>Conta Google</value></data>
@@ -209,15 +228,24 @@
   <data name="Handmade pieces" xml:space="preserve"><value>Peças feitas à mão</value></data>
   <data name="Handmade pieces, stitch by stitch, with care." xml:space="preserve"><value>Peças feitas à mão, ponto a ponto, com carinho.</value></data>
   <data name="Height (cm)" xml:space="preserve"><value>Altura (cm)</value></data>
+  <data name="Hello!" xml:space="preserve"><value>Olá!</value></data>
+  <data name="Hello, {0}!" xml:space="preserve"><value>Olá, {0}!</value></data>
   <data name="Hi! I came from the Ateliê Marylu website." xml:space="preserve"><value>Olá! Vim pelo site do Ateliê Marylu.</value></data>
   <data name="History" xml:space="preserve"><value>Histórico</value></data>
   <data name="I have read and accept" xml:space="preserve"><value>Li e aceito</value></data>
+  <data name="If the button does not work, copy and paste this address into your browser:" xml:space="preserve"><value>Se o botão não funcionar, copie e cole este endereço no navegador:</value></data>
+  <data name="If this email belongs to an account that is not confirmed yet, you will receive a new link in a few minutes." xml:space="preserve"><value>Se este e-mail for de uma conta ainda não confirmada, você vai receber um novo link em alguns minutos.</value></data>
+  <data name="If this email belongs to an account, you will receive a link to create a new password in a few minutes. Also check the spam folder." xml:space="preserve"><value>Se este e-mail for de uma conta, você vai receber em alguns minutos um link para criar uma nova senha. Confira também a caixa de spam.</value></data>
+  <data name="If you did not ask for this, ignore this email: your password stays the same." xml:space="preserve"><value>Se não foi você quem pediu, ignore este e-mail: sua senha continua a mesma.</value></data>
+  <data name="If you did not ask for this, just ignore this email. Nothing will change in any account." xml:space="preserve"><value>Se não foi você quem pediu, é só ignorar este e-mail. Nenhuma conta será alterada.</value></data>
   <data name="In preparation" xml:space="preserve"><value>Em preparo</value></data>
   <data name="Inactive" xml:space="preserve"><value>Inativo</value></data>
   <data name="Increase" xml:space="preserve"><value>Aumentar</value></data>
   <data name="Individual permissions" xml:space="preserve"><value>Permissões individuais</value></data>
   <data name="Instagram @{0}" xml:space="preserve"><value>Instagram @{0}</value></data>
   <data name="Invalid email." xml:space="preserve"><value>E-mail inválido.</value></data>
+  <data name="Invalid link" xml:space="preserve"><value>Link inválido</value></data>
+  <data name="Invalid link · Ateliê Marylu" xml:space="preserve"><value>Link inválido · Ateliê Marylu</value></data>
   <data name="Invalid phone number." xml:space="preserve"><value>Telefone inválido.</value></data>
   <data name="Invalid PIX discount." xml:space="preserve"><value>Desconto PIX inválido.</value></data>
   <data name="Invalid postal code." xml:space="preserve"><value>CEP inválido.</value></data>
@@ -253,6 +281,7 @@
   <data name="My orders · Ateliê Marylu" xml:space="preserve"><value>Meus pedidos · Ateliê Marylu</value></data>
   <data name="Name" xml:space="preserve"><value>Nome</value></data>
   <data name="Navigation" xml:space="preserve"><value>Navegação</value></data>
+  <data name="New email" xml:space="preserve"><value>Novo e-mail</value></data>
   <data name="New group name" xml:space="preserve"><value>Nome do novo grupo</value></data>
   <data name="New order" xml:space="preserve"><value>Novo pedido</value></data>
   <data name="New order · Admin" xml:space="preserve"><value>Novo pedido · Painel</value></data>
@@ -304,6 +333,7 @@
   <data name="Paid" xml:space="preserve"><value>Pago</value></data>
   <data name="Paid orders awaiting preparation" xml:space="preserve"><value>Pedidos pagos aguardando preparo</value></data>
   <data name="Password" xml:space="preserve"><value>Senha</value></data>
+  <data name="Password changed" xml:space="preserve"><value>Senha alterada</value></data>
   <data name="Pay by" xml:space="preserve"><value>Pague até</value></data>
   <data name="Pay with card ({0})" xml:space="preserve"><value>Pagar com cartão ({0})</value></data>
   <data name="Pay with PIX ({0})" xml:space="preserve"><value>Pagar com PIX ({0})</value></data>
@@ -372,7 +402,11 @@
   <data name="Search by name or email" xml:space="preserve"><value>Buscar por nome ou e-mail</value></data>
   <data name="seconds." xml:space="preserve"><value>segundos.</value></data>
   <data name="SEDEX (simulated)" xml:space="preserve"><value>SEDEX (simulado)</value></data>
+  <data name="Send" xml:space="preserve"><value>Enviar</value></data>
+  <data name="Send confirmation email" xml:space="preserve"><value>Enviar e-mail de confirmação</value></data>
   <data name="Send it to the person privately. It will not be shown again, and they must create a new password at the next sign-in." xml:space="preserve"><value>Envie para a pessoa por um canal privado. Ela não será mostrada de novo, e a pessoa terá de criar uma senha nova no próximo acesso.</value></data>
+  <data name="Send link" xml:space="preserve"><value>Enviar link</value></data>
+  <data name="Send the confirmation email again" xml:space="preserve"><value>Enviar o e-mail de confirmação de novo</value></data>
   <data name="Setting the quantity to zero removes the item. Stock and shipping are adjusted automatically." xml:space="preserve"><value>Zerar a quantidade remove o item. O estoque e o frete são ajustados automaticamente.</value></data>
   <data name="Shipped" xml:space="preserve"><value>Enviado</value></data>
   <data name="Shipping" xml:space="preserve"><value>Frete</value></data>
@@ -401,6 +435,7 @@
   <data name="System roles cannot be changed here." xml:space="preserve"><value>Papéis do sistema não podem ser alterados aqui.</value></data>
   <data name="Temporary password:" xml:space="preserve"><value>Senha temporária:</value></data>
   <data name="Terms of use" xml:space="preserve"><value>Termos de uso</value></data>
+  <data name="Thank you! Your email is confirmed." xml:space="preserve"><value>Obrigado! Seu e-mail está confirmado.</value></data>
   <data name="The address can no longer be changed." xml:space="preserve"><value>O endereço não pode mais ser alterado.</value></data>
   <data name="The address may have changed or the product is no longer available." xml:space="preserve"><value>O endereço pode ter mudado ou o produto não está mais disponível.</value></data>
   <data name="The cart is empty." xml:space="preserve"><value>O carrinho está vazio.</value></data>
@@ -431,10 +466,15 @@
   <data name="This account signs in with Google and has no password to reset." xml:space="preserve"><value>Esta conta entra com o Google e não tem senha para redefinir.</value></data>
   <data name="This account was temporarily locked. Try again later." xml:space="preserve"><value>Esta conta foi bloqueada temporariamente. Tente novamente mais tarde.</value></data>
   <data name="This email is already registered." xml:space="preserve"><value>Este e-mail já está cadastrado.</value></data>
+  <data name="This link is invalid, has expired or has already been used. Ask for a new one." xml:space="preserve"><value>Este link é inválido, venceu ou já foi usado. Peça um novo.</value></data>
+  <data name="This link is valid for {0} hours and can be used only once." xml:space="preserve"><value>Este link vale por {0} horas e só pode ser usado uma vez.</value></data>
+  <data name="This link is valid for {0} hours." xml:space="preserve"><value>Este link vale por {0} horas.</value></data>
+  <data name="This link to create a new password is invalid or has already been used. Ask for a new one." xml:space="preserve"><value>Este link para criar uma nova senha é inválido ou já foi usado. Peça um novo.</value></data>
   <data name="This order can no longer be cancelled." xml:space="preserve"><value>Este pedido não pode mais ser cancelado.</value></data>
   <data name="This order had an approved payment: refund it at the payment provider." xml:space="preserve"><value>Este pedido tinha pagamento aprovado: faça o estorno no provedor de pagamento.</value></data>
   <data name="This order is not awaiting payment." xml:space="preserve"><value>Este pedido não está aguardando pagamento.</value></data>
   <data name="To change your own password, use" xml:space="preserve"><value>Para trocar a sua própria senha, use</value></data>
+  <data name="To confirm this email address in your Ateliê Marylu account, click the button below." xml:space="preserve"><value>Para confirmar este endereço de e-mail na sua conta do Ateliê Marylu, clique no botão abaixo.</value></data>
   <data name="To finish, sign in or create your account (it takes less than 1 minute)." xml:space="preserve"><value>Para finalizar, você entra ou cria sua conta (leva menos de 1 minuto).</value></data>
   <data name="To make someone an employee, they first create an account on the site. Then, here, give them individual permissions or add them to a group." xml:space="preserve"><value>Para tornar alguém funcionário, a pessoa primeiro cria a conta no site. Depois, aqui, dê permissões individuais ou coloque-a em um grupo.</value></data>
   <data name="Total" xml:space="preserve"><value>Total</value></data>
@@ -454,7 +494,13 @@
   <data name="View photo {0}" xml:space="preserve"><value>Ver foto {0}</value></data>
   <data name="View products" xml:space="preserve"><value>Ver produtos</value></data>
   <data name="View registered customers" xml:space="preserve"><value>Ver clientes cadastrados</value></data>
+  <data name="We never ask for your password by email." xml:space="preserve"><value>Nunca pedimos sua senha por e-mail.</value></data>
+  <data name="We received a request to create a new password for your Ateliê Marylu account. Click the button below to choose it." xml:space="preserve"><value>Recebemos um pedido para criar uma nova senha na sua conta do Ateliê Marylu. Clique no botão abaixo para escolher a nova senha.</value></data>
+  <data name="We sent a link to {0}. Open it to confirm your email." xml:space="preserve"><value>Enviamos um link para {0}. Abra o link para confirmar seu e-mail.</value></data>
+  <data name="We sent a link to {0}. Open it to finish the change." xml:space="preserve"><value>Enviamos um link para {0}. Abra o link para concluir a troca.</value></data>
+  <data name="We sent you a link to confirm your account. Also check the spam folder." xml:space="preserve"><value>Enviamos um link para você confirmar sua conta. Confira também a caixa de spam.</value></data>
   <data name="we ship within 2 business days after payment confirmation." xml:space="preserve"><value>enviamos em até 2 dias úteis após a confirmação do pagamento.</value></data>
+  <data name="We will send a link to the new email. The change only happens after you open it." xml:space="preserve"><value>Vamos enviar um link para o novo e-mail. A troca só acontece depois que você abrir o link.</value></data>
   <data name="Weight (g)" xml:space="preserve"><value>Peso (g)</value></data>
   <data name="When" xml:space="preserve"><value>Quando</value></data>
   <data name="Who" xml:space="preserve"><value>Quem</value></data>
@@ -474,9 +520,12 @@
   <data name="Your account has no password yet. Create one so you can also sign in with email and password." xml:space="preserve"><value>Sua conta ainda não tem senha. Crie uma para poder entrar também com e-mail e senha.</value></data>
   <data name="Your account stores the personal data you gave us. Here you can download or delete that data." xml:space="preserve"><value>Sua conta guarda os dados pessoais que você nos informou. Aqui você pode baixar ou excluir esses dados.</value></data>
   <data name="Your cart is empty." xml:space="preserve"><value>Seu carrinho está vazio.</value></data>
+  <data name="Your email is unchanged." xml:space="preserve"><value>Seu e-mail continua o mesmo.</value></data>
+  <data name="Your email was changed. From now on, sign in with {0}." xml:space="preserve"><value>Seu e-mail foi trocado. De agora em diante, entre com {0}.</value></data>
   <data name="Your Google account is connected. You can sign in to the store with the button" xml:space="preserve"><value>Sua conta Google está conectada. Você pode entrar na loja com o botão</value></data>
   <data name="Your name" xml:space="preserve"><value>Seu nome</value></data>
   <data name="Your password was changed." xml:space="preserve"><value>Sua senha foi alterada.</value></data>
+  <data name="Your password was changed. You can now sign in with the new password." xml:space="preserve"><value>Sua senha foi alterada. Agora você já pode entrar com a nova senha.</value></data>
   <data name="Your password was created." xml:space="preserve"><value>Sua senha foi criada.</value></data>
   <data name="{0} ({1} in stock)" xml:space="preserve"><value>{0} ({1} em estoque)</value></data>
   <data name="{0} each" xml:space="preserve"><value>{0} cada</value></data>

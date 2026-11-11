@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddStructuredLogging();
 
 builder.Services
-    .AddInfrastructure(builder.Configuration)
+    .AddInfrastructure(builder.Configuration, builder.Environment)
     .AddWebInterface()
     .AddStoreAuthentication(builder.Configuration)
     .AddStoreAuthorization()

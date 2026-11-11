@@ -50,6 +50,7 @@ public static class ServiceCollectionExtensions
 
         services.AddCascadingAuthenticationState();
         services.AddScoped<IdentityRedirectManager>();
+        services.AddScoped<AccountEmailLinks>();
         services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
         services.AddHttpContextAccessor();
         services.AddDatabaseDeveloperPageExceptionFilter();
@@ -90,15 +91,26 @@ public static class ServiceCollectionExtensions
                 options.Password.RequiredLength = 8;
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                // Confirmação de conta e troca de e-mail usam um gerador com prazo próprio (veja AccountTokens.cs)
+                options.Tokens.EmailConfirmationTokenProvider = EmailConfirmationTokenProvider.ProviderName;
+                options.Tokens.ChangeEmailTokenProvider = EmailConfirmationTokenProvider.ProviderName;
                 // Version2: sem a tabela de passkeys (login sem senha), que a loja não usa
                 options.Stores.SchemaVersion = IdentitySchemaVersions.Version2;
             })
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddSignInManager()
-            // Tokens de uso único do Identity (redefinição de senha). Serão usados também no "esqueci minha senha" da Fase 4.
+            // Tokens dos links: redefinição de senha (gerador padrão) e confirmação/troca de e-mail (gerador próprio)
             .AddDefaultTokenProviders()
+            .AddTokenProvider<EmailConfirmationTokenProvider>(EmailConfirmationTokenProvider.ProviderName)
             .AddErrorDescriber<LocalizedIdentityErrorDescriber>();
+
+        // Prazo dos links enviados por e-mail (veja AccountTokenLifespans)
+        services.Configure<DataProtectionTokenProviderOptions>(options => options.TokenLifespan = AccountTokenLifespans.PasswordReset);
+        services.Configure<EmailConfirmationTokenProviderOptions>(options => options.TokenLifespan = AccountTokenLifespans.EmailConfirmation);
+
+        // Monta os e-mails da conta (texto, idioma) e entrega pelo IEmailClient registrado no AddInfrastructure
+        services.AddScoped<IEmailSender<ApplicationUser>, AccountEmailSender>();
 
         // Substitui a fábrica padrão para incluir o claim de troca de senha obrigatória
         services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppUserClaimsPrincipalFactory>();
@@ -185,6 +197,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<OrderEvents>();
         services.AddScoped<CurrentUserService>();
+        services.AddScoped<AccountRecoveryService>();
         services.AddScoped<AuditService>();
         services.AddScoped<CartService>();
         services.AddScoped<OrderService>();

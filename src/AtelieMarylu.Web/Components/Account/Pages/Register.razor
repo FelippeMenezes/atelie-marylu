@@ -13,6 +13,8 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 @inject AtelieMarylu.Infrastructure.Integrations.Turnstile Turnstile
+@inject IEmailSender<ApplicationUser> EmailSender
+@inject AccountEmailLinks Links
 
 <PageTitle>@L["Create account · Ateliê Marylu"]</PageTitle>
 
@@ -107,6 +109,19 @@
 
         Logger.LogInformation("User created a new account with password.");
         await UserManager.AddToRoleAsync(user, AppRoles.Customer);
+
+        // Por enquanto a confirmação é só um convite: a pessoa entra direto, sem confirmar.
+        // Quando RequireConfirmedAccount virar true (próximo PR), o cadastro leva a Account/RegisterConfirmation.
+        try
+        {
+            await EmailSender.SendConfirmationLinkAsync(user, Input.Email, await Links.EmailConfirmationAsync(user));
+        }
+        catch (Exception ex)
+        {
+            // A conta já foi criada: uma falha no e-mail não pode impedir o cliente de seguir com a compra.
+            // Ele pode pedir outro link em Minha conta → E-mail.
+            Logger.LogError(ex, "Could not send the confirmation email to user {UserId}.", user.Id);
+        }
 
         await SignInManager.SignInAsync(user, isPersistent: false);
         RedirectManager.RedirectTo(ReturnUrl);

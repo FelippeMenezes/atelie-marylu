@@ -8,7 +8,7 @@ Loja online do Ateliê Marylu (costura criativa), feita em .NET 10 com Blazor Se
 
 - O código (tipos, membros, tabelas e colunas do banco) e as URLs/rotas são em inglês (ex.: `/admin/orders`, `/my-orders`, `/api/webhooks/payment`). Os comentários do código são em português. Ao renomear uma rota pública, mantenha o endereço antigo redirecionando com 301 em `Endpoints/OldAddressRedirectEndpoints.cs`.
 - As branches seguem o padrão `AML-NNNN` (só o número).
-- Não crie nada que envie e-mail (confirmações, avisos) até existir um provedor de e-mail. É por isso que `RequireConfirmedAccount` está em `false` de propósito.
+- E-mail: o texto é um componente Razor em `Components/Emails` (com `L["..."]`, renderizado pelo `HtmlRenderer`), montado por um serviço do Web e entregue pelo `IEmailClient` (Domain), implementado pelo Resend na Infrastructure. As telas do Identity usam `IEmailSender<ApplicationUser>` (`AccountEmailSender`), e os links com token vêm do `Components/Account/AccountEmailLinks`. Fora de Development, a aplicação não sobe sem `Resend:ApiKey`/`Resend:From`. `RequireConfirmedAccount` continua em `false` até um PR próprio tratar as contas antigas, que nunca confirmaram o e-mail.
 
 ## Comandos
 
@@ -32,7 +32,7 @@ dotnet test --filter "FullyQualifiedName~OrderTests"              # uma classe; 
 
 São três projetos, mais os de testes:
 
-- `AtelieMarylu.Domain`: entidades e regras de negócio, sem depender de nenhum outro projeto. As entidades protegem as próprias regras com setters privados e métodos (ex.: `Order.ConfirmPayment`, `Order.Cancel`, `ChangeQuantity`) e lançam `OrderRuleException` ou `ProductRuleException`. As telas capturam essas exceções e mostram a mensagem. Os contratos das integrações, `IPaymentGateway` e `IShippingCalculator`, ficam aqui.
+- `AtelieMarylu.Domain`: entidades e regras de negócio, sem depender de nenhum outro projeto. As entidades protegem as próprias regras com setters privados e métodos (ex.: `Order.ConfirmPayment`, `Order.Cancel`, `ChangeQuantity`) e lançam `OrderRuleException` ou `ProductRuleException`. As telas capturam essas exceções e mostram a mensagem. Os contratos das integrações, `IPaymentGateway`, `IShippingCalculator` e `IEmailClient`, ficam aqui.
 - `AtelieMarylu.Infrastructure`: `ApplicationDbContext`, configurações do EF (`Data/Configurations`), migrations e integrações. O `AddInfrastructure` registra o gateway de pagamento e o cálculo de frete **simulados**. Para passar a usar Mercado Pago e Melhor Envio, basta trocar esses dois registros, sem mudar nenhuma tela.
 - `AtelieMarylu.Web`: componentes Blazor, serviços da aplicação (`Services/`), endpoints e configuração. O `Program.cs` é só um índice: cada assunto é um método de extensão em `Extensions/`.
 

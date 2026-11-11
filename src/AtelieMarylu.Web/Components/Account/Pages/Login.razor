@@ -50,8 +50,7 @@
                 </div>
                 <hr />
                 <div>
-                    @* "Esqueci minha senha" volta quando houver serviço de e-mail. Até lá, a loja redefine pelo painel/suporte. *@
-                    <p class="small text-secondary">@L["Forgot your password? Contact the store on WhatsApp or Instagram."]</p>
+                    <p><a href="Account/ForgotPassword">@L["Forgot your password?"]</a></p>
                     <p>
                         <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))"><strong>@L["Create an account"]</strong></a>
                     </p>
