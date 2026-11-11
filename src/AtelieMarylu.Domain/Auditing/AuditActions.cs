@@ -22,6 +22,7 @@ public static class AuditActions
 
     public const string AccessChanged = "access.changed";
     public const string PasswordReset = "user.password-reset";
+    public const string CustomerDeletedByStaff = "user.deleted-by-staff";
     public const string GroupCreated = "group.created";
     public const string GroupPermissionsChanged = "group.permissions";
     public const string GroupDeleted = "group.deleted";

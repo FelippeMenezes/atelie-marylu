@@ -36,6 +36,7 @@
   <data name="Address line 2" xml:space="preserve"><value>Complemento</value></data>
   <data name="Adjust your cart to continue" xml:space="preserve"><value>Ajusta el carrito para continuar</value></data>
   <data name="Admin" xml:space="preserve"><value>Admin</value></data>
+  <data name="Admin accounts cannot be deleted here." xml:space="preserve"><value>Las cuentas de Admin no se pueden eliminar aquí.</value></data>
   <data name="Admin panel" xml:space="preserve"><value>Panel</value></data>
   <data name="Admin passwords cannot be reset here." xml:space="preserve"><value>La contraseña de un Admin no se puede restablecer aquí.</value></data>
   <data name="Admin · Ateliê Marylu" xml:space="preserve"><value>Panel · Ateliê Marylu</value></data>
@@ -137,6 +138,7 @@
   <data name="Current password" xml:space="preserve"><value>Contraseña actual</value></data>
   <data name="Customer" xml:space="preserve"><value>Cliente</value></data>
   <data name="Customer not found" xml:space="preserve"><value>Cliente no encontrado</value></data>
+  <data name="Customer removed. The email can be used for a new registration." xml:space="preserve"><value>Cliente eliminado. El correo puede usarse en un registro nuevo.</value></data>
   <data name="Customer since: {0}" xml:space="preserve"><value>Cliente desde: {0}</value></data>
   <data name="Customer · Admin" xml:space="preserve"><value>Cliente · Panel</value></data>
   <data name="Customer:" xml:space="preserve"><value>Cliente:</value></data>
@@ -147,6 +149,8 @@
   <data name="Decrease" xml:space="preserve"><value>Disminuir</value></data>
   <data name="Delete" xml:space="preserve"><value>Eliminar</value></data>
   <data name="Delete account" xml:space="preserve"><value>Eliminar cuenta</value></data>
+  <data name="Delete customer" xml:space="preserve"><value>Eliminar cliente</value></data>
+  <data name="Delete customer permanently" xml:space="preserve"><value>Eliminar cliente definitivamente</value></data>
   <data name="Delete data and close my account" xml:space="preserve"><value>Eliminar datos y cerrar mi cuenta</value></data>
   <data name="Delete personal data" xml:space="preserve"><value>Eliminar datos personales</value></data>
   <data name="Delete the group? Its members lose these permissions." xml:space="preserve"><value>¿Eliminar el grupo? Los miembros pierden estos permisos.</value></data>
@@ -181,6 +185,7 @@
   <data name="Enter the name." xml:space="preserve"><value>Indica el nombre.</value></data>
   <data name="Enter the number." xml:space="preserve"><value>Indica el número.</value></data>
   <data name="Enter the postal code." xml:space="preserve"><value>Indica el código postal.</value></data>
+  <data name="Enter the reason for the deletion." xml:space="preserve"><value>Indica el motivo de la eliminación.</value></data>
   <data name="Enter the state (UF)." xml:space="preserve"><value>Indica el estado (UF).</value></data>
   <data name="Enter the street." xml:space="preserve"><value>Indica la calle.</value></data>
   <data name="Enter your email." xml:space="preserve"><value>Indica el correo electrónico.</value></data>
@@ -380,6 +385,7 @@
   <data name="Quantity must be greater than zero." xml:space="preserve"><value>La cantidad debe ser mayor que cero.</value></data>
   <data name="Questions about your order? Message us on WhatsApp or Instagram with the code" xml:space="preserve"><value>¿Dudas sobre el pedido? Escríbenos por WhatsApp o Instagram indicando el código</value></data>
   <data name="Ready to ship:" xml:space="preserve"><value>Entrega inmediata:</value></data>
+  <data name="Reason (goes to the audit log; do not write personal data)" xml:space="preserve"><value>Motivo (va a la auditoría; no escribas datos personales)</value></data>
   <data name="Reason (optional)" xml:space="preserve"><value>Motivo (opcional)</value></data>
   <data name="Reconnecting to the server..." xml:space="preserve"><value>Reconectando al servidor...</value></data>
   <data name="Record of who did what in the admin and of payment events. It cannot be changed." xml:space="preserve"><value>Registro de quién hizo qué en el panel y de los eventos de pago. No se puede cambiar.</value></data>
@@ -388,6 +394,7 @@
   <data name="Rejected" xml:space="preserve"><value>Rechazado</value></data>
   <data name="Reload" xml:space="preserve"><value>Recargar</value></data>
   <data name="Remove" xml:space="preserve"><value>Quitar</value></data>
+  <data name="Remove this person's admin access before deleting the account." xml:space="preserve"><value>Quita el acceso al panel de esta persona antes de eliminar la cuenta.</value></data>
   <data name="Reset password" xml:space="preserve"><value>Restablecer contraseña</value></data>
   <data name="Resume" xml:space="preserve"><value>Reanudar</value></data>
   <data name="Save" xml:space="preserve"><value>Guardar</value></data>
@@ -433,6 +440,7 @@
   <data name="The address may have changed or the product is no longer available." xml:space="preserve"><value>La dirección puede haber cambiado o el producto ya no está disponible.</value></data>
   <data name="The cart is empty." xml:space="preserve"><value>El carrito está vacío.</value></data>
   <data name="The customer already paid (record manual payment)" xml:space="preserve"><value>El cliente ya pagó (registrar pago manual)</value></data>
+  <data name="The email typed does not match this customer's email." xml:space="preserve"><value>El correo escrito no es el correo de este cliente.</value></data>
   <data name="the exchange policy" xml:space="preserve"><value>la política de cambios</value></data>
   <data name="The first photo is the cover. Photos are resized, converted to WEBP and have their location (GPS) data removed." xml:space="preserve"><value>La primera foto es la portada. Las fotos se reducen, se convierten a WEBP y se les quitan los datos de ubicación (GPS).</value></data>
   <data name="The order is {0} and cannot receive payment." xml:space="preserve"><value>El pedido está {0} y no puede recibir pagos.</value></data>
@@ -475,7 +483,9 @@
   <data name="Tracking code:" xml:space="preserve"><value>Código de seguimiento:</value></data>
   <data name="Try again" xml:space="preserve"><value>Intentar de nuevo</value></data>
   <data name="Try again or reload the page." xml:space="preserve"><value>Inténtalo de nuevo o recarga la página.</value></data>
+  <data name="Type the customer's email to confirm" xml:space="preserve"><value>Escribe el correo del cliente para confirmar</value></data>
   <data name="Unavailable: remove it from your cart." xml:space="preserve"><value>No disponible: quítalo del carrito.</value></data>
+  <data name="Use for fake registrations. Without orders, the account is deleted. With orders, the account is anonymized and the orders are kept. In both cases the email becomes free for a new registration. This cannot be undone." xml:space="preserve"><value>Úsalo para registros falsos. Sin pedidos, la cuenta se borra. Con pedidos, la cuenta se anonimiza y los pedidos se conservan. En ambos casos, el correo queda libre para un registro nuevo. No se puede deshacer.</value></data>
   <data name="User not found." xml:space="preserve"><value>Usuario no encontrado.</value></data>
   <data name="Users" xml:space="preserve"><value>Usuarios</value></data>
   <data name="Users and access" xml:space="preserve"><value>Usuarios y accesos</value></data>
@@ -504,6 +514,7 @@
   <data name="Yes" xml:space="preserve"><value>Sí</value></data>
   <data name="Yes, cancel" xml:space="preserve"><value>Sí, cancelar</value></data>
   <data name="You already have orders awaiting payment. Pay them or wait for their cancellation before placing another." xml:space="preserve"><value>Ya tienes pedidos pendientes de pago. Págalos o espera su cancelación antes de hacer otro.</value></data>
+  <data name="You cannot delete your own account here." xml:space="preserve"><value>No puedes eliminar tu propia cuenta aquí.</value></data>
   <data name="You cannot remove your own Admin access." xml:space="preserve"><value>No puedes quitar tu propio acceso de Admin.</value></data>
   <data name="You cannot reset your own password here." xml:space="preserve"><value>No puedes restablecer tu propia contraseña aquí.</value></data>
   <data name="You do not have access to this page." xml:space="preserve"><value>No tienes acceso a esta página.</value></data>
