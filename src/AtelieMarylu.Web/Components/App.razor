@@ -25,8 +25,8 @@
     <script src="@Assets["_framework/blazor.web.js"]"></script>
     @if (Turnstile.IsActive)
     {
+        @* O turnstile.js só baixa o script do Cloudflare nas páginas que têm o widget (login e cadastro) *@
         <script src="@Assets["js/turnstile.js"]"></script>
-        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=renderTurnstile" async defer></script>
     }
 </body>
 
