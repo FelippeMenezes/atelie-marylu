@@ -21,9 +21,46 @@ public partial class LoggingEmailClient(ILogger<LoggingEmailClient> logger, IHos
         if (!environment.IsDevelopment())
             throw new InvalidOperationException("LoggingEmailClient só pode ser usado em Development: configure Resend:ApiKey e Resend:From.");
 
-        // O HTML traz os links codificados (&amp; no lugar de &). O log mostra a versão para colar no navegador.
-        var links = Link().Matches(message.Html).Select(m => WebUtility.HtmlDecode(m.Groups[1].Value)).Distinct();
-        logger.LogInformation("[E-mail simulado] Para {To} | {Subject} | {Links}", message.To, message.Subject, string.Join(" ", links));
+        // O HTML traz os links codificados (&amp; no lugar de &). Para evitar expor dados privados no log,
+        // registramos somente versão redigida dos links e e-mail mascarado.
+        var links = Link()
+            .Matches(message.Html)
+            .Select(m => WebUtility.HtmlDecode(m.Groups[1].Value))
+            .Select(RedactLink)
+            .Distinct();
+
+        logger.LogInformation(
+            "[E-mail simulado] Para {To} | {Subject} | {Links}",
+            MaskEmail(message.To),
+            message.Subject,
+            string.Join(" ", links));
+
         return Task.CompletedTask;
+    }
+
+    private static string MaskEmail(string email)
+    {
+        var at = email.IndexOf('@');
+        if (at <= 0 || at == email.Length - 1)
+            return "***";
+
+        var local = email[..at];
+        var domain = email[(at + 1)..];
+
+        var maskedLocal = local.Length <= 2 ? "***" : $"{local[0]}***{local[^1]}";
+        var dot = domain.LastIndexOf('.');
+        var maskedDomain = dot > 1
+            ? $"{domain[0]}***{domain[(dot - 1)..]}"
+            : "***";
+
+        return $"{maskedLocal}@{maskedDomain}";
+    }
+
+    private static string RedactLink(string link)
+    {
+        if (!Uri.TryCreate(link, UriKind.Absolute, out var uri))
+            return "[invalid-link]";
+
+        return $"{uri.Scheme}://{uri.Host}{uri.AbsolutePath}";
     }
 }
