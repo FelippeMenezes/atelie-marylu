@@ -12,7 +12,9 @@ public class TurnstileTests
     [Fact]
     public async Task Accepts_when_cloudflare_confirms()
     {
-        var (turnstile, handler) = Create("""{"success": true}""");
+        var created = Create("""{"success": true}""");
+        using var turnstile = created.Item1;
+        using var handler = created.Item2;
         Assert.True(await turnstile.ValidateAsync("token", "203.0.113.5"));
         Assert.Equal(1, handler.Calls);
     }
@@ -20,14 +22,18 @@ public class TurnstileTests
     [Fact]
     public async Task Refuses_when_cloudflare_refuses()
     {
-        var (turnstile, _) = Create("""{"success": false, "error-codes": ["timeout-or-duplicate"]}""");
+        var created = Create("""{"success": false, "error-codes": ["timeout-or-duplicate"]}""");
+        using var turnstile = created.Item1;
+        using var handler = created.Item2;
         Assert.False(await turnstile.ValidateAsync("token", null));
     }
 
     [Fact]
     public async Task Refuses_missing_or_oversized_token_without_calling_cloudflare()
     {
-        var (turnstile, handler) = Create("""{"success": true}""");
+        var created = Create("""{"success": true}""");
+        using var turnstile = created.Item1;
+        using var handler = created.Item2;
         Assert.False(await turnstile.ValidateAsync(null, null));
         Assert.False(await turnstile.ValidateAsync(new string('a', Turnstile.MaxTokenLength + 1), null));
         Assert.Equal(0, handler.Calls);
@@ -37,14 +43,18 @@ public class TurnstileTests
     public async Task Fails_closed_when_response_is_not_json()
     {
         // Ex.: uma página de erro HTML de algum proxy no caminho
-        var (turnstile, _) = Create("<html>502 Bad Gateway</html>", HttpStatusCode.BadGateway, "text/html");
+        var created = Create("<html>502 Bad Gateway</html>", HttpStatusCode.BadGateway, "text/html");
+        using var turnstile = created.Item1;
+        using var handler = created.Item2;
         Assert.False(await turnstile.ValidateAsync("token", null));
     }
 
     [Fact]
     public async Task Is_disabled_without_keys()
     {
-        var (turnstile, handler) = Create("""{"success": false}""", siteKey: "");
+        var created = Create("""{"success": false}""", siteKey: "");
+        using var turnstile = created.Item1;
+        using var handler = created.Item2;
         Assert.False(turnstile.IsActive);
         Assert.True(await turnstile.ValidateAsync(null, null));
         Assert.Equal(0, handler.Calls);
@@ -59,14 +69,22 @@ public class TurnstileTests
         return (new Turnstile(http, options, NullLogger<Turnstile>.Instance), handler);
     }
 
-    private sealed class FakeHandler(string body, HttpStatusCode status, string mediaType) : HttpMessageHandler
+    private sealed class FakeHandler(string body, HttpStatusCode status, string mediaType) : HttpMessageHandler, IDisposable
     {
         public int Calls { get; private set; }
+        private bool _disposed;
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             Calls++;
             return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body, Encoding.UTF8, mediaType) });
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            base.Dispose();
         }
     }
 }
