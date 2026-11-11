@@ -49,7 +49,7 @@ else
         confirmed = result?.Succeeded == true;
         if (confirmed)
         {
-            var safeUserId = (UserId ?? string.Empty).Replace("\r", string.Empty).Replace("\n", string.Empty);
+            var safeUserId = UserId.Replace("\r", string.Empty).Replace("\n", string.Empty);
             Logger.LogInformation("User {UserId} confirmed their email.", safeUserId);
             statusMessage = L["Thank you! Your email is confirmed."];
         }
