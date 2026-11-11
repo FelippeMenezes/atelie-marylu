@@ -2,6 +2,7 @@ using System.Security.Claims;
 using AtelieMarylu.Domain.Auditing;
 using AtelieMarylu.Domain.Security;
 using AtelieMarylu.Infrastructure.Data;
+using AtelieMarylu.Web.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -85,6 +86,40 @@ public class AccessService(
         await userManager.UpdateSecurityStampAsync(user);
         await RecordAsync(AuditActions.AccessChanged, AuditEntities.User, user.Email ?? userId,
             $"Admin: {(access.IsAdmin ? "sim" : "não")} · Grupos: {string.Join(", ", wanted.Where(d => d != AppRoles.Admin))} · Individuais: {string.Join(", ", wantedPermissions)}");
+    }
+
+    // Redefine a senha de alguém pelo painel (só o Admin, pela tela /admin/users/{id}).
+    // Devolve a senha temporária: a tela mostra UMA vez e ela não fica guardada em lugar nenhum.
+    public async Task<string> ResetPasswordAsync(string userId, string loggedAdminId)
+    {
+        var user = await FindAsync(userId);
+        var temporary = TemporaryPassword.Generate();
+
+        // A própria senha se troca em "Trocar senha", que pede a senha atual
+        if (userId == loggedAdminId)
+            throw new AccessException("You cannot reset your own password here.");
+        // Uma conta de Admin roubada não pode servir para tomar as contas dos outros Admins
+        if (await userManager.IsInRoleAsync(user, AppRoles.Admin))
+            throw new AccessException("Admin passwords cannot be reset here.");
+        // Conta que só entra com Google: não há senha para redefinir
+        if (!await userManager.HasPasswordAsync(user))
+            throw new AccessException("This account signs in with Google and has no password to reset.");
+
+        // Marcado antes do reset: o ResetPasswordAsync salva o usuário inteiro, então a flag
+        // é gravada junto com a senha nova, no mesmo UPDATE
+        user.MustChangePassword = true;
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        // Valida a senha, troca o hash e renova o security stamp (desconecta os outros aparelhos)
+        EnsureSucceeded(await userManager.ResetPasswordAsync(user, token, temporary));
+
+        // Quem pede ajuda costuma estar bloqueado pelas 5 tentativas erradas
+        if (await userManager.IsLockedOutAsync(user))
+            EnsureSucceeded(await userManager.SetLockoutEndDateAsync(user, null));
+        EnsureSucceeded(await userManager.ResetAccessFailedCountAsync(user));
+
+        // Nunca registre a senha na auditoria nem no log: quem lê a auditoria não pode conseguir entrar na conta
+        await RecordAsync(AuditActions.PasswordReset, AuditEntities.User, user.Email ?? userId);
+        return temporary;
     }
 
     public async Task<IReadOnlyList<GroupSummary>> ListGroupsAsync()

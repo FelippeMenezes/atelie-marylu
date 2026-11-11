@@ -64,6 +64,36 @@ else
     <button class="btn btn-primary" @onclick="SaveAsync" disabled="@saving">@L["Save access"]</button>
     <a href="admin/users" class="btn btn-outline-primary">@L["Back"]</a>
     <p class="small text-secondary mt-2">@L["The person must sign in again for the changes to take effect."]</p>
+
+    <section class="panel-box mt-4">
+        <h2 class="h5">@L["Password"]</h2>
+        @if (Id == myId)
+        {
+            <p class="m-0">@L["To change your own password, use"] <a href="Account/Manage/ChangePassword">@L["Change password"]</a>.</p>
+        }
+        else if (temporaryPassword is not null)
+        {
+            @* Mostrada uma única vez: ao sair da tela, ela some e não fica guardada em lugar nenhum *@
+            <div class="alert alert-success" role="status">
+                <p class="mb-1">@L["Temporary password:"] <code class="fs-5 user-select-all">@temporaryPassword</code></p>
+                <p class="small m-0">@L["Send it to the person privately. It will not be shown again, and they must create a new password at the next sign-in."]</p>
+            </div>
+        }
+        else
+        {
+            <p class="small text-secondary">@L["Creates a temporary password and signs the person out of all devices. They must create a new password at the next sign-in."]</p>
+            <Notice Message="@resetMessage" IsError="true" />
+            @if (confirmingReset)
+            {
+                <button class="btn btn-danger" @onclick="ResetPasswordAsync" disabled="@saving">@L["Confirm password reset"]</button>
+                <button class="btn btn-outline-secondary" @onclick="() => confirmingReset = false" disabled="@saving">@L["Cancel"]</button>
+            }
+            else
+            {
+                <button class="btn btn-outline-danger" @onclick="() => confirmingReset = true">@L["Reset password"]</button>
+            }
+        }
+    </section>
 }
 
 @code {
@@ -77,6 +107,8 @@ else
     private bool isAdmin, loaded, saving, isError;
     private string? message;
     private string myId = "";
+    private bool confirmingReset;
+    private string? temporaryPassword, resetMessage;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -96,6 +128,24 @@ else
     {
         if (e.Value is true) conjunto.Add(amount);
         else conjunto.Remove(amount);
+    }
+
+    private async Task ResetPasswordAsync()
+    {
+        saving = true;
+        resetMessage = null;
+        try
+        {
+            temporaryPassword = await Access.ResetPasswordAsync(Id, myId);
+        }
+        catch (AccessException ex)
+        {
+            resetMessage = L[ex.Message];
+        }
+        finally
+        {
+            (saving, confirmingReset) = (false, false);
+        }
     }
 
     private async Task SaveAsync()

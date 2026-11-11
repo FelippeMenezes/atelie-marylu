@@ -1,5 +1,6 @@
 using AtelieMarylu.Domain.Catalog;
 using AtelieMarylu.Infrastructure.Data;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,9 @@ public sealed class TestDatabase : IAsyncLifetime, IDbContextFactory<Application
     private readonly string _name = $"atelie_teste_{Guid.NewGuid():N}";
     private ServiceProvider? _services;
 
+    // Para os testes que precisam de UserManager e RoleManager (crie um escopo: eles são scoped)
+    public IServiceProvider Services => _services!;
+
     public ApplicationDbContext CreateDbContext() =>
         _services!.GetRequiredService<IDbContextFactory<ApplicationDbContext>>().CreateDbContext();
 
@@ -36,8 +40,13 @@ public sealed class TestDatabase : IAsyncLifetime, IDbContextFactory<Application
         // Mesma configuração do Program.cs: o modelo do Identity depende da SchemaVersion
         var services = new ServiceCollection();
         services.AddDbContextFactory<ApplicationDbContext>(o => o.UseNpgsql(connection));
+        // Logging e Data Protection: o UserManager e os tokens de redefinição de senha dependem deles
+        services.AddLogging();
+        services.AddDataProtection();
         services.AddIdentityCore<ApplicationUser>(o => o.Stores.SchemaVersion = IdentitySchemaVersions.Version2)
-            .AddEntityFrameworkStores<ApplicationDbContext>();
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
         _services = services.BuildServiceProvider();
         await using var db = CreateDbContext();
         await db.Database.MigrateAsync();
