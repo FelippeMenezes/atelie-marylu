@@ -228,6 +228,12 @@ else
                 ? L["Could not complete the order. Try again."]
                 : L["The order was created, but there was a problem starting the payment. Try paying from the order page."];
         }
+        catch (PaymentGatewayException ex)
+        {
+            // Só acontece depois de o pedido existir: o cliente tenta pagar de novo pela página do pedido
+            Logger.LogError(ex, "Falha ao iniciar o pagamento do pedido");
+            errorMessage = L["The order was created, but there was a problem starting the payment. Try paying from the order page."];
+        }
         catch (TimeoutException ex)
         {
             Logger.LogError(ex, "Falha ao finalizar pedido");

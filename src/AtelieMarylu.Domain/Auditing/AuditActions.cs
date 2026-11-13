@@ -16,6 +16,10 @@ public static class AuditActions
     public const string PaymentNotified = "payment.notified";
     public const string PaymentMismatch = "payment.mismatch";
     public const string PaymentManual = "payment.manual";
+    public const string PaymentReversed = "payment.reversed";
+
+    // Ações que pedem atenção da loja: aparecem em destaque no resumo, no pedido e na auditoria
+    public static bool IsPaymentAlert(string action) => action is PaymentMismatch or PaymentReversed;
 
     public const string ProductCreated = "product.created";
     public const string ProductEdited = "product.edited";

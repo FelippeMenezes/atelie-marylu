@@ -31,10 +31,36 @@ public static class DependencyInjection
 
         services.Configure<TurnstileOptions>(configuration.GetSection(TurnstileOptions.SectionName));
 
-        // Integrações externas: trocar estas duas linhas pelas implementações reais
-        // (Melhor Envio e Mercado Pago) não exige mudar nenhuma tela.
+        // Integrações externas: trocar a implementação não exige mudar nenhuma tela.
+        // Frete: ainda simulado (o Melhor Envio é a Fase 3).
         services.AddSingleton<IShippingCalculator, SimulatedShippingCalculator>();
-        services.AddSingleton<IPaymentGateway, SimulatedPaymentGateway>();
+
+        // Pagamento: com token e endereço público do PagBank, cobra de verdade pelo Checkout PagBank
+        // (em desenvolvimento, no sandbox). Sem eles, o simulado, cujo webhook só existe em Development.
+        var pagBankSection = configuration.GetSection(PagBankOptions.SectionName);
+        services.AddOptions<PagBankOptions>()
+            .Bind(pagBankSection)
+            // Um pagamento do sandbox não move dinheiro. Em produção, ele marcaria um pedido real como pago.
+            .Validate(o => !o.IsActive || !o.Sandbox || environment.IsDevelopment(),
+                "PagBank:Sandbox precisa ser false fora de Development (no servidor: PAGBANK_SANDBOX=false).")
+            .Validate(o => !o.IsActive || (Uri.TryCreate(o.PublicBaseUrl, UriKind.Absolute, out var url) && url.Scheme == Uri.UriSchemeHttps),
+                "PagBank:PublicBaseUrl precisa ser um endereço https completo (ex.: https://www.ateliemarylu.com.br).")
+            .ValidateOnStart();
+
+        var pagBank = pagBankSection.Get<PagBankOptions>();
+        if (pagBank?.IsActive == true)
+        {
+            services.AddSingleton<PagBankPublicKeyCache>();
+            services.AddHttpClient<IPaymentGateway, PagBankPaymentGateway>(http =>
+            {
+                http.BaseAddress = pagBank.ApiBaseUrl;
+                http.Timeout = TimeSpan.FromSeconds(10);
+            });
+        }
+        else
+        {
+            services.AddSingleton<IPaymentGateway, SimulatedPaymentGateway>();
+        }
 
         services.AddHttpClient<PostalCodeLookup>(http =>
         {

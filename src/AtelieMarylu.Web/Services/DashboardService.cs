@@ -20,7 +20,7 @@ public class DashboardService(IDbContextFactory<ApplicationDbContext> dbFactory,
             await db.Orders.CountAsync(p => p.Status == OrderStatus.AwaitingPayment, ct),
             await db.Products.CountAsync(p => p.IsActive && p.Stock == 0, ct),
             await db.AuditEntries.AsNoTracking()
-                .Where(a => a.Action == AuditActions.PaymentMismatch && a.OccurredAt >= since)
+                .Where(a => (a.Action == AuditActions.PaymentMismatch || a.Action == AuditActions.PaymentReversed) && a.OccurredAt >= since)
                 .OrderByDescending(a => a.OccurredAt).Take(MaxAlerts).ToListAsync(ct));
     }
 }

@@ -157,20 +157,48 @@ public static class ServiceCollectionExtensions
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            // Sem corpo, o 429 era reexecutado como a página "não encontrada" (UseStatusCodePagesWithReExecute),
+            // que recusa POST: login, cadastro e webhook recebiam 400 em vez de "muitas tentativas".
+            // Aqui a reexecução é desligada, o Retry-After diz em quantos segundos tentar de novo, e a mensagem é traduzida.
+            options.OnRejected = async (context, ct) =>
+            {
+                var http = context.HttpContext;
+                if (http.Features.Get<Microsoft.AspNetCore.Diagnostics.IStatusCodePagesFeature>() is { } statusPages)
+                    statusPages.Enabled = false;
+                http.Response.Headers.RetryAfter = "60";
+                var localizer = http.RequestServices.GetService<Microsoft.Extensions.Localization.IStringLocalizer<SharedResource>>();
+                http.Response.ContentType = "text/plain; charset=utf-8";
+                await http.Response.WriteAsync(localizer?["Too many attempts. Wait a minute and try again."] ?? "Too many attempts. Wait a minute and try again.", ct);
+            };
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
             {
                 var path = context.Request.Path;
-                var sensitive = HttpMethods.IsPost(context.Request.Method)
-                    && (path.StartsWithSegments("/Account") || path.StartsWithSegments("/api/webhooks"));
-                if (!sensitive)
+                if (!HttpMethods.IsPost(context.Request.Method))
                     return RateLimitPartition.GetNoLimiter("unlimited");
 
                 var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-                return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = 10,
-                    Window = TimeSpan.FromMinutes(1),
-                });
+
+                // Webhook de pagamento: limite próprio e bem maior. Os avisos do provedor saem de poucos IPs, e um
+                // pico de vendas não pode receber 429 (o pagamento atrasaria). Afrouxar é seguro porque cada aviso
+                // precisa de assinatura válida. A chave separada ("webhook:") impede que o login e o webhook
+                // dividam o mesmo contador.
+                if (path.StartsWithSegments("/api/webhooks"))
+                    return RateLimitPartition.GetFixedWindowLimiter($"webhook:{ip}", _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 120,
+                        Window = TimeSpan.FromMinutes(1),
+                    });
+
+                // Login, cadastro, senha: limite apertado contra tentativa e erro
+                if (path.StartsWithSegments("/Account"))
+                    return RateLimitPartition.GetFixedWindowLimiter($"account:{ip}", _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                    });
+
+                return RateLimitPartition.GetNoLimiter("unlimited");
             });
         });
 
@@ -210,6 +238,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ImageService>();
         services.AddScoped<PersonalDataService>();
         services.AddHostedService<OrderExpirationService>();
+
+        // Fecha no provedor, em segundo plano, as cobranças que deixaram de valer (o webhook responde sem esperar)
+        services.AddSingleton<ChargeClosingQueue>();
+        services.AddSingleton<IChargeCloser>(sp => sp.GetRequiredService<ChargeClosingQueue>());
+        services.AddHostedService<ChargeClosingService>();
 
         return services;
     }

@@ -114,11 +114,13 @@
   <data name="Could not calculate shipping right now. Try again." xml:space="preserve"><value>No se pudo calcular el envío ahora. Inténtalo de nuevo.</value></data>
   <data name="Could not complete the order. Try again." xml:space="preserve"><value>No se pudo completar el pedido. Inténtalo de nuevo.</value></data>
   <data name="Could not complete. Try again." xml:space="preserve"><value>No se pudo completar. Inténtalo de nuevo.</value></data>
+  <data name="Could not confirm the payment with the provider. Try again in a few minutes." xml:space="preserve"><value>No fue posible confirmar el pago con el proveedor. Inténtalo de nuevo en unos minutos.</value></data>
   <data name="Could not create the order." xml:space="preserve"><value>No se pudo crear el pedido.</value></data>
   <data name="Could not reconnect." xml:space="preserve"><value>No se pudo reconectar.</value></data>
   <data name="Could not reconnect. Trying again in" xml:space="preserve"><value>Error al reconectar. Nuevo intento en</value></data>
   <data name="Could not resume the session." xml:space="preserve"><value>No se pudo reanudar la sesión.</value></data>
   <data name="Could not save. Try again." xml:space="preserve"><value>No se pudo guardar. Inténtalo de nuevo.</value></data>
+  <data name="Could not start the payment right now. Try again in a few minutes." xml:space="preserve"><value>No fue posible iniciar el pago ahora. Inténtalo de nuevo en unos minutos.</value></data>
   <data name="Could not upload the photo (8 MB maximum)." xml:space="preserve"><value>No se pudo subir la foto (máximo 8 MB).</value></data>
   <data name="Cover" xml:space="preserve"><value>Portada</value></data>
   <data name="Create a new password" xml:space="preserve"><value>Crear nueva contraseña</value></data>
@@ -334,9 +336,11 @@
   <data name="Page not found · Ateliê Marylu" xml:space="preserve"><value>Página no encontrada · Ateliê Marylu</value></data>
   <data name="Paid" xml:space="preserve"><value>Pagado</value></data>
   <data name="Paid orders awaiting preparation" xml:space="preserve"><value>Pedidos pagados pendientes de preparación</value></data>
+  <data name="Paid with {0}" xml:space="preserve"><value>Pagado con {0}</value></data>
   <data name="Password" xml:space="preserve"><value>Contraseña</value></data>
   <data name="Password changed" xml:space="preserve"><value>Contraseña cambiada</value></data>
   <data name="Pay by" xml:space="preserve"><value>Paga hasta</value></data>
+  <data name="Pay on PagBank ({0})" xml:space="preserve"><value>Pagar en PagBank ({0})</value></data>
   <data name="Pay with card ({0})" xml:space="preserve"><value>Pagar con tarjeta ({0})</value></data>
   <data name="Pay with PIX ({0})" xml:space="preserve"><value>Pagar con PIX ({0})</value></data>
   <data name="Payment" xml:space="preserve"><value>Pago</value></data>
@@ -346,6 +350,7 @@
   <data name="Payment recorded." xml:space="preserve"><value>Pago registrado.</value></data>
   <data name="Payments" xml:space="preserve"><value>Pagos</value></data>
   <data name="Payments approved on cancelled orders or with a different amount. Check them and, if needed, refund at the provider." xml:space="preserve"><value>Pagos aprobados en pedidos cancelados o con importe diferente. Revisa y, si corresponde, reembolsa en el proveedor.</value></data>
+  <data name="Payments processed by" xml:space="preserve"><value>Pagos procesados por</value></data>
   <data name="Payments that need attention" xml:space="preserve"><value>Pagos que requieren atención</value></data>
   <data name="Pending" xml:space="preserve"><value>Pendiente</value></data>
   <data name='Permissions of "{0}" saved.' xml:space="preserve"><value>Permisos de "{0}" guardados.</value></data>
@@ -457,6 +462,8 @@
   <data name="The passwords do not match." xml:space="preserve"><value>Las contraseñas no coinciden.</value></data>
   <data name="The payment deadline for this order has ended." xml:space="preserve"><value>El plazo de pago de este pedido terminó.</value></data>
   <data name="The payment does not belong to this order." xml:space="preserve"><value>El pago no pertenece a este pedido.</value></data>
+  <data name="The payment for this order was refunded or disputed at the provider. Do not ship it." xml:space="preserve"><value>El pago de este pedido fue reembolsado o impugnado en el proveedor. No lo envíes.</value></data>
+  <data name="The payment opens on PagBank's secure page. This page updates by itself when the payment is confirmed." xml:space="preserve"><value>El pago se abre en la página segura de PagBank. Esta página se actualiza sola cuando se confirme el pago.</value></data>
   <data name="The person must sign in again for the changes to take effect." xml:space="preserve"><value>La persona deberá iniciar sesión de nuevo para que los cambios surtan efecto.</value></data>
   <data name="the privacy policy" xml:space="preserve"><value>la política de privacidad</value></data>
   <data name="The session was paused by the server." xml:space="preserve"><value>El servidor pausó la sesión.</value></data>
@@ -478,6 +485,7 @@
   <data name="To confirm this email address in your Ateliê Marylu account, click the button below." xml:space="preserve"><value>Para confirmar esta dirección de correo en tu cuenta de Ateliê Marylu, haz clic en el botón de abajo.</value></data>
   <data name="To finish, sign in or create your account (it takes less than 1 minute)." xml:space="preserve"><value>Para finalizar, entras o creas tu cuenta (lleva menos de 1 minuto).</value></data>
   <data name="To make someone an employee, they first create an account on the site. Then, here, give them individual permissions or add them to a group." xml:space="preserve"><value>Para convertir a alguien en empleado, primero esa persona crea su cuenta en el sitio. Después, aquí, dale permisos individuales o ponla en un grupo.</value></data>
+  <data name="Too many attempts. Wait a minute and try again." xml:space="preserve"><value>Demasiados intentos. Espera un minuto e inténtalo de nuevo.</value></data>
   <data name="Total" xml:space="preserve"><value>Total</value></data>
   <data name="Tracking code" xml:space="preserve"><value>Código de seguimiento</value></data>
   <data name="Tracking code:" xml:space="preserve"><value>Código de seguimiento:</value></data>

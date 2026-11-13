@@ -13,7 +13,16 @@
     <div class="d-flex justify-content-between"><span>@L["Subtotal"]</span><span>@Order.Subtotal.ToBrl()</span></div>
     <div class="d-flex justify-content-between"><span>@L["Shipping ({0})", L[Order.ShippingName]]</span><span>@Order.ShippingCost.ToBrl()</span></div>
     <div class="d-flex justify-content-between fs-5"><strong>@L["Total"]</strong><strong>@Order.Total.ToBrl()</strong></div>
-    @if (Order.PixDiscount > 0)
+    @* Depois de pago, mostra como foi pago e quanto. Antes, a oferta do PIX. Mostrar a oferta num pedido
+       já pago com cartão fazia parecer que ele tinha sido pago com PIX. *@
+    @if (Order.Payments.FirstOrDefault(p => p.Status == PaymentStatus.Approved) is { } paid)
+    {
+        <div class="d-flex justify-content-between small text-secondary">
+            <span>@L["Paid with {0}", paid.Method == PaymentMethod.Pix ? "PIX" : L["Card"]]</span>
+            <span>@paid.Amount.ToBrl()</span>
+        </div>
+    }
+    else if (Order.Status == OrderStatus.AwaitingPayment && Order.PixDiscount > 0)
     {
         <div class="d-flex justify-content-between small text-secondary">
             <span>@L["With PIX ({0}% off products)", Order.PixDiscountPercent.ToString("0.#")]</span>

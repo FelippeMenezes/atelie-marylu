@@ -20,6 +20,7 @@ public class OrderService(
     IDbContextFactory<ApplicationDbContext> dbFactory,
     IShippingCalculator shipping,
     IPaymentGateway gateway,
+    IChargeCloser chargeCloser,
     AuditService audit,
     OrderEvents events,
     IOptions<ShopOptions> store,
@@ -140,16 +141,28 @@ public class OrderService(
             throw new OrderRuleException("The payment deadline for this order has ended.");
         var customer = await db.Users.AsNoTracking().FirstAsync(u => u.Id == order.CustomerId, ct);
 
+        // Antes de abrir uma cobrança nova, fecha no provedor as que estão abertas. Se não conseguir, não abre
+        // outra: com duas cobranças abertas, a cliente poderia pagar duas vezes (ex.: o PIX numa aba e o cartão na outra).
+        foreach (var open in OpenCharges(order))
+            await gateway.CancelChargeAsync(open.Reference, ct);
+
         var payment = order.StartPayment(method, gateway.Name);
         await SaveAsync(db, ct);
 
         var start = await gateway.StartAsync(new ChargeRequest(
-            order.Id, order.Code, payment.Amount, method, customer.Email ?? "", customer.FullName,
-            $"Pedido {order.Code} - Ateliê Marylu", order.PayBy), ct);
-        payment.RecordStart(start.ExternalId, start.PaymentUrl, start.PixCopyPaste);
+            order.Id, payment.Id, order.Code, payment.Amount, method, customer.Email ?? "", customer.FullName,
+            $"Pedido {order.Code} - Ateliê Marylu", order.PayBy, store.Value.InterestFreeInstallments), ct);
+        payment.RecordStart(start.ExternalId, start.PaymentUrl, start.PixCopyPaste, start.ProviderReference);
         await SaveAsync(db, ct);
         events.Notify(order.Id);
         return payment;
+    }
+
+    // Existe um pagamento da loja com esta referência neste provedor? Consulta o índice único (Provider, ExternalId).
+    public async Task<bool> HasPaymentAsync(string provider, string externalId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Payments.AsNoTracking().AnyAsync(p => p.Provider == provider && p.ExternalId == externalId, ct);
     }
 
     // Recebe o aviso do provedor (webhook). Retorna false se o pagamento não existir.
@@ -192,8 +205,11 @@ public class OrderService(
         }
 
         var order = await LoadOrderAsync(db, orderId.Value, ct);
+        var openBefore = OpenCharges(order);
         var payment = order.Payments.First(p => p.ExternalId == notification.ExternalId);
         string? alert = null;
+        var alertAction = AuditActions.PaymentMismatch;
+        string? details = null;
 
         if (notification.Status == PaymentStatus.Approved)
         {
@@ -211,18 +227,46 @@ public class OrderService(
                 alert = $"Pagamento {notification.ExternalId} aprovado no pedido {order.Code}, mas: {localizer.TranslateToStoreLanguage(ex)} Verifique e, se for o caso, estorne.";
             }
         }
-        else if (payment.Status != PaymentStatus.Approved || notification.Status == PaymentStatus.Refunded)
+        else if (notification.Status == PaymentStatus.Refunded)
+        {
+            // Estorno (feito pela loja no painel do provedor) ou contestação da cliente no cartão (chargeback)
+            alertAction = AuditActions.PaymentReversed;
+            switch (order.RegisterReversal(payment))
+            {
+                case PaymentReversal.OrderCancelled:
+                    foreach (var item in order.Items)
+                        await RestoreStockAsync(db, item.ProductId, item.Quantity, ct);
+                    alert = $"Pagamento {notification.ExternalId} do pedido {order.Code} foi estornado ou contestado. O pedido foi cancelado e o estoque voltou. Não envie.";
+                    break;
+                case PaymentReversal.AlreadyShipped:
+                    alert = $"Pagamento {notification.ExternalId} do pedido {order.Code} foi estornado ou contestado, mas o pedido já foi enviado. Confira no painel do provedor e fale com a cliente.";
+                    break;
+                case PaymentReversal.StillPaid:
+                    details = $"Refunded via {gateway.Name} ({notification.ExternalId}); o pedido continua pago por outro pagamento";
+                    break;
+            }
+        }
+        else if (payment.Status != PaymentStatus.Approved)
         {
             payment.UpdateStatus(notification.Status);
         }
+        else if (notification.Status is PaymentStatus.Cancelled or PaymentStatus.Rejected)
+        {
+            // Transição inesperada: o provedor diz que um pagamento já aprovado foi cancelado ou recusado.
+            // Pode ser um estorno num formato que a loja não conhece. Não muda nada sozinho (o pedido pode até já
+            // ter sido enviado), mas também não fica em silêncio: vira alerta para alguém conferir no provedor.
+            alertAction = AuditActions.PaymentReversed;
+            alert = $"O provedor informou {notification.Status} para o pagamento {notification.ExternalId} do pedido {order.Code}, que já estava aprovado. Confira no painel do provedor se houve estorno antes de enviar.";
+        }
 
-        await audit.RecordAsync(db, alert is null ? AuditActions.PaymentNotified : AuditActions.PaymentMismatch, AuditEntities.Order, order.Id,
-            alert ?? $"{notification.Status} via {gateway.Name} ({notification.ExternalId})", Author.Automated);
+        await audit.RecordAsync(db, alert is null ? AuditActions.PaymentNotified : alertAction, AuditEntities.Order, order.Id,
+            alert ?? details ?? $"{notification.Status} via {gateway.Name} ({notification.ExternalId})", Author.Automated);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
         events.Notify(order.Id);
         if (alert is not null) logger.LogError("ALERTA: {Alerta}", alert);
+        ScheduleClosingOfFinishedCharges(order, openBefore);
         return true;
     }
 
@@ -245,6 +289,10 @@ public class OrderService(
             return reason;
         }, ct: ct);
 
+    // Se o provedor não responder na conciliação, o pedido espera até este tempo além do prazo. Depois expira
+    // assim mesmo, para um provedor fora do ar não segurar o estoque para sempre (um pagamento tardio vira alerta).
+    public static readonly TimeSpan ReconciliationGrace = TimeSpan.FromHours(1);
+
     // Tarefa periódica: cancela pedidos cujo prazo de pagamento acabou e devolve o estoque
     public async Task<int> ExpireOverdueAsync(CancellationToken ct = default)
     {
@@ -260,6 +308,7 @@ public class OrderService(
         var cancelledCount = 0;
         foreach (var id in overdue)
         {
+            if (!await ReadyToExpireAfterReconcilingAsync(id, now, ct)) continue;
             try
             {
                 var expired = await ChangeAsync(id, AuditActions.OrderExpired, async (order, db) =>
@@ -279,6 +328,52 @@ public class OrderService(
             }
         }
         return cancelledCount;
+    }
+
+    // Conciliação antes de expirar: pergunta ao provedor se alguma cobrança pendente do pedido foi paga.
+    // Se foi, confirma pelo mesmo caminho do webhook (e o EventId evita processar duas vezes).
+    // Devolve false quando o pedido não deve expirar agora: foi pago, ou o provedor não respondeu e ainda há folga.
+    private async Task<bool> ReadyToExpireAfterReconcilingAsync(int orderId, DateTime now, CancellationToken ct)
+    {
+        List<(string ExternalId, string? ProviderReference)> pending;
+        DateTime payBy;
+        await using (var db = await dbFactory.CreateDbContextAsync(ct))
+        {
+            var order = await db.Orders.AsNoTracking().Include(o => o.Payments).FirstOrDefaultAsync(o => o.Id == orderId, ct);
+            if (order is null) return false;
+            payBy = order.PayBy;
+            pending = order.Payments
+                .Where(p => p.Status == PaymentStatus.Pending && p.Provider == gateway.Name && p.ExternalId is not null)
+                .Select(p => (p.ExternalId!, p.ProviderReference))
+                .ToList();
+        }
+
+        foreach (var (externalId, providerReference) in pending)
+        {
+            PaymentNotification? status;
+            try
+            {
+                status = await gateway.QueryStatusAsync(externalId, providerReference, ct);
+            }
+            catch (PaymentGatewayException ex)
+            {
+                if (now < payBy + ReconciliationGrace)
+                {
+                    logger.LogWarning(ex, "Não foi possível consultar o provedor antes de expirar o pedido {PedidoId}; tenta de novo na próxima rodada.", orderId);
+                    return false;
+                }
+                logger.LogError(ex, "ALERTA: o provedor não respondeu e o pedido {PedidoId} expira mesmo assim. Um pagamento tardio aparecerá como divergente.", orderId);
+                return true;
+            }
+
+            if (status?.Status == PaymentStatus.Approved)
+            {
+                logger.LogWarning("Pedido {PedidoId} estava pago no provedor sem o aviso ter chegado; confirmado pela conciliação.", orderId);
+                await ProcessNotificationAsync(status, ct);
+                return false;
+            }
+        }
+        return true;
     }
 
     public Task ChangeQuantityAsync(int orderId, int productId, int quantity, CancellationToken ct = default) =>
@@ -317,8 +412,48 @@ public class OrderService(
     public Task StartPreparationAsync(int orderId, CancellationToken ct = default) =>
         ChangeAsync(orderId, AuditActions.OrderPreparing, (p, _) => { p.StartPreparation(); return Task.FromResult<string?>(null); }, ct: ct);
 
-    public Task MarkShippedAsync(int orderId, string? trackingCode, CancellationToken ct = default) =>
-        ChangeAsync(orderId, AuditActions.OrderShipped, (p, _) => { p.MarkShipped(trackingCode); return Task.FromResult(p.TrackingCode); }, ct: ct);
+    public async Task MarkShippedAsync(int orderId, string? trackingCode, CancellationToken ct = default)
+    {
+        // Enviar não tem volta: confere antes com o provedor se o pagamento continua valendo
+        await EnsurePaymentStillValidAsync(orderId, ct);
+        await ChangeAsync(orderId, AuditActions.OrderShipped, (p, _) => { p.MarkShipped(trackingCode); return Task.FromResult(p.TrackingCode); }, ct: ct);
+    }
+
+    // Conferência no momento irreversível. Um aviso de estorno ou de contestação (chargeback) pode ter se perdido
+    // (ex.: a loja fora do ar num deploy), e o pedido continuaria "Pago". Pagamento manual (ex.: Minizinha) não tem
+    // o que consultar. Se o provedor não responder, o envio espera: melhor atrasar que mandar sem o dinheiro.
+    private async Task EnsurePaymentStillValidAsync(int orderId, CancellationToken ct)
+    {
+        List<(string ExternalId, string? ProviderReference)> approved;
+        await using (var db = await dbFactory.CreateDbContextAsync(ct))
+        {
+            approved = await db.Payments.AsNoTracking()
+                .Where(p => p.OrderId == orderId && p.Status == PaymentStatus.Approved && p.Provider == gateway.Name && p.ExternalId != null)
+                .Select(p => new ValueTuple<string, string?>(p.ExternalId!, p.ProviderReference))
+                .ToListAsync(ct);
+        }
+
+        foreach (var (externalId, providerReference) in approved)
+        {
+            PaymentNotification? status;
+            try
+            {
+                status = await gateway.QueryStatusAsync(externalId, providerReference, ct);
+            }
+            catch (PaymentGatewayException ex)
+            {
+                logger.LogWarning(ex, "Não foi possível conferir o pagamento do pedido {PedidoId} antes do envio.", orderId);
+                throw new OrderRuleException("Could not confirm the payment with the provider. Try again in a few minutes.");
+            }
+
+            if (status?.Status is PaymentStatus.Refunded or PaymentStatus.Cancelled or PaymentStatus.Rejected)
+            {
+                // Aplica pelo mesmo caminho do webhook: o pedido é cancelado (ou vira alerta), e o estoque volta
+                await ProcessNotificationAsync(status, ct);
+                throw new OrderRuleException("The payment for this order was refunded or disputed at the provider. Do not ship it.");
+            }
+        }
+    }
 
     public Task MarkDeliveredAsync(int orderId, CancellationToken ct = default) =>
         ChangeAsync(orderId, AuditActions.OrderDelivered, (p, _) => { p.MarkDelivered(); return Task.FromResult<string?>(null); }, ct: ct);
@@ -329,10 +464,13 @@ public class OrderService(
     private async Task<bool> ChangeAsync(int orderId, string action, Func<Order, ApplicationDbContext, Task<string?>> change,
         Author? author = null, CancellationToken ct = default)
     {
+        Order order;
+        List<OpenCharge> openBefore;
         await using (var db = await dbFactory.CreateDbContextAsync(ct))
         {
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
-            var order = await LoadOrderAsync(db, orderId, ct);
+            order = await LoadOrderAsync(db, orderId, ct);
+            openBefore = OpenCharges(order);
             var statusBefore = order.Status;
             var details = await change(order, db);
             if (details is null && order.Status == statusBefore && !db.ChangeTracker.HasChanges())
@@ -343,7 +481,34 @@ public class OrderService(
         }
 
         events.Notify(orderId);
+        // Cancelar, editar itens ou frete, ou registrar pagamento manual cancela as cobranças pendentes
+        ScheduleClosingOfFinishedCharges(order, openBefore);
         return true;
+    }
+
+    private sealed record OpenCharge(int PaymentId, string Reference);
+
+    // Cobranças abertas no provedor atual (ex.: checkout do PagBank), que ainda aceitam pagamento
+    private List<OpenCharge> OpenCharges(Order order) =>
+        order.Payments
+            .Where(p => p.Status == PaymentStatus.Pending && p.Provider == gateway.Name && p.ProviderReference is not null)
+            .Select(p => new OpenCharge(p.Id, p.ProviderReference!))
+            .ToList();
+
+    // Depois de gravar: manda fechar no provedor as cobranças que deixaram de estar pendentes aqui, canceladas OU pagas.
+    // A paga também: o sandbox mostrou que o checkout do PagBank continua ativo depois do pagamento, e a cliente
+    // conseguiria pagar de novo no mesmo link. Vai para a fila em segundo plano (IChargeCloser): a alteração já está
+    // gravada e não volta atrás, e quem chamou (o webhook, uma tela do painel) não espera o provedor.
+    private void ScheduleClosingOfFinishedCharges(Order order, List<OpenCharge> openBefore)
+    {
+        // O checkout vence junto com o prazo do pedido: depois dele, não há o que fechar
+        if (openBefore.Count == 0 || clock.GetUtcNow().UtcDateTime > order.PayBy) return;
+
+        foreach (var open in openBefore)
+        {
+            if (order.Payments.FirstOrDefault(p => p.Id == open.PaymentId)?.Status is null or PaymentStatus.Pending) continue;
+            chargeCloser.Enqueue(new ChargeToClose(open.Reference, order.Id, order.PayBy));
+        }
     }
 
     private static async Task SaveAsync(ApplicationDbContext db, CancellationToken ct)
