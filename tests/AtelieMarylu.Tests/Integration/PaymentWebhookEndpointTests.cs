@@ -74,8 +74,11 @@ public class PaymentWebhookEndpointTests(TestDatabase database) : IClassFixture<
         return await service.StartPaymentAsync(order.Id, PaymentMethod.Pix);
     }
 
-    private static Task<HttpResponseMessage> PostAsync(HttpClient client, string? reference, string body = "{}") =>
-        client.PostAsync(reference is null ? Url : $"{Url}?ref={reference}", new StringContent(body, Encoding.UTF8, "application/json"));
+    private static async Task<HttpResponseMessage> PostAsync(HttpClient client, string? reference, string body = "{}")
+    {
+        using var content = new StringContent(body, Encoding.UTF8, "application/json");
+        return await client.PostAsync(reference is null ? Url : $"{Url}?ref={reference}", content);
+    }
 
     [FactWithDatabase]
     public async Task Unknown_reference_never_reaches_the_provider()
