@@ -187,7 +187,8 @@ public class PaymentWebhookEndpointTests(TestDatabase database) : IClassFixture<
         for (var i = 0; i < 120; i++)
             await PostAsync(client, "AML-X-P1");
 
-        var login = await client.PostAsync("/Account/Login", new StringContent(""));
+        using var content = new StringContent("");
+        var login = await client.PostAsync("/Account/Login", content);
 
         Assert.NotEqual(HttpStatusCode.TooManyRequests, login.StatusCode);
     }
