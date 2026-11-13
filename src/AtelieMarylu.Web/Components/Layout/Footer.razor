@@ -81,6 +81,8 @@
 
     private sealed record LogoLookup(string? Path);
 
-    private string? PagBankLogo => (logoCache ??= new LogoLookup(
-        new[] { "img/pagbank.svg", "img/pagbank.png" }.FirstOrDefault(path => WebHost.WebRootFileProvider.GetFileInfo(path).Exists))).Path;
+    private static LogoLookup FindLogo(IWebHostEnvironment webHost) => logoCache ??= new LogoLookup(
+        new[] { "img/pagbank.svg", "img/pagbank.png" }.FirstOrDefault(path => webHost.WebRootFileProvider.GetFileInfo(path).Exists));
+
+    private string? PagBankLogo => FindLogo(WebHost).Path;
 }

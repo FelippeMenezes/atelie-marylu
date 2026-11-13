@@ -27,9 +27,8 @@ public static class PaymentWebhookEndpoints
             if (!isDevelopment && !gateway.VerifiesNotifications)
                 return Results.NotFound();
 
-            if (request.ContentLength > MaxBodyBytes)
-                return Results.StatusCode(StatusCodes.Status413PayloadTooLarge);
-
+            // O limite vale pelos bytes que chegam de verdade. O Content-Length não é usado: é um cabeçalho que quem
+            // envia controla (pode declarar 10 bytes e mandar 1 MB), e o CodeQL aponta decisões baseadas nele.
             var body = await ReadLimitedAsync(request.Body, ct);
             if (body is null)
                 return Results.StatusCode(StatusCodes.Status413PayloadTooLarge);

@@ -504,11 +504,10 @@ public class OrderService(
         // O checkout vence junto com o prazo do pedido: depois dele, não há o que fechar
         if (openBefore.Count == 0 || clock.GetUtcNow().UtcDateTime > order.PayBy) return;
 
-        foreach (var open in openBefore)
-        {
-            if (order.Payments.FirstOrDefault(p => p.Id == open.PaymentId)?.Status is null or PaymentStatus.Pending) continue;
+        var finished = openBefore.Where(open =>
+            order.Payments.FirstOrDefault(p => p.Id == open.PaymentId)?.Status is not (null or PaymentStatus.Pending));
+        foreach (var open in finished)
             chargeCloser.Enqueue(new ChargeToClose(open.Reference, order.Id, order.PayBy));
-        }
     }
 
     private static async Task SaveAsync(ApplicationDbContext db, CancellationToken ct)

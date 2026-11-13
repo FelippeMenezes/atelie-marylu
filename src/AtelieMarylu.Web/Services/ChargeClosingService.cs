@@ -13,7 +13,12 @@ public class ChargeClosingService(
     // Esperas entre as tentativas. Os testes passam esperas zeradas.
     public IReadOnlyList<TimeSpan> RetryDelays { get; init; } = [TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(30)];
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) => ProcessQueueAsync(stoppingToken);
+
+    // O laço da fila. Público para o teste chamá-lo direto: desde o .NET 10, o BackgroundService roda o ExecuteAsync
+    // em outra thread, então ligar e desligar o serviço no teste vira uma corrida (o desligamento pode chegar antes
+    // de o laço começar).
+    public async Task ProcessQueueAsync(CancellationToken stoppingToken)
     {
         try
         {

@@ -127,9 +127,10 @@ public partial class PagBankPaymentGateway(
         using var request = new HttpRequestMessage(HttpMethod.Get, $"checkouts/{providerReference}");
         var checkout = await SendAsync<CheckoutStatusResponse>(request, "consultar o checkout", ct, notFoundIsNull: true);
         PaymentNotification? found = null;
-        foreach (var orderId in checkout?.Orders?.Select(o => o.Id) ?? [])
+        // Só ids no formato do PagBank viram parte do endereço consultado
+        var orderIds = checkout?.Orders?.Select(o => o.Id).OfType<string>().Where(id => OrderIdFormat().IsMatch(id)) ?? [];
+        foreach (var orderId in orderIds)
         {
-            if (orderId is null || !OrderIdFormat().IsMatch(orderId)) continue;
             var notification = await ReadOrderAsync(orderId, externalId, ct);
             if (notification?.Status is PaymentStatus.Approved or PaymentStatus.Refunded) return notification;
             found ??= notification;

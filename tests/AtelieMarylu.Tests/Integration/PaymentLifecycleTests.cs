@@ -69,14 +69,18 @@ public class RecordingPaymentGateway : IPaymentGateway
 // como na fila de verdade (que só registra o alerta): a alteração do pedido nunca volta atrás.
 public class InlineChargeCloser(IPaymentGateway gateway) : IChargeCloser
 {
+    // As falhas ficam registradas, como o ALERTA no log da fila de verdade, para os testes poderem conferir
+    public List<string> Failures { get; } = [];
+
     public void Enqueue(ChargeToClose charge)
     {
         try
         {
             gateway.CancelChargeAsync(charge.ProviderReference).GetAwaiter().GetResult();
         }
-        catch (PaymentGatewayException)
+        catch (PaymentGatewayException ex)
         {
+            Failures.Add($"{charge.ProviderReference}: {ex.Message}");
         }
     }
 }

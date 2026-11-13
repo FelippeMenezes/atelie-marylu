@@ -67,13 +67,18 @@ public class ChargeClosingServiceTests
     [Fact]
     public async Task Shutting_down_is_not_an_error()
     {
-        // Desligar a loja cancela a espera da fila: o serviço tem de terminar normalmente, sem exceção
+        // Desligar a loja cancela a espera da fila: o laço tem de terminar normalmente, sem exceção.
+        // O laço é chamado direto, e não por StartAsync/StopAsync: desde o .NET 10 o ExecuteAsync roda em outra
+        // thread, e o desligamento podia chegar antes de o laço começar (o teste falhava só às vezes, no CI).
         var service = Service(new FlakyGateway(failures: 0));
+        using var stopping = new CancellationTokenSource();
 
-        await service.StartAsync(CancellationToken.None);
-        await service.StopAsync(CancellationToken.None);
+        var running = service.ProcessQueueAsync(stopping.Token);
+        Assert.False(running.IsCompleted); // esperando a fila
+        await stopping.CancelAsync();
+        await running;
 
-        Assert.True(service.ExecuteTask!.IsCompletedSuccessfully);
+        Assert.True(running.IsCompletedSuccessfully);
     }
 
     [Fact]
