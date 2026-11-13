@@ -2,6 +2,7 @@
 @using Microsoft.Extensions.Options
 @inject IOptions<ShopOptions> Options
 @inject AtelieMarylu.Infrastructure.Integrations.Turnstile Turnstile
+@inject IWebHostEnvironment WebHost
 
 @{ var store = Options.Value; }
 <footer class="footer">
@@ -36,6 +37,27 @@
             </div>
         </div>
         <p class="small mt-3 mb-0">@L["© {0} {1}. Payments processed in the provider's secure environment.", DateTime.UtcNow.Year, store.Name]</p>
+        @* PagBank: aparece sempre, esteja ligado ou não (decisão de 12/11/2026). O logo é o arquivo OFICIAL baixado do
+           PagBank (selos para lojistas), salvo em wwwroot/img. Sem o arquivo, aparece o nome em texto.
+           O link leva ao trecho da política de privacidade que explica o que vai para o PagBank. *@
+        <p class="small mt-1 mb-0 d-flex align-items-center flex-wrap gap-1">
+            @* Ícone genérico "lock" do Bootstrap Icons (licença MIT), embutido como o escudo do Turnstile:
+               herda a cor do texto e não depende de CDN nem de mudança no CSP *@
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2M5 8h6a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1"/>
+            </svg>
+            <span>@L["Payments processed by"]</span>
+            <a href="privacy-policy#pagbank" class="d-inline-flex align-items-center">
+                @if (PagBankLogo is { } logo)
+                {
+                    <img src="@logo" alt="PagBank" height="20" class="align-text-bottom" />
+                }
+                else
+                {
+                    <span>PagBank</span>
+                }
+            </a>
+        </p>
         @if (Turnstile.IsActive)
         {
             @* Só o nome, sem o logo: as regras de marca do Cloudflare exigem autorização por escrito para usar o logo,
@@ -51,3 +73,16 @@
         }
     </div>
 </footer>
+
+@code {
+    // O disco é lido uma vez só por execução (o rodapé aparece em todas as páginas). Um logo novo aparece depois
+    // de reiniciar a loja. A troca de referência é atômica, então duas leituras ao mesmo tempo não dão problema.
+    private static LogoLookup? logoCache;
+
+    private sealed record LogoLookup(string? Path);
+
+    private static LogoLookup FindLogo(IWebHostEnvironment webHost) => logoCache ??= new LogoLookup(
+        new[] { "img/pagbank.svg", "img/pagbank.png" }.FirstOrDefault(path => webHost.WebRootFileProvider.GetFileInfo(path).Exists));
+
+    private string? PagBankLogo => FindLogo(WebHost).Path;
+}

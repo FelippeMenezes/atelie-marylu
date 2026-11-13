@@ -159,7 +159,7 @@ else if (order is not null)
         <h2 class="h5">@L["History"]</h2>
         @foreach (var entry in history)
         {
-            <div class="small py-1 @(entry.Action == AuditActions.PaymentMismatch ? "text-danger fw-bold" : "")">
+            <div class="small py-1 @(AuditActions.IsPaymentAlert(entry.Action) ? "text-danger fw-bold" : "")">
                 @entry.OccurredAt.FormatBrasilia() · <strong>@entry.Author</strong> · <code>@entry.Action</code> @entry.Details
             </div>
         }

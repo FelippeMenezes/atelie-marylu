@@ -1,5 +1,7 @@
 using System.Globalization;
 using AtelieMarylu.Domain.Orders;
+using AtelieMarylu.Domain.Payments;
+using AtelieMarylu.Domain.Shipping;
 using AtelieMarylu.Web.Components.Shared;
 using AtelieMarylu.Web.Configuration;
 using Bunit;
@@ -24,6 +26,34 @@ public class ComponentTests : BunitContext
     {
         CultureInfo.CurrentUICulture = _previousUiCulture;
         base.Dispose(disposing);
+    }
+
+    private static Order OrderWithPixDiscount() =>
+        new("c", [new OrderItem(1, "Bolsa", 89.90m, 1)], new ShippingAddress(), new ShippingOption("pickup", "Retirada", 0, null),
+            DateTime.UtcNow.AddMinutes(30), pixDiscountPercent: 5);
+
+    [Fact]
+    public void Paid_order_shows_how_it_was_paid_and_not_the_pix_offer()
+    {
+        // Pedido pago com cartão: mostrar "No PIX R$ 85,40" fazia parecer que tinha sido pago com PIX
+        var order = OrderWithPixDiscount();
+        var card = order.StartPayment(PaymentMethod.CreditCard, "pagbank");
+        order.ConfirmPayment(card);
+
+        var cut = Render<OrderSummary>(p => p.Add(x => x.Order, order));
+
+        Assert.Contains("Pago com Cartão", cut.Markup);
+        Assert.Contains("R$ 89,90", cut.Markup);
+        Assert.DoesNotContain("No PIX", cut.Markup);
+    }
+
+    [Fact]
+    public void Order_awaiting_payment_shows_the_pix_offer()
+    {
+        var cut = Render<OrderSummary>(p => p.Add(x => x.Order, OrderWithPixDiscount()));
+
+        Assert.Contains("No PIX", cut.Markup);
+        Assert.Contains("R$ 85,40", cut.Markup);
     }
 
     [Fact]

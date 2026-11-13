@@ -146,8 +146,37 @@ public class Order
             throw new OrderRuleException("Amount paid ({0}) differs from the order amount ({1}).", (amountPaid ?? payment.Amount).ToBrl(), expected.ToBrl());
 
         payment.UpdateStatus(PaymentStatus.Approved);
+        // Pago: as outras cobranças abertas deixam de valer, para a cliente não pagar duas vezes
+        CancelPendingPayments();
         Status = OrderStatus.Paid;
         PaidAt = DateTime.UtcNow;
+    }
+
+    // Chamado pelo webhook quando o provedor avisa que o dinheiro voltou para a cliente:
+    // estorno feito pela loja no painel do provedor ou contestação da cliente no cartão (chargeback).
+    public PaymentReversal RegisterReversal(Payment payment)
+    {
+        if (!_payments.Contains(payment)) throw new OrderRuleException("The payment does not belong to this order.");
+        var wasApproved = payment.Status == PaymentStatus.Approved;
+        payment.UpdateStatus(PaymentStatus.Refunded);
+        if (!wasApproved) return PaymentReversal.NothingToDo;
+
+        // Outro pagamento aprovado continua cobrindo o pedido (ex.: a cliente pagou duas vezes)
+        if (_payments.Any(p => p != payment && p.Status == PaymentStatus.Approved && p.Amount == payment.Amount))
+            return PaymentReversal.StillPaid;
+
+        if (Status is OrderStatus.Shipped or OrderStatus.Delivered)
+            return PaymentReversal.AlreadyShipped;
+
+        // Pago ou em preparo: o pedido não pode mais sair sem o dinheiro
+        if (Status is OrderStatus.Paid or OrderStatus.Preparing)
+        {
+            Cancel("Pagamento estornado ou contestado");
+            return PaymentReversal.OrderCancelled;
+        }
+
+        // Já cancelado (ex.: a loja estornou um pagamento que chegou depois do prazo)
+        return PaymentReversal.NothingToDo;
     }
 
     public void StartPreparation()

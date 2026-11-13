@@ -53,7 +53,9 @@ else if (order is not null)
                 }
                 else if (paymentEntry.PaymentUrl is not null)
                 {
-                    <a class="btn btn-primary" href="@paymentEntry.PaymentUrl" target="_blank" rel="noopener">@L["Pay with card ({0})", paymentEntry.Amount.ToBrl()]</a>
+                    @* Abre a página segura do PagBank em outra aba. Esta continua aberta e se atualiza sozinha quando o pagamento for confirmado. *@
+                    <a class="btn btn-primary" href="@paymentEntry.PaymentUrl" target="_blank" rel="noopener noreferrer">@L["Pay on PagBank ({0})", paymentEntry.Amount.ToBrl()]</a>
+                    <p class="small text-muted mt-2">@L["The payment opens on PagBank's secure page. This page updates by itself when the payment is confirmed."]</p>
                 }
                 else
                 {
@@ -161,6 +163,11 @@ else if (order is not null)
         catch (OperationCanceledException)
         {
             throw;
+        }
+        catch (PaymentGatewayException ex)
+        {
+            Logger.LogError(ex, "Falha no provedor de pagamento no pedido {PedidoId}", order?.Id);
+            (message, isError) = (L["Could not start the payment right now. Try again in a few minutes."], true);
         }
         catch (InvalidOperationException ex)
         {

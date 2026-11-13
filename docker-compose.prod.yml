@@ -57,6 +57,11 @@ services:
       Resend__ApiKey: ${RESEND_API_KEY:?Defina RESEND_API_KEY no .env.producao}
       Resend__From: ${RESEND_FROM:?Defina RESEND_FROM no .env.producao}
       Resend__ReplyTo: ${RESEND_REPLY_TO:-}
+      # PagBank: só preencher depois da homologação. Sem token, a loja usa o gateway simulado
+      # (e o webhook fica fechado). Com token, PAGBANK_SANDBOX precisa ser false, ou a loja não sobe.
+      PagBank__Token: ${PAGBANK_TOKEN:-}
+      PagBank__Sandbox: ${PAGBANK_SANDBOX:-false}
+      PagBank__PublicBaseUrl: ${PAGBANK_PUBLIC_BASE_URL:-https://www.ateliemarylu.com.br}
     volumes:
       - fotos:/app/wwwroot/uploads
     depends_on:

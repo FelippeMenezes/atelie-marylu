@@ -13,6 +13,7 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(x => x.Provider).HasMaxLength(30);
         builder.Property(x => x.ExternalId).HasMaxLength(100);
+        builder.Property(x => x.ProviderReference).HasMaxLength(100);
         builder.HasIndex(x => new { x.Provider, x.ExternalId }).IsUnique();
     }
 }

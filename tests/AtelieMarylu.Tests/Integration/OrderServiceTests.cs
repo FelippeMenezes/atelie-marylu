@@ -32,7 +32,8 @@ public class OrderServiceTests(TestDatabase database) : IClassFixture<TestDataba
     private OrderService Service()
     {
         var audit = new AuditService(new CurrentUserService(new ServiceCollection().BuildServiceProvider(), new HttpContextAccessor()), database);
-        return new OrderService(database, new SimulatedShippingCalculator(), new SimulatedPaymentGateway(), audit, new OrderEvents(),
+        var gateway = new SimulatedPaymentGateway();
+        return new OrderService(database, new SimulatedShippingCalculator(), gateway, new InlineChargeCloser(gateway), audit, new OrderEvents(),
             Options.Create(store), clock, Localizer(), NullLogger<OrderService>.Instance);
     }
 

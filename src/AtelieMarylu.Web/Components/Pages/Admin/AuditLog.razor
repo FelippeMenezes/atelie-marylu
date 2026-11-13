@@ -26,7 +26,7 @@
         <tbody>
             @foreach (var entry in entries)
             {
-                <tr class="@(entry.Action == AuditActions.PaymentMismatch ? "table-danger" : "")">
+                <tr class="@(AuditActions.IsPaymentAlert(entry.Action) ? "table-danger" : "")">
                     <td class="text-nowrap">@entry.OccurredAt.FormatBrasilia()</td>
                     <td>@entry.Author</td>
                     <td><code>@entry.Action</code></td>
