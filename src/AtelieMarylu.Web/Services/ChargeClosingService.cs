@@ -15,8 +15,16 @@ public class ChargeClosingService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await foreach (var charge in queue.Reader.ReadAllAsync(stoppingToken))
-            await CloseAsync(charge, stoppingToken);
+        try
+        {
+            await foreach (var charge in queue.Reader.ReadAllAsync(stoppingToken))
+                await CloseAsync(charge, stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            // A loja está desligando (Ctrl+C, deploy ou falha na subida): parar aqui é o esperado, não um erro.
+            // Sem este catch, o host registrava "BackgroundService failed" com log fatal a cada desligamento.
+        }
     }
 
     public async Task CloseAsync(ChargeToClose charge, CancellationToken ct)

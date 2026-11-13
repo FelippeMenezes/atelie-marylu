@@ -3,7 +3,6 @@
 @inject IOptions<ShopOptions> Options
 @inject AtelieMarylu.Infrastructure.Integrations.Turnstile Turnstile
 @inject IWebHostEnvironment WebHost
-@inject IOptions<AtelieMarylu.Infrastructure.Integrations.PagBankOptions> PagBank
 
 @{ var store = Options.Value; }
 <footer class="footer">
@@ -38,25 +37,27 @@
             </div>
         </div>
         <p class="small mt-3 mb-0">@L["© {0} {1}. Payments processed in the provider's secure environment.", DateTime.UtcNow.Year, store.Name]</p>
-        @if (PagBank.Value.IsActive)
-        {
-            @* PagBank: só com ele ligado (decisão de 12/11/2026), para o rodapé nunca afirmar algo que não é verdade
-               (CDC, art. 6º, III). O logo é o arquivo OFICIAL baixado do PagBank (selos para lojistas), salvo em
-               wwwroot/img. Sem o arquivo, aparece o nome em texto. O link leva ao trecho da política de privacidade. *@
-            <p class="small mt-1 mb-0 d-flex align-items-center flex-wrap gap-1">
-                <span>@L["Payments processed by"]</span>
-                <a href="privacy-policy#pagbank" class="d-inline-flex align-items-center">
-                    @if (PagBankLogo is { } logo)
-                    {
-                        <img src="@logo" alt="PagBank" height="20" class="align-text-bottom" />
-                    }
-                    else
-                    {
-                        <span>PagBank</span>
-                    }
-                </a>
-            </p>
-        }
+        @* PagBank: aparece sempre, esteja ligado ou não (decisão de 12/11/2026). O logo é o arquivo OFICIAL baixado do
+           PagBank (selos para lojistas), salvo em wwwroot/img. Sem o arquivo, aparece o nome em texto.
+           O link leva ao trecho da política de privacidade que explica o que vai para o PagBank. *@
+        <p class="small mt-1 mb-0 d-flex align-items-center flex-wrap gap-1">
+            @* Ícone genérico "lock" do Bootstrap Icons (licença MIT), embutido como o escudo do Turnstile:
+               herda a cor do texto e não depende de CDN nem de mudança no CSP *@
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2M5 8h6a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1"/>
+            </svg>
+            <span>@L["Payments processed by"]</span>
+            <a href="privacy-policy#pagbank" class="d-inline-flex align-items-center">
+                @if (PagBankLogo is { } logo)
+                {
+                    <img src="@logo" alt="PagBank" height="20" class="align-text-bottom" />
+                }
+                else
+                {
+                    <span>PagBank</span>
+                }
+            </a>
+        </p>
         @if (Turnstile.IsActive)
         {
             @* Só o nome, sem o logo: as regras de marca do Cloudflare exigem autorização por escrito para usar o logo,

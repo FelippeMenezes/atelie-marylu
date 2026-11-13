@@ -65,6 +65,18 @@ public class ChargeClosingServiceTests
     }
 
     [Fact]
+    public async Task Shutting_down_is_not_an_error()
+    {
+        // Desligar a loja cancela a espera da fila: o serviço tem de terminar normalmente, sem exceção
+        var service = Service(new FlakyGateway(failures: 0));
+
+        await service.StartAsync(CancellationToken.None);
+        await service.StopAsync(CancellationToken.None);
+
+        Assert.True(service.ExecuteTask!.IsCompletedSuccessfully);
+    }
+
+    [Fact]
     public async Task Skips_charges_that_already_expired()
     {
         var gateway = new FlakyGateway(failures: 0);
