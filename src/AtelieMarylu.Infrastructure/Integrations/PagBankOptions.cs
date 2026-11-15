@@ -17,6 +17,13 @@ public class PagBankOptions
     // a cliente para cá e manda os avisos de pagamento para cá. Em desenvolvimento, o endereço do túnel.
     public string PublicBaseUrl { get; set; } = "";
 
+    // Homologação: grava as chamadas e respostas (mascaradas) em arquivos .json. Ligar só enquanto gera os cenários.
+    public bool LogTraffic { get; set; }
+
+    // Onde gravar. Vazio = pasta "pagbank-homologacao" dentro da pasta temporária do sistema (no container, /tmp),
+    // que o usuário sem privilégios da loja consegue escrever.
+    public string TrafficLogDirectory { get; set; } = "";
+
     public bool IsActive => !string.IsNullOrWhiteSpace(Token) && !string.IsNullOrWhiteSpace(PublicBaseUrl);
 
     public Uri ApiBaseUrl => new(Sandbox ? "https://sandbox.api.pagseguro.com/" : "https://api.pagseguro.com/");

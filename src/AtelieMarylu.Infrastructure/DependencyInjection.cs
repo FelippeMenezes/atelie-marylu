@@ -51,11 +51,14 @@ public static class DependencyInjection
         if (pagBank?.IsActive == true)
         {
             services.AddSingleton<PagBankPublicKeyCache>();
+            // Registro das chamadas para a homologação (desligado por padrão: PagBank:LogTraffic)
+            services.AddSingleton<PagBankTrafficRecorder>();
+            services.AddTransient<PagBankTrafficHandler>();
             services.AddHttpClient<IPaymentGateway, PagBankPaymentGateway>(http =>
             {
                 http.BaseAddress = pagBank.ApiBaseUrl;
                 http.Timeout = TimeSpan.FromSeconds(10);
-            });
+            }).AddHttpMessageHandler<PagBankTrafficHandler>();
         }
         else
         {
