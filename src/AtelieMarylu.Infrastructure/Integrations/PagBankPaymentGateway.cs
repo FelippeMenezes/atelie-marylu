@@ -29,6 +29,7 @@ public partial class PagBankPaymentGateway(
     HttpClient http,
     IOptions<PagBankOptions> options,
     PagBankPublicKeyCache keyCache,
+    PagBankTrafficRecorder recorder,
     TimeProvider clock,
     ILogger<PagBankPaymentGateway> logger) : IPaymentGateway
 {
@@ -92,6 +93,25 @@ public partial class PagBankPaymentGateway(
         logger.LogInformation("Checkout {CheckoutId} inativado no PagBank.", providerReference);
     }
 
+    // Homologação: registra o aviso que chegou (corpo mascarado). Da assinatura, só se ela veio.
+    private Task RecordNoticeAsync(PaymentWebhookRequest webhook, string? signature, CancellationToken ct)
+    {
+        if (!recorder.IsEnabled) return Task.CompletedTask;
+        var headers = new System.Text.Json.Nodes.JsonObject
+        {
+            ["x-payload-signature"] = string.IsNullOrWhiteSpace(signature) ? "ausente" : "presente",
+        };
+        if (webhook.Headers.TryGetValue("content-type", out var type)) headers["Content-Type"] = type;
+        if (webhook.Headers.TryGetValue("user-agent", out var agent)) headers["User-Agent"] = agent;
+        return recorder.RecordAsync("aviso-recebido", new System.Text.Json.Nodes.JsonObject
+        {
+            ["method"] = "POST",
+            ["url"] = $"/api/webhooks/payment?ref={ClaimedExternalId(webhook)}",
+            ["headers"] = headers,
+            ["body"] = PagBankTrafficRecorder.MaskBody(webhook.Body),
+        }, null, ct);
+    }
+
     // A referência vai na URL de aviso que a própria loja montou (?ref=AML-XXXXXX-P42)
     public string? ClaimedExternalId(PaymentWebhookRequest request) =>
         request.Query.TryGetValue("ref", out var reference) && ReferenceFormat().IsMatch(reference) ? reference : null;
@@ -99,6 +119,7 @@ public partial class PagBankPaymentGateway(
     public async Task<PaymentNotification?> ReadNotificationAsync(PaymentWebhookRequest webhook, CancellationToken ct = default)
     {
         webhook.Headers.TryGetValue("x-payload-signature", out var signature);
+        await RecordNoticeAsync(webhook, signature, ct);
         if (!string.IsNullOrWhiteSpace(signature) && !await HasValidSignatureAsync(webhook.RawBody, signature, ct))
         {
             // Diagnóstico sem dado sensível: só quais cabeçalhos de autenticação chegaram e o tamanho de cada

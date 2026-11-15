@@ -434,7 +434,8 @@ public sealed class PagBankPaymentGatewayTests : IDisposable
         { BaseAddress = new Uri("https://sandbox.api.pagseguro.com/") };
         clients.Add(http);
         var options = Options.Create(new PagBankOptions { Token = "token-de-teste", PublicBaseUrl = "https://loja.teste/" });
-        return new PagBankPaymentGateway(http, options, keyCache, clock, NullLogger<PagBankPaymentGateway>.Instance);
+        var recorder = new PagBankTrafficRecorder(options, clock, NullLogger<PagBankTrafficRecorder>.Instance);
+        return new PagBankPaymentGateway(http, options, keyCache, recorder, clock, NullLogger<PagBankPaymentGateway>.Instance);
     }
 
     private sealed class MutableClock(DateTimeOffset now) : TimeProvider

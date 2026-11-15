@@ -62,6 +62,8 @@ services:
       PagBank__Token: ${PAGBANK_TOKEN:-}
       PagBank__Sandbox: ${PAGBANK_SANDBOX:-false}
       PagBank__PublicBaseUrl: ${PAGBANK_PUBLIC_BASE_URL:-https://www.ateliemarylu.com.br}
+      # Homologação: grava as chamadas (mascaradas) em /tmp/pagbank-homologacao dentro do container. Ligar só para gerar os registros.
+      PagBank__LogTraffic: ${PAGBANK_LOG_TRAFFIC:-false}
     volumes:
       - fotos:/app/wwwroot/uploads
     depends_on:
