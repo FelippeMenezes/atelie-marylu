@@ -139,6 +139,10 @@ public class AccessService(
             throw new AccessException("Enter the reason for the deletion.");
 
         var user = await FindAsync(userId);
+        // Daqui em diante, o id usado no log é o que veio do BANCO, e não o do endereço da tela (/admin/users/{id}),
+        // que quem faz a requisição controla. São o mesmo valor (a conta foi encontrada por ele), mas só o do banco
+        // é confiável: um texto vindo de fora, com quebra de linha, poderia forjar linhas no log (alerta #70 do CodeQL).
+        var customerId = user.Id;
         // Digitar o e-mail evita excluir a pessoa errada por um clique distraído
         if (!string.Equals(typedEmail.Trim(), user.Email, StringComparison.OrdinalIgnoreCase))
             throw new AccessException("The email typed does not match this customer's email.");
@@ -162,7 +166,7 @@ public class AccessService(
             $"Cliente removido pela equipe de gestão técnica. Motivo: {reason}. " +
             (hadOrders ? "Conta anonimizada; pedidos mantidos." : "Conta apagada."));
         logger.LogInformation("Customer {UserId} deleted by the technical staff (admin {AdminId}). Had orders: {HadOrders}.",
-            userId, loggedAdminId, hadOrders);
+            customerId, loggedAdminId, hadOrders);
     }
 
     public async Task<IReadOnlyList<GroupSummary>> ListGroupsAsync()
