@@ -14,6 +14,11 @@
     <link rel="stylesheet" href="@Assets["AtelieMarylu.Web.styles.css"]" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <meta name="theme-color" content="#b8408a" />
+    @* PWA: o manifest faz a loja poder ser "instalada" no celular. O iPhone ainda usa o apple-touch-icon
+       e o título próprio na tela de início. Sem @Assets: os endereços precisam ser fixos entre deploys. *@
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/img/pwa/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Marylu" />
     <HeadOutlet />
 </head>
 
@@ -23,6 +28,7 @@
     <Routes />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="@Assets["js/pwa.js"]"></script>
     @if (Turnstile.IsActive)
     {
         @* O turnstile.js só baixa o script do Cloudflare nas páginas que têm o widget (login e cadastro) *@

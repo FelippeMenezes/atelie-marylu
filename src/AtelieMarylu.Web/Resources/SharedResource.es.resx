@@ -247,6 +247,7 @@
   <data name="Increase" xml:space="preserve"><value>Aumentar</value></data>
   <data name="Individual permissions" xml:space="preserve"><value>Permisos individuales</value></data>
   <data name="Instagram @{0}" xml:space="preserve"><value>Instagram @{0}</value></data>
+  <data name="Install the app" xml:space="preserve"><value>Instalar la app</value></data>
   <data name="Invalid email." xml:space="preserve"><value>Correo electrónico no válido.</value></data>
   <data name="Invalid link" xml:space="preserve"><value>Enlace no válido</value></data>
   <data name="Invalid link · Ateliê Marylu" xml:space="preserve"><value>Enlace no válido · Ateliê Marylu</value></data>
@@ -303,6 +304,7 @@
   <data name="Note: {0}" xml:space="preserve"><value>Observación: {0}</value></data>
   <data name="Now just pay and we'll start preparing your order." xml:space="preserve"><value>Ahora solo falta pagar para que empecemos a preparar tu pedido.</value></data>
   <data name="Number" xml:space="preserve"><value>Número</value></data>
+  <data name="On iPhone, tap Share and then Add to Home Screen." xml:space="preserve"><value>En el iPhone, toca Compartir y luego Agregar a pantalla de inicio.</value></data>
   <data name="One of the products in the cart is no longer available." xml:space="preserve"><value>Uno de los productos del carrito ya no está disponible.</value></data>
   <data name="Only paid or in-preparation orders can be shipped." xml:space="preserve"><value>Solo los pedidos pagados o en preparación se pueden enviar.</value></data>
   <data name="Only paid orders can go into preparation." xml:space="preserve"><value>Solo los pedidos pagados pueden entrar en preparación.</value></data>

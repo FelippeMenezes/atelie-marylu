@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!-- Página mostrada pelo service worker quando o celular está sem internet.
+     É HTML estático (não passa pelo Blazor), então não tem L["..."]: o texto vem nos três idiomas.
+     Sem JavaScript: a CSP só aceita scripts de arquivo, e o link "Tentar de novo" basta. -->
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#b8408a" />
+    <title>Ateliê Marylu</title>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fdf7fa;
+            color: #4a2a3d;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            text-align: center;
+        }
+        main { padding: 24px 16px; max-width: 420px; }
+        img { width: 120px; height: 120px; }
+        h1 { font-size: 1.4rem; margin: 16px 0 8px; }
+        p { margin: 4px 0; }
+        .other { color: #7a5a6d; font-size: .95rem; }
+        a {
+            display: inline-block;
+            margin-top: 24px;
+            padding: 12px 28px;
+            border-radius: 999px;
+            background: #b8408a;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <img src="/img/pwa/icon-192.png" alt="Ateliê Marylu" />
+        <h1>Você está sem internet</h1>
+        <p>A loja precisa de conexão para mostrar produtos, preços e pedidos.</p>
+        <p class="other" lang="es">Estás sin internet.</p>
+        <p class="other" lang="en">You are offline.</p>
+        <a href="/">Tentar de novo · Reintentar · Try again</a>
+    </main>
+</body>
+</html>
