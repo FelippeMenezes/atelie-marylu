@@ -12,7 +12,18 @@
     <link rel="canonical" href="@Navigation.BaseUri" />
 </HeadContent>
 
-<h1>@L["Handmade pieces"]</h1>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+    <h1 class="mb-0">@L["Handmade pieces"]</h1>
+    @* PWA: começa escondido. O js/pwa.js só mostra o botão quando dá para instalar
+       (Chrome/Edge/Android ou iPhone) e a loja ainda não está instalada. *@
+    <button type="button" class="btn btn-outline-primary btn-sm" data-pwa-install
+            aria-controls="pwa-ios-hint" aria-expanded="false" hidden>
+        @L["Install the app"]
+    </button>
+</div>
+<p id="pwa-ios-hint" class="alert alert-light small" data-pwa-ios-hint hidden>
+    @L["On iPhone, tap Share and then Add to Home Screen."]
+</p>
 <p class="mb-4">@L["Bags, pouches and accessories sewn one by one in our studio. Each piece is unique. You can fill your cart without signing up."]</p>
 
 @if (products.Count == 0)
