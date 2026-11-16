@@ -16,7 +16,7 @@ public partial class PwaTests
     private static string FindWwwRoot()
     {
         var folder = new DirectoryInfo(AppContext.BaseDirectory);
-        while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "AtelieMarylu.slnx")))
+        while (folder is not null && !File.Exists(Path.Join(folder.FullName, "AtelieMarylu.slnx")))
             folder = folder.Parent;
         return Path.Join(folder!.FullName, "src", "AtelieMarylu.Web", "wwwroot");
     }
