@@ -41,6 +41,10 @@ public static class SecurityHeaders
             "img-src 'self' data:",
             $"connect-src {connect}",
             $"frame-src {frames}",
+            // PWA: o service worker e o manifest só podem vir da própria loja. Já seria assim pelo
+            // default-src, mas deixar explícito evita que uma mudança futura no script-src abra o worker.
+            "worker-src 'self'",
+            "manifest-src 'self'",
             "object-src 'none'",
             "base-uri 'self'",
             // O botão "Continuar com Google" envia um formulário que é redirecionado ao provedor
