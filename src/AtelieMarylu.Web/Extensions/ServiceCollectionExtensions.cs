@@ -111,7 +111,10 @@ public static class ServiceCollectionExtensions
         services.Configure<EmailConfirmationTokenProviderOptions>(options => options.TokenLifespan = AccountTokenLifespans.EmailConfirmation);
 
         // Monta os e-mails da conta (texto, idioma) e entrega pelo IEmailClient registrado no AddInfrastructure
+        // O cache guarda quando saiu o último aviso de cadastro repetido de cada conta (limite de 1 por hora)
+        services.AddMemoryCache();
         services.AddScoped<AccountEmailSender>();
+        services.AddScoped<AccountRegistrationService>();
         services.AddScoped<IEmailSender<ApplicationUser>>(sp => sp.GetRequiredService<AccountEmailSender>());
 
         // Substitui a fábrica padrão para incluir o claim de troca de senha obrigatória
