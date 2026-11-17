@@ -49,6 +49,7 @@ services:
       Store__ContactEmail: ${LOJA_EMAIL:-}
       Store__Phone: ${LOJA_TELEFONE:-}
       Store__WhatsApp: ${LOJA_WHATSAPP:-}
+      Store__GoogleReviewUrl: ${LOJA_LINK_AVALIACAO_GOOGLE:-}
       GoogleLogin__ClientId: ${GOOGLE_CLIENT_ID:-}
       GoogleLogin__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
       Turnstile__SiteKey: ${TURNSTILE_SITE_KEY:-}

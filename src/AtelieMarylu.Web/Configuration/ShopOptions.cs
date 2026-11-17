@@ -30,5 +30,14 @@ public class ShopOptions
     // Impede que alguém reserve o estoque inteiro com pedidos que nunca paga
     [Range(1, 20)] public int MaxPendingOrdersPerCustomer { get; set; } = 3;
 
+    // Link "escrever avaliação" do Perfil da Empresa no Google (ex.: https://g.page/r/XXXX/review).
+    // Vazio esconde o convite de avaliação na página do pedido.
+    public string GoogleReviewUrl { get; set; } = "";
+
     public bool HasLegalData => !string.IsNullOrWhiteSpace(TaxDocument);
+
+    // Só aceita https: o link vai num botão para a cliente, e um endereço mal digitado na configuração
+    // (sem https://) viraria um link relativo quebrado dentro da loja
+    public bool HasReviewLink =>
+        Uri.TryCreate(GoogleReviewUrl, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps;
 }

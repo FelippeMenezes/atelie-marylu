@@ -1,6 +1,10 @@
 @page "/"
 @inject ProductService ProductService
 @inject NavigationManager Navigation
+@inject IOptions<ShopOptions> Store
+@using AtelieMarylu.Web.Configuration
+@using AtelieMarylu.Web.Seo
+@using Microsoft.Extensions.Options
 
 <PageTitle>@L["Ateliê Marylu · Creative sewing"]</PageTitle>
 <HeadContent>
@@ -10,6 +14,8 @@
     <meta property="og:description" content="@L["Handmade pieces, stitch by stitch, with care."]" />
     <meta property="og:image" content="@(Navigation.BaseUri)img/logo.png" />
     <link rel="canonical" href="@Navigation.BaseUri" />
+    @* Dados estruturados da loja (nome, logo, contato, Instagram), para o Google montar o perfil da marca *@
+    @((MarkupString)$"<script type=\"application/ld+json\">{StoreStructuredData.Build(Store.Value, Navigation.BaseUri)}</script>")
 </HeadContent>
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
