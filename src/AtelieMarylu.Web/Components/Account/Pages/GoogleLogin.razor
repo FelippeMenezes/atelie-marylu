@@ -178,7 +178,7 @@ else
         }
         if (!result.Succeeded)
         {
-            message = $"Erro: {string.Join(" ", result.Errors.Select(e => e.Description))}";
+            message = L["Error: {0}", string.Join(" ", result.Errors.Select(e => e.Description))];
             return;
         }
 

@@ -36,6 +36,9 @@ public sealed class AccountEmailLinks(UserManager<ApplicationUser> userManager, 
     // quem escreve no HTML é o componente Razor, que codifica.
     public string StoreHome() => navigation.ToAbsoluteUri("").AbsoluteUri;
 
+    // Página "esqueci minha senha", para o aviso de cadastro com e-mail já existente. Também sem token.
+    public string ForgotPassword() => navigation.ToAbsoluteUri("Account/ForgotPassword").AbsoluteUri;
+
     // Desfaz o Encode na tela que recebe o link. Devolve null se o código vier corrompido.
     public static string? DecodeToken(string code)
     {

@@ -1,16 +1,19 @@
+using System.Globalization;
 using System.Net;
 using AtelieMarylu.Domain.Email;
 using AtelieMarylu.Infrastructure.Data;
 using AtelieMarylu.Web.Components.Emails;
+using AtelieMarylu.Web.Localization;
 using AtelieMarylu.Web.Security;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Localization;
 
 namespace AtelieMarylu.Web.Services;
 
-// Monta os e-mails da conta (boas-vindas, redefinição de senha, troca de e-mail) e entrega ao IEmailClient (Resend ou log).
+// Monta os e-mails da conta (boas-vindas, redefinição de senha, troca de e-mail, aviso de cadastro repetido) e entrega ao IEmailClient (Resend ou log).
 // É o IEmailSender<ApplicationUser> que as telas do Identity usam.
 //
 // - O HTML vem de componentes Razor (Components/Emails), renderizados fora de uma tela pelo HtmlRenderer.
@@ -21,6 +24,7 @@ public sealed class AccountEmailSender(
     IEmailClient client,
     IStringLocalizer<SharedResource> L,
     IServiceProvider services,
+    IMemoryCache cache,
     ILoggerFactory loggerFactory,
     ILogger<AccountEmailSender> logger) : IEmailSender<ApplicationUser>
 {
@@ -70,6 +74,58 @@ public sealed class AccountEmailSender(
         catch (EmailDeliveryException ex)
         {
             logger.LogError(ex, "Could not send the welcome email to user {UserId}.", user.Id);
+        }
+    }
+
+    // Prazo mínimo entre dois avisos de "tentaram criar conta com seu e-mail" para a mesma conta
+    public static readonly TimeSpan ExistingAccountNoticeInterval = TimeSpan.FromHours(1);
+
+    // Cadastro com um e-mail que já tem conta: a tela mostra uma mensagem neutra e o dono recebe este aviso.
+    //
+    // - Limite de um aviso por conta a cada hora: sem ele, alguém poderia repetir o cadastro com o e-mail
+    //   de outra pessoa para lotar a caixa dela (e gastar a cota do Resend). O Turnstile e o limite por IP
+    //   já freiam robôs; este limite protege a vítima mesmo de tentativas vindas de vários IPs.
+    // - O controle fica na memória (IMemoryCache), como o OrderEvents: vale para um único servidor e zera
+    //   quando a aplicação reinicia, o que no pior caso permite um aviso a mais.
+    // - A chave é o Id do usuário, não o e-mail, para não guardar dado pessoal no cache.
+    // - Sai no idioma padrão da loja, não no da requisição: quem tentou o cadastro não é o dono da conta.
+    //   Sem isso, quem navega em espanhol faria a dona receber um aviso de segurança que ela não lê.
+    //   (A loja não guarda o idioma de cada cliente; se passar a guardar, use o dele aqui.)
+    // - Falha no envio fica só no log: a tela não pode se comportar diferente por causa dela.
+    public async Task TrySendExistingAccountNoticeAsync(ApplicationUser user, string email, string forgotPasswordUrl)
+    {
+        var key = $"existing-account-notice:{user.Id}";
+        if (cache.TryGetValue(key, out _))
+        {
+            logger.LogInformation("Existing account notice for user {UserId} skipped (already sent recently).", user.Id);
+            return;
+        }
+        // Marca antes de enviar: se o Resend estiver fora do ar, as novas tentativas também não insistem
+        cache.Set(key, true, ExistingAccountNoticeInterval);
+
+        var previousCulture = CultureInfo.CurrentCulture;
+        var previousUICulture = CultureInfo.CurrentUICulture;
+        var storeCulture = CultureInfo.GetCultureInfo(SupportedLanguages.Default);
+        CultureInfo.CurrentCulture = storeCulture;
+        CultureInfo.CurrentUICulture = storeCulture;
+        try
+        {
+            var html = await RenderAsync<ExistingAccountMessage>(new()
+            {
+                [nameof(ExistingAccountMessage.Name)] = user.FullName,
+                [nameof(ExistingAccountMessage.ForgotPasswordUrl)] = forgotPasswordUrl,
+            });
+            await client.SendAsync(new EmailMessage(email, L["Someone tried to create an account with your email"], html));
+        }
+        catch (EmailDeliveryException ex)
+        {
+            logger.LogError(ex, "Could not send the existing account notice to user {UserId}.", user.Id);
+        }
+        finally
+        {
+            // Devolve o idioma da requisição: o resto da tela continua no idioma de quem está navegando
+            CultureInfo.CurrentCulture = previousCulture;
+            CultureInfo.CurrentUICulture = previousUICulture;
         }
     }
 

@@ -107,6 +107,66 @@ public class AccountEmailSenderTests
     }
 
     [Fact]
+    public async Task Existing_account_notice_has_no_token_and_is_in_the_store_language()
+    {
+        using var services = BuildServices(out var client);
+        var previous = CultureInfo.CurrentUICulture;
+        // Quem tentou o cadastro navegava em espanhol; o aviso vai para o dono, no idioma da loja
+        CultureInfo.CurrentUICulture = new CultureInfo("es");
+        try
+        {
+            await services.GetRequiredService<AccountEmailSender>().TrySendExistingAccountNoticeAsync(
+                new ApplicationUser { FullName = "Maria" }, "cliente@teste.local", "https://loja.teste/Account/ForgotPassword");
+            // A requisição volta ao idioma de quem está navegando
+            Assert.Equal("es", CultureInfo.CurrentUICulture.Name);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previous;
+        }
+
+        var sent = Assert.Single(client.Sent);
+        Assert.Equal("cliente@teste.local", sent.To);
+        Assert.Equal("Tentaram criar uma conta com o seu e-mail", sent.Subject);
+        Assert.Contains("Olá, Maria!", Text(sent.Html));
+        Assert.Contains("href=\"https://loja.teste/Account/ForgotPassword\"", sent.Html);
+        // Disparado por um formulário anônimo: não pode levar link com token
+        Assert.DoesNotContain("code=", sent.Html);
+        Assert.Contains("nada mudou na sua conta", Text(sent.Html));
+        Assert.Contains("lang=\"pt-BR\"", sent.Html);
+    }
+
+    [Fact]
+    public async Task Existing_account_notice_is_sent_at_most_once_per_interval()
+    {
+        // Repetir o cadastro com o e-mail de outra pessoa não pode lotar a caixa dela
+        using var services = BuildServices(out var client);
+        var user = new ApplicationUser { FullName = "Maria" };
+        var other = new ApplicationUser { FullName = "Ana" };
+
+        // Cada requisição tem o seu escopo (AccountEmailSender é scoped); o limite vale entre elas
+        for (var i = 0; i < 3; i++)
+        {
+            using var scope = services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<AccountEmailSender>().TrySendExistingAccountNoticeAsync(
+                user, "maria@teste.local", "https://loja.teste/Account/ForgotPassword");
+        }
+        await services.GetRequiredService<AccountEmailSender>().TrySendExistingAccountNoticeAsync(
+            other, "ana@teste.local", "https://loja.teste/Account/ForgotPassword");
+
+        Assert.Equal(["maria@teste.local", "ana@teste.local"], client.Sent.Select(m => m.To));
+    }
+
+    [Fact]
+    public async Task Existing_account_notice_failure_does_not_reach_the_registration()
+    {
+        using var services = BuildServices(out _, new FailingEmailClient());
+
+        await services.GetRequiredService<AccountEmailSender>().TrySendExistingAccountNoticeAsync(
+            new ApplicationUser { FullName = "Maria" }, "cliente@teste.local", "https://loja.teste/Account/ForgotPassword");
+    }
+
+    [Fact]
     public void Confirmation_and_reset_tokens_are_protected_separately()
     {
         // Nomes diferentes = chaves diferentes: um token de confirmação não serve para redefinir a senha
@@ -141,6 +201,7 @@ public class AccountEmailSenderTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddLocalization(options => options.ResourcesPath = "Resources");
+        services.AddMemoryCache();
         services.AddSingleton(replacement ?? client);
         services.AddTransient<AccountEmailSender>();
         return services.BuildServiceProvider();

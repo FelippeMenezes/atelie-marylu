@@ -4,16 +4,13 @@
 @using Microsoft.AspNetCore.Identity
 @using AtelieMarylu.Infrastructure.Data
 @using AtelieMarylu.Web.Validation
-@using AtelieMarylu.Domain.Security
+@using AtelieMarylu.Web.Services
 
-@inject UserManager<ApplicationUser> UserManager
-@inject IUserStore<ApplicationUser> UserStore
 @inject SignInManager<ApplicationUser> SignInManager
-@inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 @inject AtelieMarylu.Infrastructure.Integrations.Turnstile Turnstile
-@inject AtelieMarylu.Web.Services.AccountEmailSender AccountEmails
+@inject AtelieMarylu.Web.Services.AccountRegistrationService Registration
 @inject AccountEmailLinks Links
 
 <PageTitle>@L["Create account · Ateliê Marylu"]</PageTitle>
@@ -74,7 +71,8 @@
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
-    private string? Message => identityErrors is null ? null : $"Erro: {string.Join(", ", identityErrors.Select(error => error.Description))}";
+    // O prefixo "Error:" também é traduzido: o StatusMessage usa ele para pintar o aviso de vermelho
+    private string? Message => identityErrors is null ? null : L["Error: {0}", string.Join(", ", identityErrors.Select(error => error.Description))].Value;
 
     protected override void OnInitialized()
     {
@@ -96,22 +94,14 @@
         user.FullName = Input.FullName.Trim();
         user.PhoneNumber = string.IsNullOrWhiteSpace(Input.Phone) ? null : Input.Phone.Trim();
 
-        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-        var emailStore = GetEmailStore();
-        await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
-        var result = await UserManager.CreateAsync(user, Input.Password);
-
+        // A regra do e-mail já cadastrado (mensagem neutra + aviso ao dono) fica no AccountRegistrationService
+        var result = await Registration.RegisterAsync(user, Input.Email, Input.Password,
+            new RegistrationLinks(Links.StoreHome(), Links.ForgotPassword()));
         if (!result.Succeeded)
         {
             identityErrors = result.Errors;
             return;
         }
-
-        Logger.LogInformation("User created a new account with password.");
-        await UserManager.AddToRoleAsync(user, AppRoles.Customer);
-
-        // Só boas-vindas, sem link de confirmação: a loja não exige confirmar o e-mail (AML-0027)
-        await AccountEmails.TrySendWelcomeAsync(user, Input.Email, Links.StoreHome());
 
         await SignInManager.SignInAsync(user, isPersistent: false);
         RedirectManager.RedirectTo(ReturnUrl);
@@ -133,15 +123,6 @@
             throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
                 $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.", ex);
         }
-    }
-
-    private IUserEmailStore<ApplicationUser> GetEmailStore()
-    {
-        if (!UserManager.SupportsUserEmail)
-        {
-            throw new NotSupportedException("The default UI requires a user store with email support.");
-        }
-        return (IUserEmailStore<ApplicationUser>)UserStore;
     }
 
     private sealed class InputModel

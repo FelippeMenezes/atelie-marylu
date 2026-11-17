@@ -1,6 +1,9 @@
 @if (!string.IsNullOrEmpty(DisplayMessage))
 {
-    var statusMessageClass = DisplayMessage.StartsWith("Erro") ? "danger" : "success";
+    // Mensagem de erro = começa com a tradução de "Error" (Erro, Error). O "Error" fixo cobre mensagens
+    // ainda sem tradução (ex.: IdentityRedirectManager). Antes era "Erro" fixo, que só valia em português.
+    var isError = DisplayMessage.StartsWith(L["Error"], StringComparison.Ordinal) || DisplayMessage.StartsWith("Error", StringComparison.Ordinal);
+    var statusMessageClass = isError ? "danger" : "success";
     <div class="alert alert-@statusMessageClass" role="alert">
         @DisplayMessage
     </div>
