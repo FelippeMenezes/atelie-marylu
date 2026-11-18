@@ -9,6 +9,7 @@
 @inject OrderEvents Events
 @inject IWebHostEnvironment Environment
 @inject ILogger<MyOrder> Logger
+@inject Microsoft.Extensions.Options.IOptions<ShopOptions> Store
 
 <PageTitle>@L["Order {0} · Ateliê Marylu", Code]</PageTitle>
 
@@ -90,6 +91,16 @@ else if (order is not null)
                 </div>
             }
         </section>
+    }
+
+    @* Convite de avaliação no Google: só depois que a peça saiu (é quando a cliente tem algo a avaliar).
+       Avaliações pesam muito na busca local ("ateliê de costura perto de mim"). *@
+    @if ((order.Status is OrderStatus.Shipped or OrderStatus.Delivered) && Store.Value.HasReviewLink)
+    {
+        <div class="alert alert-light d-flex flex-wrap align-items-center gap-2">
+            <span>@L["Liked your piece? A review on Google helps our studio a lot."]</span>
+            <a class="btn btn-outline-primary btn-sm" href="@Store.Value.GoogleReviewUrl" target="_blank" rel="noopener noreferrer">@L["Review us on Google"]</a>
+        </div>
     }
 
     <OrderSummary Order="order" />

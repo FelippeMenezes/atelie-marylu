@@ -274,6 +274,7 @@
   <data name="Last units" xml:space="preserve"><value>Últimas unidades</value></data>
   <data name="Last {0} unit(s)" xml:space="preserve"><value>Últimas {0} unidade(s)</value></data>
   <data name="Length (cm)" xml:space="preserve"><value>Comprimento (cm)</value></data>
+  <data name="Liked your piece? A review on Google helps our studio a lot." xml:space="preserve"><value>Gostou da sua peça? Uma avaliação no Google ajuda muito o nosso ateliê.</value></data>
   <data name="Limit of {0} photos." xml:space="preserve"><value>Limite de {0} fotos.</value></data>
   <data name="Loading..." xml:space="preserve"><value>Carregando...</value></data>
   <data name="Looking up address..." xml:space="preserve"><value>Buscando endereço...</value></data>
@@ -409,6 +410,7 @@
   <data name="Remove this person's admin access before deleting the account." xml:space="preserve"><value>Tire o acesso ao painel desta pessoa antes de excluir a conta.</value></data>
   <data name="Reset password" xml:space="preserve"><value>Redefinir senha</value></data>
   <data name="Resume" xml:space="preserve"><value>Retomar</value></data>
+  <data name="Review us on Google" xml:space="preserve"><value>Avaliar no Google</value></data>
   <data name="Save" xml:space="preserve"><value>Salvar</value></data>
   <data name="Save access" xml:space="preserve"><value>Salvar acessos</value></data>
   <data name="Save delivery" xml:space="preserve"><value>Salvar entrega</value></data>

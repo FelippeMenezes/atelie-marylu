@@ -3,6 +3,7 @@ using AtelieMarylu.Domain.Security;
 using AtelieMarylu.Infrastructure.Data;
 using AtelieMarylu.Web.Components.Account;
 using AtelieMarylu.Web.Configuration;
+using AtelieMarylu.Web.Endpoints;
 using AtelieMarylu.Web.Localization;
 using AtelieMarylu.Web.Security;
 using AtelieMarylu.Web.Services;
@@ -55,6 +56,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpContextAccessor();
         services.AddDatabaseDeveloperPageExceptionFilter();
         services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>("database");
+        services.AddSeoOutputCache();
 
         return services;
     }

@@ -44,6 +44,11 @@ public static class WebApplicationExtensions
         app.UseStaticFiles();
         app.UseAuthentication();
         app.UseAuthorization();
+        // Só guarda as respostas dos endpoints marcados com CacheOutput (robots, sitemap e feed).
+        // Precisa vir DEPOIS do login: a política padrão nunca guarda nem serve cache para quem está logado,
+        // e antes do UseAuthentication todo mundo pareceria anônimo. Assim, se um dia uma tela de cliente
+        // for marcada com CacheOutput por engano, a página de uma pessoa não aparece para outra.
+        app.UseOutputCache();
         app.UseMandatoryPasswordChange();
         app.UseAntiforgery();
 

@@ -1,6 +1,7 @@
 @page "/product/{Id:int}"
 @page "/product/{Id:int}/{Slug}"
 @using System.Text.Json
+@using AtelieMarylu.Web.Seo
 @inject ProductService ProductService
 @inject NavigationManager Navigation
 
@@ -15,7 +16,8 @@ else
 {
     var productUrl = $"{Navigation.BaseUri}{product.Url}";
     var image = product.Cover is { } cover ? $"{Navigation.BaseUri.TrimEnd('/')}{cover.Url}" : $"{Navigation.BaseUri}img/logo.png";
-    var summary = product.Description.Length > 160 ? product.Description[..157] + "..." : product.Description;
+    @* Até 160 caracteres (o que o Google mostra), sem partir um emoji ao meio: com [..157] a prévia podia sair com "�" *@
+    var summary = SafeText.Truncate(product.Description, 160);
 
     <PageTitle>@L["{0} · Ateliê Marylu", product.Name]</PageTitle>
     <HeadContent>
