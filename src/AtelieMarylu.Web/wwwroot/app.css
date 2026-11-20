@@ -497,3 +497,10 @@ img.product-photo {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* AML-0036: frete indisponível (PAC/SEDEX) aparece com a cor normal, sem o apagado
+   que o Bootstrap põe no radio desabilitado; quem avisa é a etiqueta "Ainda não disponível" */
+.shipping-unavailable .form-check-input:disabled,
+.shipping-unavailable .form-check-input:disabled ~ .form-check-label {
+    opacity: 1;
+}

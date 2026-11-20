@@ -573,4 +573,6 @@
   <data name="← Back to customers" xml:space="preserve"><value>← Voltar para clientes</value></data>
   <data name="← Back to my orders" xml:space="preserve"><value>← Voltar para meus pedidos</value></data>
   <data name="← Back to orders" xml:space="preserve"><value>← Voltar para pedidos</value></data>
+  <data name="At the moment, delivery by mail is not yet available. Please select pickup at the studio. Once your order is placed, we will contact you to arrange the delivery details." xml:space="preserve"><value>No momento, o envio pelos Correios ainda não está disponível. Selecione a opção de retirada no ateliê. Após a finalização do pedido, entraremos em contato para combinar os detalhes da entrega.</value></data>
+  <data name="Not available yet" xml:space="preserve"><value>Ainda não disponível</value></data>
 </root>
