@@ -44,14 +44,21 @@ else
                     }
                     else
                     {
+                        @if (shippingOptions.Any(o => !IsSelectable(o)))
+                        {
+                            <div id="aviso-frete" class="alert alert-info small py-2" role="note">@L["At the moment, delivery by mail is not yet available. Please select pickup at the studio. Once your order is placed, we will contact you to arrange the delivery details."]</div>
+                        }
                         <InputRadioGroup @bind-Value="shippingCode">
                             @foreach (var o in shippingOptions)
                             {
-                                <div class="form-check">
-                                    <InputRadio class="form-check-input" id="@($"frete-{o.Code}")" Value="o.Code" />
+                                var available = IsSelectable(o);
+                                <div class="form-check @(available ? "" : "shipping-unavailable")">
+                                    <InputRadio class="form-check-input" id="@($"frete-{o.Code}")" Value="o.Code"
+                                                disabled="@(!available)" aria-describedby="@(available ? null : "aviso-frete")" />
                                     <label class="form-check-label" for="@($"frete-{o.Code}")">
                                         @L[o.Name]: <strong>@(o.Amount == 0 ? L["Free"] : o.Amount.ToBrl())</strong>
                                         @if (o.DeliveryDays is int days) { <span class="text-secondary"> @L["(up to {0} business days)", days]</span> }
+                                        @if (!available) { <span class="tag ms-1">@L["Not available yet"]</span> }
                                     </label>
                                 </div>
                             }
@@ -173,6 +180,10 @@ else
         StateHasChanged();
     }
 
+    // AML-0036 (temporário): só a retirada no ateliê pode ser escolhida. PAC e SEDEX aparecem
+    // desabilitados, com aviso, até decidirmos a forma de entrega. Para liberar, apague este método e seus usos.
+    private static bool IsSelectable(ShippingOption option) => option.Code == "retirada";
+
     private void ClearShipping()
     {
         shippingOptions = null;
@@ -191,7 +202,9 @@ else
         try
         {
             shippingOptions = await Orders.QuoteShippingAsync(postalCode, Cart.Current.Items);
-            shippingCode = shippingOptions.FirstOrDefault(o => o.Amount > 0)?.Code ?? shippingOptions.FirstOrDefault()?.Code;
+            // Pré-seleciona a primeira opção paga que estiver habilitada (com só retirada, é ela)
+            var available = shippingOptions.Where(IsSelectable).ToList();
+            shippingCode = available.FirstOrDefault(o => o.Amount > 0)?.Code ?? available.FirstOrDefault()?.Code;
         }
         catch (OrderRuleException ex)
         {
