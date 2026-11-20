@@ -247,4 +247,98 @@ public class OrderTests
     {
         Assert.Equal(expected, SlugGenerator.Create(name));
     }
+
+    [Fact]
+    public void Payment_that_did_not_open_is_marked_as_failed()
+    {
+        var order = NewOrder();
+        var payment = order.StartPayment(PaymentMethod.Pix, "simulado");
+
+        payment.MarkStartFailed();
+
+        Assert.Equal(PaymentStatus.Failed, payment.Status);
+        Assert.Equal(OrderStatus.AwaitingPayment, order.Status);
+    }
+
+    [Fact]
+    public void Marking_an_approved_payment_as_failed_changes_nothing()
+    {
+        // Um status final nunca é sobrescrito: o dinheiro entrou
+        var order = NewOrder();
+        var payment = order.StartPayment(PaymentMethod.Pix, "simulado");
+        order.ConfirmPayment(payment);
+
+        payment.MarkStartFailed();
+
+        Assert.Equal(PaymentStatus.Approved, payment.Status);
+        Assert.Equal(OrderStatus.Paid, order.Status);
+    }
+
+    [Fact]
+    public void Marking_a_cancelled_payment_as_failed_changes_nothing()
+    {
+        // Ex.: outra aba trocou de forma de pagamento enquanto o provedor falhava
+        var order = NewOrder();
+        var first = order.StartPayment(PaymentMethod.Pix, "simulado");
+        order.StartPayment(PaymentMethod.CreditCard, "simulado");
+
+        first.MarkStartFailed();
+
+        Assert.Equal(PaymentStatus.Cancelled, first.Status);
+    }
+
+    [Fact]
+    public void Payment_already_open_at_the_provider_cannot_be_marked_as_failed()
+    {
+        // Esconderia um link que a cliente ainda pode pagar: é erro de programação, não regra de negócio
+        var order = NewOrder();
+        var payment = order.StartPayment(PaymentMethod.CreditCard, "simulado");
+        payment.RecordStart("ref-1", "https://pagamento.pagseguro.uol.com.br/pagamento?code=1", null, "CHEC_1");
+
+        Assert.Throws<InvalidOperationException>(payment.MarkStartFailed);
+        Assert.Equal(PaymentStatus.Pending, payment.Status);
+    }
+
+    [Fact]
+    public void Payment_waiting_for_the_provider_is_opening_not_failed()
+    {
+        // A chamada ao provedor pode estar em andamento (ex.: em outra aba): ainda não é hora de "Tentar de novo"
+        var payment = NewOrder().StartPayment(PaymentMethod.Pix, "simulado");
+        var now = payment.CreatedAt.AddSeconds(30);
+
+        Assert.True(payment.IsOpening(now));
+        Assert.False(payment.DidNotOpen(now));
+    }
+
+    [Fact]
+    public void Payment_without_provider_answer_after_the_window_did_not_open()
+    {
+        // Ex.: a conexão caiu no meio da chamada e a tentativa ficou pendente sem link
+        var payment = NewOrder().StartPayment(PaymentMethod.Pix, "simulado");
+        var now = payment.CreatedAt + Payment.OpeningWindow + TimeSpan.FromSeconds(1);
+
+        Assert.False(payment.IsOpening(now));
+        Assert.True(payment.DidNotOpen(now));
+    }
+
+    [Fact]
+    public void Failed_payment_did_not_open_right_away()
+    {
+        var payment = NewOrder().StartPayment(PaymentMethod.Pix, "simulado");
+        payment.MarkStartFailed();
+
+        Assert.True(payment.DidNotOpen(payment.CreatedAt));
+        Assert.False(payment.IsOpening(payment.CreatedAt));
+    }
+
+    [Fact]
+    public void Payment_open_at_the_provider_is_neither_opening_nor_failed()
+    {
+        var payment = NewOrder().StartPayment(PaymentMethod.Pix, "simulado");
+        payment.RecordStart("ref-1", null, "00020126PIX", null);
+        var later = payment.CreatedAt.AddHours(1);
+
+        Assert.False(payment.IsOpening(payment.CreatedAt));
+        Assert.False(payment.DidNotOpen(later));
+    }
 }

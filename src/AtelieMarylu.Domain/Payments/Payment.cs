@@ -33,6 +33,24 @@ public class Payment
     public string? PaymentUrl { get; private set; }
     public string? PixCopyPaste { get; private set; }
 
+    // O provedor devolveu a cobrança (link, código PIX ou referência). Sem isso, a cliente não tem como pagar.
+    public bool HasStarted => ExternalId is not null;
+
+    // Quanto tempo uma tentativa pode ficar "abrindo" (pendente, ainda sem resposta do provedor) antes de contar
+    // como "não abriu". Bem acima do limite das chamadas ao provedor (10 s): antes disso, a chamada pode estar em
+    // andamento, e oferecer "Tentar de novo" cancelaria uma cobrança que ainda vai abrir.
+    public static readonly TimeSpan OpeningWindow = TimeSpan.FromMinutes(1);
+
+    // Ainda esperando o provedor devolver a cobrança
+    public bool IsOpening(DateTime utcNow) =>
+        Status == PaymentStatus.Pending && !HasStarted && utcNow - CreatedAt <= OpeningWindow;
+
+    // Não abriu: o provedor falhou (Failed) ou a tentativa ficou pendente sem resposta além do prazo
+    // (ex.: a conexão caiu no meio da chamada, ou tentativas de antes do status Failed existir)
+    public bool DidNotOpen(DateTime utcNow) =>
+        Status == PaymentStatus.Failed
+        || (Status == PaymentStatus.Pending && !HasStarted && utcNow - CreatedAt > OpeningWindow);
+
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; private set; }
 
@@ -43,6 +61,7 @@ public class Payment
         PaymentStatus.Rejected => "Rejected",
         PaymentStatus.Cancelled => "Cancelled",
         PaymentStatus.Refunded => "Refunded",
+        PaymentStatus.Failed => "Did not open",
         _ => status.ToString(),
     };
 
@@ -52,6 +71,23 @@ public class Payment
         ProviderReference = providerReference;
         PaymentUrl = paymentUrl;
         PixCopyPaste = pixCopyPaste;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    // Chamado quando o provedor falha ao abrir a cobrança (PaymentGatewayException em StartAsync).
+    // Tira a tentativa de "Pendente" para a tela da cliente mostrar "o pagamento não abriu" e "Tentar de novo".
+    public void MarkStartFailed()
+    {
+        // Já saiu de Pendente (outra ação cancelou, ou foi aprovado): nada a fazer.
+        // Idempotente, e nunca sobrescreve um status final como Approved.
+        if (Status != PaymentStatus.Pending) return;
+
+        // Pendente COM cobrança aberta: marcar como falha esconderia um link que a cliente pode pagar.
+        // Só acontece por erro de programação, então falha na hora em vez de gravar um dado errado.
+        if (HasStarted)
+            throw new InvalidOperationException($"O pagamento {Id} já abriu no provedor e não pode ser marcado como falha.");
+
+        Status = PaymentStatus.Failed;
         UpdatedAt = DateTime.UtcNow;
     }
 

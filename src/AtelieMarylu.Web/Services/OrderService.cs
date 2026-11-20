@@ -149,9 +149,36 @@ public class OrderService(
         var payment = order.StartPayment(method, gateway.Name);
         await SaveAsync(db, ct);
 
-        var start = await gateway.StartAsync(new ChargeRequest(
-            order.Id, payment.Id, order.Code, payment.Amount, method, customer.Email ?? "", customer.FullName,
-            $"Pedido {order.Code} - Ateliê Marylu", order.PayBy, store.Value.InterestFreeInstallments), ct);
+        PaymentStart start;
+        try
+        {
+            start = await gateway.StartAsync(new ChargeRequest(
+                order.Id, payment.Id, order.Code, payment.Amount, method, customer.Email ?? "", customer.FullName,
+                $"Pedido {order.Code} - Ateliê Marylu", order.PayBy, store.Value.InterestFreeInstallments), ct);
+        }
+        catch (PaymentGatewayException)
+        {
+            // A cobrança não abriu (o provedor recusou, caiu ou demorou demais). Sem isso, a tentativa ficaria
+            // "Pendente" para sempre, sem link: a tela diria "pagamento iniciado" e esconderia o botão dessa forma.
+            // Marcada como falha, a tela mostra "o pagamento não abriu" com "Tentar de novo".
+            // Se o provedor chegou a criar o checkout e só a resposta se perdeu, ninguém recebeu o link, então ele
+            // não pode ser pago, e vence sozinho no prazo do pedido. Nada muda nas chamadas ao provedor.
+            // CancellationToken.None: o registro da falha precisa ser gravado mesmo se quem chamou desistir.
+            payment.MarkStartFailed();
+            try
+            {
+                await SaveAsync(db, CancellationToken.None);
+            }
+            catch (Exception saveError) when (saveError is DbUpdateException or NpgsqlException or OrderRuleException)
+            {
+                // Não deixa uma falha do banco esconder a do provedor (o motivo real). A tentativa fica pendente
+                // sem link, e a tela a mostra como "não abriu" depois de Payment.OpeningWindow.
+                logger.LogError(saveError, "Não foi possível gravar a falha do pagamento {PagamentoId} do pedido {PedidoId}.", payment.Id, order.Id);
+            }
+            logger.LogWarning("O pagamento {PagamentoId} do pedido {PedidoId} não abriu no provedor.", payment.Id, order.Id);
+            events.Notify(order.Id);
+            throw;
+        }
         payment.RecordStart(start.ExternalId, start.PaymentUrl, start.PixCopyPaste, start.ProviderReference);
         await SaveAsync(db, ct);
         events.Notify(order.Id);

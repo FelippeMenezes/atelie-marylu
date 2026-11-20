@@ -23,6 +23,9 @@ public class RecordingPaymentGateway : IPaymentGateway
     public List<string> Cancelled { get; } = [];
     public bool FailOnCancel { get; set; }
 
+    // Simula o provedor recusando ou sem responder ao abrir a cobrança
+    public bool FailOnStart { get; set; }
+
     // Conciliação: o que o "provedor" responde quando a loja pergunta (por ExternalId)
     public Dictionary<string, PaymentNotification> StatusInProvider { get; } = [];
     public bool FailOnQuery { get; set; }
@@ -40,6 +43,7 @@ public class RecordingPaymentGateway : IPaymentGateway
 
     public Task<PaymentStart> StartAsync(ChargeRequest charge, CancellationToken ct = default)
     {
+        if (FailOnStart) throw new PaymentGatewayException("provedor fora do ar");
         var n = Interlocked.Increment(ref next);
         return Task.FromResult(new PaymentStart($"ref-{charge.PaymentId}", $"https://pagamento.pagseguro.uol.com.br/pagamento?code={n}", null, $"CHEC_{n}"));
     }
@@ -148,6 +152,43 @@ public class PaymentLifecycleTests(TestDatabase database) : IClassFixture<TestDa
         var only = Assert.Single(payments);
         Assert.Equal(PaymentStatus.Pending, only.Status);
         Assert.Equal(pix.Id, only.Id);
+    }
+
+    [FactWithDatabase]
+    public async Task Payment_that_does_not_open_is_marked_as_failed()
+    {
+        // Visto em produção (19/11/2026): sem isto, a tentativa ficava "Pendente" sem link para sempre
+        var (service, order, _) = await NewOrderAsync();
+        gateway.FailOnStart = true;
+
+        await Assert.ThrowsAsync<PaymentGatewayException>(() => service.StartPaymentAsync(order.Id, PaymentMethod.Pix));
+
+        await using var db = database.CreateDbContext();
+        var payment = await db.Payments.SingleAsync(p => p.OrderId == order.Id);
+        Assert.Equal(PaymentStatus.Failed, payment.Status);
+        Assert.False(payment.HasStarted);
+        Assert.Null(payment.PaymentUrl);
+        // O pedido continua esperando pagamento, com o estoque reservado
+        Assert.Equal(OrderStatus.AwaitingPayment, (await db.Orders.SingleAsync(o => o.Id == order.Id)).Status);
+    }
+
+    [FactWithDatabase]
+    public async Task Trying_again_after_a_failure_opens_a_new_payment()
+    {
+        var (service, order, _) = await NewOrderAsync();
+        gateway.FailOnStart = true;
+        await Assert.ThrowsAsync<PaymentGatewayException>(() => service.StartPaymentAsync(order.Id, PaymentMethod.Pix));
+
+        gateway.FailOnStart = false;
+        var retry = await service.StartPaymentAsync(order.Id, PaymentMethod.Pix);
+
+        await using var db = database.CreateDbContext();
+        var payments = await db.Payments.Where(p => p.OrderId == order.Id).OrderBy(p => p.Id).ToListAsync();
+        Assert.Equal([PaymentStatus.Failed, PaymentStatus.Pending], payments.Select(p => p.Status));
+        Assert.Equal(retry.Id, payments[1].Id);
+        Assert.NotNull(payments[1].PaymentUrl);
+        // A tentativa que não abriu não tinha cobrança no provedor: não há o que fechar
+        Assert.Empty(gateway.Cancelled);
     }
 
     [FactWithDatabase]
