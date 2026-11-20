@@ -17,10 +17,17 @@
   <data name=": full access, including users and groups" xml:space="preserve"><value>: acceso total, incluidos usuarios y grupos</value></data>
   <data name='A group brings permissions together. When you add an employee to a group, they get all of them at once (e.g. "Shipping" with view and edit orders).' xml:space="preserve"><value>Un grupo reúne permisos. Al poner a un empleado en el grupo, recibe todos de una vez (ej.: "Expedición" con ver y editar pedidos).</value></data>
   <data name="A group with that name already exists." xml:space="preserve"><value>Ya existe un grupo con ese nombre.</value></data>
+  <data name="Did not open" xml:space="preserve"><value>No se abrió</value></data>
   <data name="If it was not you, you can ignore this email: nothing was changed in your account and your password is still the same." xml:space="preserve"><value>Si no fuiste tú, puedes ignorar este correo: no se cambió nada en tu cuenta y tu contraseña sigue siendo la misma.</value></data>
   <data name="If it was you, just sign in. If you do not remember your password, use the button below to create a new one." xml:space="preserve"><value>Si fuiste tú, solo inicia sesión. Si no recuerdas tu contraseña, usa el botón de abajo para crear una nueva.</value></data>
+  <data name="Nothing was charged. Try again or choose another way to pay." xml:space="preserve"><value>No se cobró nada. Inténtalo de nuevo o elige otra forma de pago.</value></data>
+  <data name="Opening the payment… This page will update by itself." xml:space="preserve"><value>Abriendo el pago… Esta página se actualizará sola.</value></data>
+  <data name="Payment started ({0}). As soon as the provider confirms, this page will update by itself." xml:space="preserve"><value>Pago iniciado ({0}). En cuanto el proveedor confirme, esta página se actualizará sola.</value></data>
   <data name="Someone tried to create a new account at Ateliê Marylu with this email, but you already have an account." xml:space="preserve"><value>Alguien intentó crear una nueva cuenta en Ateliê Marylu con este correo, pero ya tienes una cuenta.</value></data>
   <data name="Someone tried to create an account with your email" xml:space="preserve"><value>Intentaron crear una cuenta con tu correo</value></data>
+  <data name="The payment did not open." xml:space="preserve"><value>El pago no se abrió.</value></data>
+  <data name="Try card again ({0})" xml:space="preserve"><value>Intentar con tarjeta de nuevo ({0})</value></data>
+  <data name="Try PIX again ({0})" xml:space="preserve"><value>Intentar con PIX de nuevo ({0})</value></data>
   <data name="We could not create an account with this email. If you already have an account, sign in or use &quot;Forgot your password?&quot;." xml:space="preserve"><value>No fue posible crear una cuenta con este correo. Si ya tienes una cuenta, inicia sesión o usa "¿Olvidaste tu contraseña?".</value></data>
   <data name="a password" xml:space="preserve"><value>una contraseña</value></data>
   <data name="Access" xml:space="preserve"><value>Accesos</value></data>
@@ -85,7 +92,6 @@
   <data name="Cancelled" xml:space="preserve"><value>Cancelado</value></data>
   <data name="Card" xml:space="preserve"><value>Tarjeta</value></data>
   <data name="Card details never pass through our site: payment happens in the provider's secure environment." xml:space="preserve"><value>Los datos de la tarjeta nunca pasan por nuestro sitio: el pago se realiza en el entorno seguro del proveedor.</value></data>
-  <data name="Card payment started ({0}). As soon as the provider confirms, this page will update by itself." xml:space="preserve"><value>Pago con tarjeta iniciado ({0}). En cuanto el proveedor confirme, esta página se actualizará sola.</value></data>
   <data name="Cart" xml:space="preserve"><value>Carrito</value></data>
   <data name="Cart · Ateliê Marylu" xml:space="preserve"><value>Carrito · Ateliê Marylu</value></data>
   <data name="Change email" xml:space="preserve"><value>Cambiar correo</value></data>

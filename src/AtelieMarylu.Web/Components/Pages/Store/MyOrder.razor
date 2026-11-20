@@ -10,6 +10,7 @@
 @inject IWebHostEnvironment Environment
 @inject ILogger<MyOrder> Logger
 @inject Microsoft.Extensions.Options.IOptions<ShopOptions> Store
+@inject TimeProvider Clock
 
 <PageTitle>@L["Order {0} · Ateliê Marylu", Code]</PageTitle>
 
@@ -46,7 +47,7 @@ else if (order is not null)
             <h2 class="h5">@L["Payment"]</h2>
             <p class="small">@L["Pay by"] <strong>@order.PayBy.FormatBrasilia()</strong>@L[". After that, the order is cancelled automatically."]</p>
 
-            @if (PendingPayment is { } paymentEntry)
+            @if (OpenPayment is { } paymentEntry)
             {
                 @if (paymentEntry.Method == PaymentMethod.Pix && paymentEntry.PixCopyPaste is not null)
                 {
@@ -60,8 +61,25 @@ else if (order is not null)
                 }
                 else
                 {
-                    <p>@L["Card payment started ({0}). As soon as the provider confirms, this page will update by itself.", paymentEntry.Amount.ToBrl()]</p>
+                    <p>@L["Payment started ({0}). As soon as the provider confirms, this page will update by itself.", paymentEntry.Amount.ToBrl()]</p>
                 }
+            }
+            else if (OpeningPayment is not null)
+            {
+                @* A chamada ao provedor ainda está em andamento (ex.: em outra aba): a página se atualiza quando ela terminar *@
+                <p role="status">@L["Opening the payment… This page will update by itself."]</p>
+            }
+            else if (NotOpenedAttempt is { } failed)
+            {
+                @* A última tentativa não abriu no provedor: diz isso com clareza e oferece repetir a mesma forma *@
+                <div class="alert alert-warning" role="alert">
+                    <strong>@L["The payment did not open."]</strong> @L["Nothing was charged. Try again or choose another way to pay."]
+                </div>
+                <button class="btn btn-primary" @onclick="() => NewPaymentAsync(failed.Method)" disabled="@processing">
+                    @(failed.Method == PaymentMethod.Pix
+                        ? L["Try PIX again ({0})", order.AmountFor(PaymentMethod.Pix).ToBrl()]
+                        : L["Try card again ({0})", order.AmountFor(PaymentMethod.CreditCard).ToBrl()])
+                </button>
             }
             else
             {
@@ -69,13 +87,13 @@ else if (order is not null)
             }
 
             <div class="d-flex gap-2 flex-wrap mt-3">
-                @if (PendingPayment?.Method != PaymentMethod.Pix)
+                @if (ShowsMethodButton(PaymentMethod.Pix))
                 {
                     <button class="btn btn-outline-primary btn-sm" @onclick="() => NewPaymentAsync(PaymentMethod.Pix)" disabled="@processing">
                         @L["Pay with PIX ({0})", order.AmountFor(PaymentMethod.Pix).ToBrl()]
                     </button>
                 }
-                @if (PendingPayment?.Method != PaymentMethod.CreditCard)
+                @if (ShowsMethodButton(PaymentMethod.CreditCard))
                 {
                     <button class="btn btn-outline-primary btn-sm" @onclick="() => NewPaymentAsync(PaymentMethod.CreditCard)" disabled="@processing">
                         @L["Pay with card ({0})", order.AmountFor(PaymentMethod.CreditCard).ToBrl()]
@@ -83,7 +101,7 @@ else if (order is not null)
                 }
             </div>
 
-            @if (Environment.IsDevelopment() && PendingPayment is { Provider: SimulatedPaymentGateway.ProviderName } simulated)
+            @if (Environment.IsDevelopment() && OpenPayment is { Provider: SimulatedPaymentGateway.ProviderName } simulated)
             {
                 <div class="alert alert-warning mt-3 mb-0">
                     <strong>@L["Development environment:"]</strong> @L["payment is simulated."]
@@ -117,10 +135,23 @@ else if (order is not null)
     private bool loaded, processing, isError;
     private string? message;
 
-    private Payment? PendingPayment => order?.Payments
-        .Where(p => p.Status == PaymentStatus.Pending)
-        .OrderByDescending(p => p.CreatedAt)
-        .FirstOrDefault();
+    // A última tentativa de pagamento (o Id cresce a cada uma; mais confiável que comparar horários)
+    private Payment? LatestPayment => order?.Payments.MaxBy(p => p.Id);
+
+    private DateTime Now => Clock.GetUtcNow().UtcDateTime;
+
+    // Cobrança aberta no provedor: tem link ou código PIX para a cliente pagar
+    private Payment? OpenPayment => LatestPayment is { Status: PaymentStatus.Pending, HasStarted: true } p ? p : null;
+
+    // A chamada ao provedor ainda pode estar em andamento: nada de "Tentar de novo" para essa forma
+    private Payment? OpeningPayment => LatestPayment is { } p && p.IsOpening(Now) ? p : null;
+
+    // A última tentativa não chegou a abrir (regra em Payment.DidNotOpen)
+    private Payment? NotOpenedAttempt => LatestPayment is { } p && p.DidNotOpen(Now) ? p : null;
+
+    // Esconde o botão da forma que já está na tela: aberta, abrindo ou com o próprio "Tentar de novo"
+    private bool ShowsMethodButton(PaymentMethod method) =>
+        (OpenPayment ?? OpeningPayment ?? NotOpenedAttempt)?.Method != method;
 
     // Quando o webhook confirma o pagamento, a página se atualiza sem o cliente recarregar
     protected override void OnInitialized() => Events.OrderChanged += OnOrderChanged;
@@ -160,6 +191,7 @@ else if (order is not null)
 
     private async Task RunActionAsync(Func<Task> action, string? successMessage)
     {
+        var gatewayFailed = false;
         processing = true;
         message = null;
         try
@@ -179,6 +211,7 @@ else if (order is not null)
         {
             Logger.LogError(ex, "Falha no provedor de pagamento no pedido {PedidoId}", order?.Id);
             (message, isError) = (L["Could not start the payment right now. Try again in a few minutes."], true);
+            gatewayFailed = true;
         }
         catch (InvalidOperationException ex)
         {
@@ -191,6 +224,9 @@ else if (order is not null)
             processing = false;
         }
         await LoadAsync();
+        // A caixa "o pagamento não abriu" já explica a falha: a mensagem de cima repetiria o mesmo aviso.
+        // Ela continua quando a falha foi outra (ex.: não deu para fechar a cobrança anterior no provedor).
+        if (gatewayFailed && NotOpenedAttempt is not null) message = null;
     }
 
     public void Dispose() => Events.OrderChanged -= OnOrderChanged;
