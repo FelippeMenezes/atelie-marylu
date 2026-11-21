@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using AtelieMarylu.Domain.Shipping;
 using Microsoft.Extensions.Logging;
@@ -15,7 +16,7 @@ public class PostalCodeLookup(HttpClient http, ILogger<PostalCodeLookup> logger)
         try
         {
             var response = await http.GetFromJsonAsync<ViaCepResponse>($"ws/{normalized}/json/", ct);
-            if (response is null || response.IsError == true || string.IsNullOrEmpty(response.City)) return null;
+            if (response is null || response.IsNotFound || string.IsNullOrEmpty(response.City)) return null;
             return new PostalCodeAddress(response.Street ?? "", response.District ?? "", response.City, response.State ?? "");
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
@@ -32,5 +33,11 @@ public class PostalCodeLookup(HttpClient http, ILogger<PostalCodeLookup> logger)
         [property: JsonPropertyName("bairro")] string? District,
         [property: JsonPropertyName("localidade")] string? City,
         [property: JsonPropertyName("uf")] string? State,
-        [property: JsonPropertyName("erro")] bool? IsError);
+        [property: JsonPropertyName("erro")] JsonElement? Error)
+    {
+        // CEP inexistente: o ViaCEP manda "erro": "true" (texto, visto em 21/11/2026); versões antigas mandavam true.
+        // Aceita os dois, para um CEP inexistente não ser confundido com o ViaCEP fora do ar.
+        public bool IsNotFound => Error is { } e &&
+            (e.ValueKind == JsonValueKind.True || (e.ValueKind == JsonValueKind.String && e.GetString() == "true"));
+    }
 }

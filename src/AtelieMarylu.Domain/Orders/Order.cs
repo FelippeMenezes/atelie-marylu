@@ -67,6 +67,8 @@ public class Order
     public bool CanChangeItems => Status == OrderStatus.AwaitingPayment;
     public bool CanCancel => Status is OrderStatus.AwaitingPayment or OrderStatus.Paid or OrderStatus.Preparing;
     public bool CanChangeDelivery => Status is not (OrderStatus.Shipped or OrderStatus.Delivered or OrderStatus.Cancelled);
+    // Pago e ainda não enviado. A mesma regra decide o MarkShipped e o que o painel manda a Marylu fazer com o pacote
+    public bool CanShip => Status is OrderStatus.Paid or OrderStatus.Preparing;
     public bool IsPaymentOverdue(DateTime utcNow) => Status == OrderStatus.AwaitingPayment && utcNow > PayBy;
 
     public void SetShipping(ShippingOption shipping)
@@ -187,7 +189,7 @@ public class Order
 
     public void MarkShipped(string? trackingCode)
     {
-        if (Status is not (OrderStatus.Paid or OrderStatus.Preparing))
+        if (!CanShip)
             throw new OrderRuleException("Only paid or in-preparation orders can be shipped.");
         TrackingCode = string.IsNullOrWhiteSpace(trackingCode) ? null : trackingCode.Trim();
         Status = OrderStatus.Shipped;

@@ -235,6 +235,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AccountRecoveryService>();
         services.AddScoped<AuditService>();
         services.AddScoped<CartService>();
+        services.AddScoped<LastPostalCodeService>();
         services.AddScoped<OrderService>();
         services.AddScoped<ProductService>();
         services.AddScoped<CustomerService>();

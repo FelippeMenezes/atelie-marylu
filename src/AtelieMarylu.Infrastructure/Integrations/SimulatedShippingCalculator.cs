@@ -2,10 +2,11 @@ using AtelieMarylu.Domain.Shipping;
 
 namespace AtelieMarylu.Infrastructure.Integrations;
 
-// Tabela fixa só para o MVP. Será trocada pela cotação real do Melhor Envio.
+// Tabela fixa, só para desenvolvimento e testes (sem token do Melhor Envio). Fora de Development nunca é usada:
+// sem token, a produção oferece só a retirada no ateliê, para não cobrar um frete inventado.
 public class SimulatedShippingCalculator : IShippingCalculator
 {
-    public const string PickupCode = "retirada";
+    public const string PickupCode = StudioPickupCalculator.Code;
 
     public Task<IReadOnlyList<ShippingOption>> QuoteAsync(string destinationPostalCode, IReadOnlyList<ShippingPackage> packages, CancellationToken ct = default)
     {
@@ -17,7 +18,7 @@ public class SimulatedShippingCalculator : IShippingCalculator
 
         IReadOnlyList<ShippingOption> options =
         [
-            new(PickupCode, "Pickup at the studio", 0m, null),
+            StudioPickupCalculator.Option,
             new("pac", "PAC (simulated)", 20m + 5m * (kilos - 1), 8),
             new("sedex", "SEDEX (simulated)", 35m + 8m * (kilos - 1), 3),
         ];

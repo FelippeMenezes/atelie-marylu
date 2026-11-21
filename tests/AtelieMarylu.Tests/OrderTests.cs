@@ -63,6 +63,28 @@ public class OrderTests
     }
 
     [Fact]
+    public void Only_paid_or_in_preparation_orders_can_be_shipped()
+    {
+        // O painel só manda a Marylu levar ou entregar o pacote quando CanShip: nunca num pedido não pago ou cancelado
+        var order = NewOrder();
+        Assert.False(order.CanShip);                      // aguardando pagamento
+
+        order.ConfirmPayment(order.StartPayment(PaymentMethod.Pix, "simulado"));
+        Assert.True(order.CanShip);                       // pago
+
+        order.StartPreparation();
+        Assert.True(order.CanShip);                       // em preparo
+
+        order.MarkShipped("BR123");
+        Assert.False(order.CanShip);                      // enviado
+
+        var cancelled = NewOrder();
+        cancelled.Cancel();
+        Assert.False(cancelled.CanShip);                  // cancelado
+        Assert.Throws<OrderRuleException>(() => cancelled.MarkShipped("BR123"));
+    }
+
+    [Fact]
     public void Confirming_payment_changes_status_to_paid()
     {
         var order = NewOrder();

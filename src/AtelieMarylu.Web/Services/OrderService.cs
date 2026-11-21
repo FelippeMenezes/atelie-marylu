@@ -77,16 +77,38 @@ public class OrderService(
 
     public async Task<IReadOnlyList<ShippingOption>> QuoteShippingAsync(string postalCode, IReadOnlyList<CartItem> items, CancellationToken ct = default)
     {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var products = await LoadProductsAsync(db, items.Select(i => i.ProductId), ct);
-        return await shipping.QuoteAsync(postalCode, BuildPackages(items, products), ct);
+        Dictionary<int, Product> products;
+        await using (var db = await dbFactory.CreateDbContextAsync(ct))
+        {
+            products = await LoadProductsAsync(db, items.Select(i => i.ProductId), ct);
+        }
+        return await QuoteAsync(postalCode, BuildPackages(items, products), ct);
+    }
+
+    // Toda cotação passa por aqui. A falha do provedor de frete vira OrderRuleException, que as telas já mostram.
+    // Chamado sempre SEM transação aberta: a cotação real é uma chamada HTTP de alguns segundos, e uma transação
+    // aberta esse tempo todo prende uma conexão do banco (e, nas edições, a linha do pedido).
+    private async Task<IReadOnlyList<ShippingOption>> QuoteAsync(string postalCode, List<ShippingPackage> packages, CancellationToken ct)
+    {
+        try
+        {
+            return await shipping.QuoteAsync(postalCode, packages, ct);
+        }
+        catch (ShippingQuoteException ex)
+        {
+            // Sem o CEP no log: é dado pessoal digitado pela cliente (regra de LGPD do projeto)
+            logger.LogWarning(ex, "Falha ao cotar o frete.");
+            throw new OrderRuleException("Could not calculate shipping right now. Try again in a few minutes.");
+        }
     }
 
     // Cria o pedido a partir do carrinho. Preços vêm do banco e o frete é cotado de novo aqui:
     // nada que o navegador mandou é usado como valor.
     // createdBy preenchido = pedido lançado pelo painel (sem limite de pendentes e com prazo maior).
+    // shownShippingAmount = o frete que a cliente viu na tela. Se a nova cotação vier MAIOR, o pedido não é criado
+    // (ShippingPriceChangedException) e ela confirma de novo vendo o valor certo. Se vier menor, segue: ela paga menos.
     public async Task<Order> CreateAsync(string customerId, IReadOnlyList<CartItem> items, ShippingAddress address,
-        string shippingCode, string? createdBy = null, CancellationToken ct = default)
+        string shippingCode, string? createdBy = null, decimal? shownShippingAmount = null, CancellationToken ct = default)
     {
         if (items.Count == 0) throw new OrderRuleException("The cart is empty.");
         var postalCode = PostalCode.Normalize(address.PostalCode) ?? throw new OrderRuleException("Invalid postal code.");
@@ -111,9 +133,11 @@ public class OrderService(
             return new OrderItem(p.Id, p.Name, p.Price, i.Quantity);
         }).ToList();
 
-        var quote = await shipping.QuoteAsync(postalCode, BuildPackages(items, products), ct);
+        var quote = await QuoteAsync(postalCode, BuildPackages(items, products), ct);
         var option = quote.FirstOrDefault(o => o.Code == shippingCode)
             ?? throw new OrderRuleException("Invalid shipping option. Calculate shipping again.");
+        if (shownShippingAmount is decimal shown && option.Amount > shown)
+            throw new ShippingPriceChangedException(option.Amount.ToBrl());
 
         var deadline = createdBy is null ? TimeSpan.FromMinutes(options.PaymentDeadlineMinutes) : TimeSpan.FromHours(options.AdminPaymentDeadlineHours);
         var order = new Order(customerId, orderItems, address, option, now + deadline, options.PixDiscountPercent, createdBy);
@@ -403,38 +427,56 @@ public class OrderService(
         return true;
     }
 
-    public Task ChangeQuantityAsync(int orderId, int productId, int quantity, CancellationToken ct = default) =>
-        ChangeAsync(orderId, AuditActions.OrderItemsChanged, async (order, db) =>
+    // Nas três edições abaixo, o frete é cotado ANTES da transação (PrepareRequoteAsync), com os itens e o CEP
+    // como ficarão depois da mudança. Dentro da transação, ApplyRequote só confere que nada mudou no meio e aplica.
+    public async Task ChangeQuantityAsync(int orderId, int productId, int quantity, CancellationToken ct = default)
+    {
+        var requote = await PrepareRequoteAsync(orderId, items => items
+            .Select(i => i.ProductId == productId ? i with { Quantity = quantity } : i)
+            .Where(i => i.Quantity > 0), newPostalCode: null, ct);
+
+        await ChangeAsync(orderId, AuditActions.OrderItemsChanged, async (order, db) =>
         {
             var name = order.Items.FirstOrDefault(i => i.ProductId == productId)?.ProductName ?? "";
             var difference = order.ChangeQuantity(productId, quantity);
             if (difference > 0) await ReduceStockAsync(db, productId, difference, name, ct);
             else if (difference < 0) await RestoreStockAsync(db, productId, -difference, ct);
-            await RequoteShippingAsync(db, order, ct);
+            ApplyRequote(order, requote);
             return $"{name}: quantidade {quantity}";
         }, ct: ct);
+    }
 
-    public Task AddItemAsync(int orderId, int productId, int quantity, CancellationToken ct = default) =>
-        ChangeAsync(orderId, AuditActions.OrderItemsChanged, async (order, db) =>
+    public async Task AddItemAsync(int orderId, int productId, int quantity, CancellationToken ct = default)
+    {
+        // Mesma regra do Order.AddItem: produto que já está no pedido só soma a quantidade
+        var requote = await PrepareRequoteAsync(orderId, items => items.Any(i => i.ProductId == productId)
+            ? items.Select(i => i.ProductId == productId ? i with { Quantity = i.Quantity + quantity } : i)
+            : items.Append(new CartItem(productId, quantity)), newPostalCode: null, ct);
+
+        await ChangeAsync(orderId, AuditActions.OrderItemsChanged, async (order, db) =>
         {
             var product = await db.Products.FirstOrDefaultAsync(p => p.Id == productId && p.IsActive, ct)
                 ?? throw new OrderRuleException("Product not found.");
             order.AddItem(new OrderItem(product.Id, product.Name, product.Price, quantity));
             await ReduceStockAsync(db, product.Id, quantity, product.Name, ct);
-            await RequoteShippingAsync(db, order, ct);
+            ApplyRequote(order, requote);
             return $"+{quantity} {product.Name}";
         }, ct: ct);
+    }
 
-    public Task ChangeDeliveryAsync(int orderId, ShippingAddress address, string? notes, CancellationToken ct = default) =>
-        ChangeAsync(orderId, AuditActions.OrderDeliveryChanged, async (order, db) =>
+    public async Task ChangeDeliveryAsync(int orderId, ShippingAddress address, string? notes, CancellationToken ct = default)
+    {
+        address.PostalCode = PostalCode.Normalize(address.PostalCode) ?? throw new OrderRuleException("Invalid postal code.");
+        var requote = await PrepareRequoteAsync(orderId, items => items, address.PostalCode, ct);
+
+        await ChangeAsync(orderId, AuditActions.OrderDeliveryChanged, (order, _) =>
         {
-            address.PostalCode = PostalCode.Normalize(address.PostalCode) ?? throw new OrderRuleException("Invalid postal code.");
-            var postalCodeChanged = address.PostalCode != order.Address.PostalCode;
             order.ChangeAddress(address);
             order.Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
-            if (postalCodeChanged && order.CanChangeItems) await RequoteShippingAsync(db, order, ct);
-            return $"CEP {address.PostalCode}";
+            ApplyRequote(order, requote);
+            return Task.FromResult<string?>($"CEP {address.PostalCode}");
         }, ct: ct);
+    }
 
     public Task StartPreparationAsync(int orderId, CancellationToken ct = default) =>
         ChangeAsync(orderId, AuditActions.OrderPreparing, (p, _) => { p.StartPreparation(); return Task.FromResult<string?>(null); }, ct: ct);
@@ -549,14 +591,54 @@ public class OrderService(
         }
     }
 
-    private async Task RequoteShippingAsync(ApplicationDbContext db, Order order, CancellationToken ct)
+    // Cotação feita antes da transação, para os itens e o CEP que o pedido terá depois da edição
+    private sealed record Requote(string PostalCode, List<CartItem> Items, IReadOnlyList<ShippingOption> Options);
+
+    // Devolve null quando não há o que recotar: o frete só muda antes do pagamento, e no endereço só se o CEP mudar.
+    // Se o pedido já foi pago, a própria entidade recusa a troca de itens dentro do ChangeAsync.
+    private async Task<Requote?> PrepareRequoteAsync(int orderId, Func<IEnumerable<CartItem>, IEnumerable<CartItem>> change,
+        string? newPostalCode, CancellationToken ct)
     {
-        var items = order.Items.Select(i => new CartItem(i.ProductId, i.Quantity)).ToList();
-        var products = await LoadProductsAsync(db, items.Select(i => i.ProductId), ct);
-        var options = await shipping.QuoteAsync(order.Address.PostalCode, BuildPackages(items, products), ct);
-        var same = options.FirstOrDefault(o => o.Code == order.ShippingCode);
-        if (same is not null) order.SetShipping(same);
+        List<CartItem> items;
+        string postalCode;
+        Dictionary<int, Product> products;
+        await using (var db = await dbFactory.CreateDbContextAsync(ct))
+        {
+            var order = await db.Orders.AsNoTracking().Include(p => p.Items).FirstOrDefaultAsync(p => p.Id == orderId, ct);
+            if (order is null || !order.CanChangeItems) return null;
+            if (newPostalCode is not null && newPostalCode == order.Address.PostalCode) return null;
+
+            items = Snapshot(change(order.Items.Select(i => new CartItem(i.ProductId, i.Quantity))));
+            postalCode = newPostalCode ?? order.Address.PostalCode;
+            products = await LoadProductsAsync(db, items.Select(i => i.ProductId), ct);
+        }
+
+        return new Requote(postalCode, items, await QuoteAsync(postalCode, BuildPackages(items, products), ct));
     }
+
+    // Dentro da transação: se o pedido mudou entre a cotação e agora (outra pessoa editando ao mesmo tempo),
+    // a cotação não vale para ele. Melhor pedir para tentar de novo do que gravar um frete calculado para outros itens.
+    private void ApplyRequote(Order order, Requote? requote)
+    {
+        if (requote is null) return;
+        var current = Snapshot(order.Items.Select(i => new CartItem(i.ProductId, i.Quantity)));
+        if (order.Address.PostalCode != requote.PostalCode || !current.SequenceEqual(requote.Items))
+            throw new OrderRuleException(ConcurrencyMessage);
+
+        // A modalidade deixou de atender o pedido (CEP novo fora da área, ou pacote acima do limite dela).
+        // Manter o valor antigo faria a loja cobrar menos do que a etiqueta custa, ou vender um envio que não existe.
+        // A edição é recusada (a transação desfaz o estoque já mexido). O painel não troca a modalidade: o caminho é
+        // cancelar e criar outro pedido com outra forma de entrega (decisão de 21/11/2026, AML-0039).
+        var same = requote.Options.FirstOrDefault(o => o.Code == order.ShippingCode)
+            ?? throw new OrderRuleException(
+                "The shipping method \"{0}\" no longer serves this order (new address or package size). Cancel this order and create a new one with another shipping method.",
+                order.ShippingName);
+        order.SetShipping(same);
+    }
+
+    // Ordem fixa e sem itens zerados, para comparar duas listas de itens
+    private static List<CartItem> Snapshot(IEnumerable<CartItem> items) =>
+        items.Where(i => i.Quantity > 0).OrderBy(i => i.ProductId).ToList();
 
     private static async Task<Order> LoadOrderAsync(ApplicationDbContext db, int orderId, CancellationToken ct) =>
         await db.Orders.Include(p => p.Items).Include(p => p.Payments).FirstOrDefaultAsync(p => p.Id == orderId, ct)
@@ -573,7 +655,7 @@ public class OrderService(
             .Select(i =>
             {
                 var p = products[i.ProductId];
-                return new ShippingPackage(p.WeightGrams, p.HeightCm, p.WidthCm, p.LengthCm, i.Quantity);
+                return new ShippingPackage(p.WeightGrams, p.HeightCm, p.WidthCm, p.LengthCm, i.Quantity, p.Price);
             }).ToList();
 
     // UPDATE com condição no próprio banco: se duas pessoas comprarem a última peça ao mesmo tempo,

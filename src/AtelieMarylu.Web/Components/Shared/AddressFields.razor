@@ -59,10 +59,7 @@
         searching = false;
         if (found is null) return;
 
-        Address.Street = found.Street;
-        Address.District = found.District;
-        Address.City = found.City;
-        Address.State = found.State;
+        Address.Fill(found);
         if (numberField?.Element is { } number)
             await number.FocusAsync();
     }
