@@ -1,6 +1,7 @@
 @page "/admin/orders/{Id:int}"
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = Permissions.OrdersView)]
+@using AtelieMarylu.Domain.Shipping
 @inject CustomerService CustomerService
 @inject ProductService ProductService
 @inject AuditService AuditService
@@ -8,6 +9,9 @@
 @inject IAuthorizationService Authorization
 @inject ILogger<OrderDetails> Logger
 @inject OrderEvents Events
+@inject IOptions<AtelieMarylu.Web.Configuration.ShopOptions> Store
+@inject IOptions<AtelieMarylu.Infrastructure.Integrations.MelhorEnvioOptions> MelhorEnvio
+@using Microsoft.Extensions.Options
 @implements IDisposable
 
 <PageTitle>@L["Order · Admin"]</PageTitle>
@@ -125,6 +129,41 @@ else if (order is not null)
     }
 
     <OrderSummary Order="order" />
+
+    @* Como o pacote sai do ateliê (AML-0039): a Marylu precisa saber se espera a cliente, espera a coleta ou leva o pacote.
+       A instrução só aparece quando o pedido pode ser enviado (Order.CanShip). Num pedido cancelado ela levaria a enviar
+       uma peça que ninguém pagou; aguardando pagamento, o aviso é para ainda não enviar. Enviado ou entregue: nada a fazer. *@
+    @if (order.Status == OrderStatus.AwaitingPayment)
+    {
+        <section class="panel-box mb-3" aria-labelledby="envio-titulo">
+            <h2 class="h5" id="envio-titulo">@L["How the package leaves {0}", Store.Value.Name]</h2>
+            <p class="mb-1"><strong>@L[order.ShippingName]</strong></p>
+            <p class="small mb-0 text-danger">@L["Do not ship yet: the payment has not been confirmed."]</p>
+        </section>
+    }
+    else if (order.CanShip)
+    {
+        <section class="panel-box mb-3" aria-labelledby="envio-titulo">
+            <h2 class="h5" id="envio-titulo">@L["How the package leaves {0}", Store.Value.Name]</h2>
+            <p class="mb-1"><strong>@L[order.ShippingName]</strong></p>
+            @switch (ShippingHandoverRules.For(order.ShippingCode))
+            {
+                case ShippingHandover.CustomerPickup:
+                    <p class="small mb-0">@L["The customer will pick up the order at the studio. Arrange the day and time by WhatsApp."]</p>
+                    break;
+                case ShippingHandover.CarrierPickup:
+                    <p class="small mb-0">@L["The carrier picks up the package at the studio. Generate the label on Melhor Envio: the pickup is scheduled for the sender address registered there (up to 3 attempts). Leave the package packed and labeled."]</p>
+                    break;
+                default:
+                    <p class="small mb-0">@L["Take the labeled package to a branch or partner point of the carrier. When you generate the label, Melhor Envio shows the addresses that accept this service."]</p>
+                    break;
+            }
+            @if (ShippingHandoverRules.For(order.ShippingCode) != ShippingHandover.CustomerPickup)
+            {
+                <a class="btn btn-outline-primary btn-sm mt-2" href="@MelhorEnvio.Value.PanelUrl" target="_blank" rel="noopener noreferrer">@L["Open Melhor Envio"]</a>
+            }
+        </section>
+    }
 
     @if (canEdit && order.CanChangeDelivery)
     {

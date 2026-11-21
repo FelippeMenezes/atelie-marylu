@@ -4,8 +4,8 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <data name=" · up to {0} business days" xml:space="preserve"><value> · até {0} dias úteis</value></data>
-  <data name="(up to {0} business days)" xml:space="preserve"><value>(até {0} dias úteis)</value></data>
+  <data name=" · up to {0} business days after shipping" xml:space="preserve"><value> · até {0} dias úteis após o envio</value></data>
+  <data name="(up to {0} business days after shipping)" xml:space="preserve"><value>(até {0} dias úteis após o envio)</value></data>
   <data name="({0} each)" xml:space="preserve"><value>({0} cada)</value></data>
   <data name="({0} member(s))" xml:space="preserve"><value>({0} membro(s))</value></data>
   <data name=". After that, the order is cancelled automatically." xml:space="preserve"><value>. Depois disso o pedido é cancelado automaticamente.</value></data>
@@ -122,7 +122,7 @@
   <data name="Continue with Google" xml:space="preserve"><value>Continuar com Google</value></data>
   <data name="Copy PIX code" xml:space="preserve"><value>Copiar código PIX</value></data>
   <data name="Could not calculate right now. Try again." xml:space="preserve"><value>Não foi possível calcular agora. Tente de novo.</value></data>
-  <data name="Could not calculate shipping right now. Try again." xml:space="preserve"><value>Não foi possível calcular o frete agora. Tente novamente.</value></data>
+  <data name="Could not calculate shipping right now. Try again in a few minutes." xml:space="preserve"><value>Não foi possível calcular o frete agora. Tente de novo em alguns minutos.</value></data>
   <data name="Could not complete the order. Try again." xml:space="preserve"><value>Não foi possível concluir o pedido. Tente novamente.</value></data>
   <data name="Could not complete. Try again." xml:space="preserve"><value>Não foi possível concluir. Tente novamente.</value></data>
   <data name="Could not confirm the payment with the provider. Try again in a few minutes." xml:space="preserve"><value>Não foi possível conferir o pagamento com o provedor. Tente de novo em alguns minutos.</value></data>
@@ -571,8 +571,6 @@
   <data name="← Back to customers" xml:space="preserve"><value>← Voltar para clientes</value></data>
   <data name="← Back to my orders" xml:space="preserve"><value>← Voltar para meus pedidos</value></data>
   <data name="← Back to orders" xml:space="preserve"><value>← Voltar para pedidos</value></data>
-  <data name="At the moment, delivery by mail is not yet available. Please select pickup at the studio. Once your order is placed, we will contact you to arrange the delivery details." xml:space="preserve"><value>No momento, o envio pelos Correios ainda não está disponível. Selecione a opção de retirada no ateliê. Após a finalização do pedido, entraremos em contato para combinar os detalhes da entrega.</value></data>
-  <data name="Not available yet" xml:space="preserve"><value>Ainda não disponível</value></data>
   <data name="1 item" xml:space="preserve"><value>1 item</value></data>
   <data name="{0} items" xml:space="preserve"><value>{0} itens</value></data>
   <data name="Last unit" xml:space="preserve"><value>Última unidade</value></data>
@@ -590,4 +588,14 @@
   <data name="Only {0} units are left, and your cart has more than that. Adjust the quantity in your cart." xml:space="preserve"><value>Só restam {0} unidades, e o seu carrinho tem mais do que isso. Ajuste a quantidade no carrinho.</value></data>
   <data name="Limit per product" xml:space="preserve"><value>Limite por produto</value></data>
   <data name="Each order can have up to {0} units of each product." xml:space="preserve"><value>Cada pedido pode ter até {0} unidades de cada produto.</value></data>
+  <data name="Choose how you want to receive your order:" xml:space="preserve"><value>Escolha como quer receber o seu pedido:</value></data>
+  <data name="Choose a delivery method to continue." xml:space="preserve"><value>Escolha a forma de entrega para continuar.</value></data>
+  <data name="How the package leaves {0}" xml:space="preserve"><value>Como o pacote sai do {0}</value></data>
+  <data name="The customer will pick up the order at the studio. Arrange the day and time by WhatsApp." xml:space="preserve"><value>A cliente vai buscar o pedido no ateliê. Combine o dia e o horário pelo WhatsApp.</value></data>
+  <data name="The carrier picks up the package at the studio. Generate the label on Melhor Envio: the pickup is scheduled for the sender address registered there (up to 3 attempts). Leave the package packed and labeled." xml:space="preserve"><value>A transportadora busca o pacote no ateliê. Gere a etiqueta no Melhor Envio: a coleta é agendada para o endereço de remetente cadastrado lá (até 3 tentativas). Deixe o pacote embalado e etiquetado.</value></data>
+  <data name="Take the labeled package to a branch or partner point of the carrier. When you generate the label, Melhor Envio shows the addresses that accept this service." xml:space="preserve"><value>Leve o pacote etiquetado a uma agência ou ponto parceiro da transportadora. Ao gerar a etiqueta, o Melhor Envio mostra os endereços que aceitam esta modalidade.</value></data>
+  <data name="Open Melhor Envio" xml:space="preserve"><value>Abrir o Melhor Envio</value></data>
+  <data name="The shipping price changed to {0}. Check the new amount and confirm again." xml:space="preserve"><value>O frete mudou para {0}. Confira o novo valor e confirme de novo.</value></data>
+  <data name="The shipping method &quot;{0}&quot; no longer serves this order (new address or package size). Cancel this order and create a new one with another shipping method." xml:space="preserve"><value>A forma de entrega "{0}" não atende mais este pedido (endereço novo ou tamanho do pacote). Cancele este pedido e crie outro com outra forma de entrega.</value></data>
+  <data name="Do not ship yet: the payment has not been confirmed." xml:space="preserve"><value>Ainda não envie: o pagamento não foi confirmado.</value></data>
 </root>

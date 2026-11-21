@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using AtelieMarylu.Domain.Orders;
+using AtelieMarylu.Infrastructure.Integrations;
 
 namespace AtelieMarylu.Web.Components.Shared;
 
@@ -44,9 +45,23 @@ public class AddressForm
         State = State.Trim().ToUpperInvariant(),
     };
 
+    // Rua, bairro, cidade e UF vindos do ViaCEP. Número e complemento ficam com a cliente.
+    public void Fill(PostalCodeAddress found)
+    {
+        Street = found.Street;
+        District = found.District;
+        City = found.City;
+        State = found.State;
+    }
+
+    // Só o CEP (ex.: o último cotado), já no formato da tela: "20560-040"
+    public static AddressForm WithPostalCode(string postalCode) =>
+        new() { PostalCode = Domain.Shipping.PostalCode.Normalize(postalCode) is { } d ? $"{d[..5]}-{d[5..]}" : "" };
+
     public static AddressForm FromAddress(ShippingAddress e) => new()
     {
-        PostalCode = e.PostalCode,
+        // O pedido guarda só os dígitos; a tela mostra "20560-040"
+        PostalCode = WithPostalCode(e.PostalCode).PostalCode is { Length: > 0 } formatted ? formatted : e.PostalCode,
         Street = e.Street,
         Number = e.Number,
         Complement = e.Complement,

@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace AtelieMarylu.Infrastructure;
 
@@ -32,8 +33,7 @@ public static class DependencyInjection
         services.Configure<TurnstileOptions>(configuration.GetSection(TurnstileOptions.SectionName));
 
         // Integrações externas: trocar a implementação não exige mudar nenhuma tela.
-        // Frete: ainda simulado (o Melhor Envio é a Fase 3).
-        services.AddSingleton<IShippingCalculator, SimulatedShippingCalculator>();
+        AddShipping(services, configuration, environment);
 
         // Pagamento: com token e endereço público do PagBank, cobra de verdade pelo Checkout PagBank
         // (em desenvolvimento, no sandbox). Sem eles, o simulado, cujo webhook só existe em Development.
@@ -106,5 +106,51 @@ public static class DependencyInjection
         }
 
         return services;
+    }
+
+    // Frete: a retirada no ateliê sempre existe; as transportadoras vêm do Melhor Envio quando há token.
+    //   - Com token (qualquer ambiente): retirada + Melhor Envio.
+    //   - Sem token, em Development: o simulado (retirada + PAC/SEDEX inventados), para testar sem conta.
+    //   - Sem token, fora de Development: só a retirada. Nunca um frete inventado cobrado de uma cliente real.
+    private static void AddShipping(IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
+    {
+        var section = configuration.GetSection(MelhorEnvioOptions.SectionName);
+        services.AddOptions<MelhorEnvioOptions>()
+            .Bind(section)
+            // Cotação do sandbox tem preço de mentira: em produção, a cliente pagaria um frete que não existe
+            .Validate(o => !o.IsActive || !o.Sandbox || environment.IsDevelopment(),
+                "MelhorEnvio:Sandbox precisa ser false fora de Development (no servidor: MELHORENVIO_SANDBOX=false).")
+            .Validate(o => !o.IsActive || o.NormalizedOriginPostalCode is not null,
+                "MelhorEnvio:OriginPostalCode precisa ser o CEP do ateliê, com 8 dígitos (no servidor: MELHORENVIO_ORIGIN_POSTAL_CODE).")
+            .Validate(o => !o.IsActive || o.ContactEmail.Contains('@'),
+                "MelhorEnvio:ContactEmail precisa ser o e-mail de contato da loja: o Melhor Envio exige (no servidor: MELHORENVIO_CONTACT_EMAIL).")
+            .Validate(o => o.HasValidServices,
+                "MelhorEnvio:Services precisa ser uma lista de números separados por vírgula (ex.: 1,2,17) ou ficar vazio.")
+            .ValidateOnStart();
+
+        var melhorEnvio = section.Get<MelhorEnvioOptions>();
+        if (melhorEnvio?.IsActive == true)
+        {
+            services.AddSingleton<MelhorEnvioQuoteCache>();
+            services.AddHttpClient<MelhorEnvioShippingCalculator>(http =>
+            {
+                http.BaseAddress = melhorEnvio.ApiBaseUrl;
+                // A cliente está esperando na tela do checkout: melhor desistir cedo
+                http.Timeout = TimeSpan.FromSeconds(8);
+                // A resposta normal tem poucos KB: um teto protege a memória se a API responder algo absurdo
+                http.MaxResponseContentBufferSize = 1024 * 1024;
+            });
+            services.AddTransient<IShippingCalculator>(sp => new ShippingQuoteAggregator(
+                [new StudioPickupCalculator(), sp.GetRequiredService<MelhorEnvioShippingCalculator>()],
+                sp.GetRequiredService<ILogger<ShippingQuoteAggregator>>()));
+        }
+        else if (environment.IsDevelopment())
+        {
+            services.AddSingleton<IShippingCalculator, SimulatedShippingCalculator>();
+        }
+        else
+        {
+            services.AddSingleton<IShippingCalculator, StudioPickupCalculator>();
+        }
     }
 }

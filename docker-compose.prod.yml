@@ -65,6 +65,13 @@ services:
       PagBank__PublicBaseUrl: ${PAGBANK_PUBLIC_BASE_URL:-https://www.ateliemarylu.com.br}
       # Homologação: grava as chamadas (mascaradas) em /tmp/pagbank-homologacao dentro do container. Ligar só para gerar os registros.
       PagBank__LogTraffic: ${PAGBANK_LOG_TRAFFIC:-false}
+      # Frete pelo Melhor Envio. Sem token, o checkout oferece só a retirada no ateliê.
+      # Com token, MELHORENVIO_SANDBOX precisa ser false e o CEP e o e-mail precisam estar preenchidos, ou a loja não sobe.
+      MelhorEnvio__Token: ${MELHORENVIO_TOKEN:-}
+      MelhorEnvio__Sandbox: ${MELHORENVIO_SANDBOX:-false}
+      MelhorEnvio__OriginPostalCode: ${MELHORENVIO_ORIGIN_POSTAL_CODE:-}
+      MelhorEnvio__ContactEmail: ${MELHORENVIO_CONTACT_EMAIL:-}
+      MelhorEnvio__Services: ${MELHORENVIO_SERVICES:-}
     volumes:
       - fotos:/app/wwwroot/uploads
     depends_on:

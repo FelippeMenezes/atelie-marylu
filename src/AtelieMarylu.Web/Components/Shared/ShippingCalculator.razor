@@ -2,13 +2,14 @@
 @using AtelieMarylu.Domain.Carts
 @using AtelieMarylu.Domain.Shipping
 @inject OrderService Orders
+@inject LastPostalCodeService LastPostalCode
 @inject ILogger<ShippingCalculator> Logger
 
 <div class="panel-box">
     <label class="form-label fw-bold" for="cep-frete">@L["Calculate shipping and delivery time"]</label>
     <div class="d-flex gap-2">
         <input id="cep-frete" class="form-control" style="max-width: 160px" placeholder="00000-000" inputmode="numeric" autocomplete="postal-code"
-               @bind="postalCode" @onkeydown="OnKeyDown" />
+               @bind="postalCode" @bind:event="oninput" @onkeydown="OnKeyDown" />
         <button type="button" class="btn btn-outline-primary" @onclick="Calculate" disabled="@(calculating || !RendererInfo.IsInteractive)">@L["Calculate"]</button>
     </div>
     @if (isError is not null)
@@ -20,7 +21,7 @@
         <ul class="list-unstyled small mt-2 mb-0">
             @foreach (var o in options)
             {
-                <li>@L[o.Name]: <strong>@(o.Amount == 0 ? L["Free"] : o.Amount.ToBrl())</strong>@(o.DeliveryDays is int d ? L[" · up to {0} business days", d] : "")</li>
+                <li>@L[o.Name]: <strong>@(o.Amount == 0 ? L["Free"] : o.Amount.ToBrl())</strong>@(o.DeliveryDays is int d ? L[" · up to {0} business days after shipping", d] : "")</li>
             }
         </ul>
     }
@@ -35,6 +36,19 @@
     private IReadOnlyList<ShippingOption>? options;
     private bool calculating;
 
+    // Começa com o último CEP cotado (em qualquer produto, no carrinho ou no checkout), se a cliente ainda não digitou outro
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || !string.IsNullOrEmpty(postalCode)) return;
+        if (await LastPostalCode.GetAsync() is { } last)
+        {
+            postalCode = $"{last[..5]}-{last[5..]}";
+            StateHasChanged();
+        }
+    }
+
+    // O campo atualiza a cada tecla (oninput): com o padrão (onchange), o valor só chega quando o campo perde o foco,
+    // e o Enter calculava com o CEP ainda vazio ("Informe um CEP válido" na primeira tentativa; visto no navegador)
     private Task OnKeyDown(KeyboardEventArgs e) => e.Key == "Enter" ? Calculate() : Task.CompletedTask;
 
     private async Task Calculate()
@@ -49,16 +63,13 @@
         try
         {
             options = await Orders.QuoteShippingAsync(normalized, items);
+            // O checkout abre com este CEP (AML-0039)
+            await LastPostalCode.SaveAsync(normalized);
         }
-        catch (System.Net.Http.HttpRequestException ex)
+        catch (OrderRuleException ex)
         {
-            Logger.LogWarning(ex, "Falha ao simular frete");
-            isError = L["Could not calculate right now. Try again."];
-        }
-        catch (System.Threading.Tasks.TaskCanceledException ex)
-        {
-            Logger.LogWarning(ex, "Falha ao simular frete");
-            isError = L["Could not calculate right now. Try again."];
+            // Falha do provedor de frete (já registrada no log pelo OrderService)
+            isError = L.Translate(ex);
         }
         catch (InvalidOperationException ex)
         {

@@ -4,11 +4,14 @@
 @using System.Security.Claims
 @using AtelieMarylu.Domain.Carts
 @using AtelieMarylu.Domain.Shipping
+@using AtelieMarylu.Infrastructure.Integrations
 @using AtelieMarylu.Web.Configuration
 @using Microsoft.Extensions.Options
 @inject ProductService ProductService
 @inject CartService Cart
 @inject OrderService Orders
+@inject LastPostalCodeService LastPostalCode
+@inject PostalCodeLookup PostalCodeLookup
 @inject NavigationManager Navigation
 @inject IOptions<ShopOptions> Store
 @inject ILogger<Checkout> Logger
@@ -40,31 +43,38 @@ else
 
                 <section class="panel-box mb-3">
                     <h2 class="h4">@L["2. Shipping"]</h2>
+                    @* Prazo de preparo antes do prazo da transportadora: o prazo de entrega mostrado é "após o envio" *@
+                    <p class="small text-secondary mb-2">
+                        @if (ProductionDays is int days)
+                        {
+                            <strong>@L["Made to order:"]</strong> <text>@L["made within {0} business days after payment confirmation, plus shipping time.", days]</text>
+                        }
+                        else
+                        {
+                            <strong>@L["Ready to ship:"]</strong> <text>@L["we ship within 2 business days after payment confirmation."]</text>
+                        }
+                    </p>
                     @if (shippingOptions is null)
                     {
                         <button type="button" class="btn btn-outline-primary" @onclick="CalculateShippingAsync" disabled="@processing">@L["Calculate shipping"]</button>
                     }
                     else
                     {
-                        @if (shippingOptions.Any(o => !IsSelectable(o)))
-                        {
-                            <div id="aviso-frete" class="alert alert-info small py-2" role="note">@L["At the moment, delivery by mail is not yet available. Please select pickup at the studio. Once your order is placed, we will contact you to arrange the delivery details."]</div>
-                        }
-                        <InputRadioGroup @bind-Value="shippingCode">
-                            @foreach (var o in shippingOptions)
-                            {
-                                var available = IsSelectable(o);
-                                <div class="form-check @(available ? "" : "shipping-unavailable")">
-                                    <InputRadio class="form-check-input" id="@($"frete-{o.Code}")" Value="o.Code"
-                                                disabled="@(!available)" aria-describedby="@(available ? null : "aviso-frete")" />
-                                    <label class="form-check-label" for="@($"frete-{o.Code}")">
-                                        @L[o.Name]: <strong>@(o.Amount == 0 ? L["Free"] : o.Amount.ToBrl())</strong>
-                                        @if (o.DeliveryDays is int days) { <span class="text-secondary"> @L["(up to {0} business days)", days]</span> }
-                                        @if (!available) { <span class="tag ms-1">@L["Not available yet"]</span> }
-                                    </label>
-                                </div>
-                            }
-                        </InputRadioGroup>
+                        <fieldset>
+                            <legend class="small text-secondary">@L["Choose how you want to receive your order:"]</legend>
+                            <InputRadioGroup @bind-Value="shippingCode">
+                                @foreach (var o in shippingOptions)
+                                {
+                                    <div class="form-check">
+                                        <InputRadio class="form-check-input" id="@($"frete-{o.Code}")" Value="o.Code" />
+                                        <label class="form-check-label" for="@($"frete-{o.Code}")">
+                                            @L[o.Name]: <strong>@(o.Amount == 0 ? L["Free"] : o.Amount.ToBrl())</strong>
+                                            @if (o.DeliveryDays is int days) { @(" ")<span class="text-secondary">@L["(up to {0} business days after shipping)", days]</span> }
+                                        </label>
+                                    </div>
+                                }
+                            </InputRadioGroup>
+                        </fieldset>
                     }
                 </section>
 
@@ -127,9 +137,13 @@ else
                     <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@(processing || SelectedShipping is null || !acceptedTerms)">
                         @(processing ? L["Processing..."] : L["Confirm order"])
                     </button>
-                    @if (SelectedShipping is null)
+                    @if (shippingOptions is null)
                     {
                         <p class="small text-secondary text-center mt-2 mb-0">@L["Calculate shipping to continue."]</p>
+                    }
+                    else if (SelectedShipping is null)
+                    {
+                        <p class="small text-secondary text-center mt-2 mb-0">@L["Choose a delivery method to continue."]</p>
                     }
                 </section>
             </div>
@@ -156,6 +170,9 @@ else
     private ShippingOption? SelectedShipping => shippingOptions?.FirstOrDefault(o => o.Code == shippingCode);
     private decimal Total => Subtotal - Discount + (SelectedShipping?.Amount ?? 0);
 
+    // O pedido sai inteiro: com peças sob encomenda, vale o maior prazo de produção do carrinho
+    private int? ProductionDays => Cart.Current.Items.Max(i => products.GetValueOrDefault(i.ProductId)?.ProductionDays);
+
     private string DeadlineText
     {
         get
@@ -168,10 +185,6 @@ else
     protected override async Task OnInitializedAsync()
     {
         customerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
-
-        // Sugere o endereço do último pedido
-        var last = await Orders.GetLastAddressAsync(customerId);
-        if (last is not null) address = AddressForm.FromAddress(last);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -179,13 +192,32 @@ else
         if (!firstRender) return;
         await Cart.LoadAsync();
         products = await ProductService.GetByIdsAsync(Cart.Current.Items.Select(i => i.ProductId));
+        await SuggestAddressAsync();
         ready = true;
         StateHasChanged();
     }
 
-    // AML-0036 (temporário): só a retirada no ateliê pode ser escolhida. PAC e SEDEX aparecem
-    // desabilitados, com aviso, até decidirmos a forma de entrega. Para liberar, apague este método e seus usos.
-    private static bool IsSelectable(ShippingOption option) => option.Code == "retirada";
+    // O endereço começa pelo último CEP com que a cliente calculou o frete (no produto, no carrinho ou aqui).
+    // Sem cotação recente, o formulário começa vazio. Antes, ele trazia sempre o endereço do último pedido,
+    // e a cliente via um CEP "fixo" que nem era o que ela tinha acabado de cotar.
+    // Fica no OnAfterRenderAsync porque o CEP mora no navegador (precisa de JS interop).
+    private async Task SuggestAddressAsync()
+    {
+        if (await LastPostalCode.GetAsync() is not { } postalCode) return;
+
+        // Se for o CEP do último pedido, reaproveita o endereço inteiro (com número e complemento)
+        var last = await Orders.GetLastAddressAsync(customerId);
+        if (last is not null && PostalCode.Normalize(last.PostalCode) == postalCode)
+        {
+            address = AddressForm.FromAddress(last);
+            return;
+        }
+
+        // CEP novo: rua, bairro e cidade pelo ViaCEP; o número fica com a cliente
+        address = AddressForm.WithPostalCode(postalCode);
+        if (await PostalCodeLookup.FindAsync(postalCode) is { } found)
+            address.Fill(found);
+    }
 
     private void ClearShipping()
     {
@@ -205,14 +237,15 @@ else
         try
         {
             shippingOptions = await Orders.QuoteShippingAsync(postalCode, Cart.Current.Items);
-            // Pré-seleciona a primeira opção paga que estiver habilitada (com só retirada, é ela)
-            var available = shippingOptions.Where(IsSelectable).ToList();
-            shippingCode = available.FirstOrDefault(o => o.Amount > 0)?.Code ?? available.FirstOrDefault()?.Code;
+            await LastPostalCode.SaveAsync(postalCode);
+            // Nada vem marcado: a forma de entrega é escolha da cliente (AML-0039), e o botão de confirmar
+            // só libera depois dela. Uma opção pré-marcada passa despercebida e vira reclamação depois.
+            shippingCode = null;
         }
         catch (OrderRuleException ex)
         {
-            Logger.LogError(ex, "Falha ao cotar frete");
-            errorMessage = L["Could not calculate shipping right now. Try again."];
+            // O OrderService já registrou a falha do provedor no log; aqui só a mensagem
+            errorMessage = L.Translate(ex);
         }
         finally
         {
@@ -229,7 +262,8 @@ else
         {
             // Cópia dos itens: o pedido nasce do que a cliente estava vendo, não de uma lista que pode mudar no meio
             var items = Cart.Current.Items.ToList();
-            var order = await Orders.CreateAsync(customerId, items, address.ToAddress(), shippingCode);
+            var order = await Orders.CreateAsync(customerId, items, address.ToAddress(), shippingCode,
+                shownShippingAmount: SelectedShipping?.Amount);
             createdOrderCode = order.Code;
 
             // Daqui em diante quem guarda os itens (e o estoque reservado) é o pedido. Tirar do carrinho
@@ -239,6 +273,15 @@ else
             await TryRemoveOrderedFromCartAsync(items);
 
             await Orders.StartPaymentAsync(order.Id, method);
+        }
+        catch (ShippingPriceChangedException ex)
+        {
+            // O pedido não foi criado. Recalcula para a lista mostrar o valor novo; nada fica marcado,
+            // então a cliente escolhe e confirma de novo, sabendo quanto vai pagar
+            var message = L.Translate(ex);
+            processing = false;
+            await CalculateShippingAsync();
+            errorMessage = message;
         }
         catch (OrderRuleException ex)
         {

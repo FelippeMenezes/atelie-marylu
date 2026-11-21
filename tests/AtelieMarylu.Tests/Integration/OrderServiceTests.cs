@@ -29,11 +29,11 @@ public class OrderServiceTests(TestDatabase database) : IClassFixture<TestDataba
     private readonly FakeClock clock = new();
     private readonly ShopOptions store = new() { PixDiscountPercent = 5, PaymentDeadlineMinutes = 120, MaxPendingOrdersPerCustomer = 3 };
 
-    private OrderService Service()
+    private OrderService Service(IShippingCalculator? shipping = null)
     {
         var audit = new AuditService(new CurrentUserService(new ServiceCollection().BuildServiceProvider(), new HttpContextAccessor()), database);
         var gateway = new SimulatedPaymentGateway();
-        return new OrderService(database, new SimulatedShippingCalculator(), gateway, new InlineChargeCloser(gateway), audit, new OrderEvents(),
+        return new OrderService(database, shipping ?? new SimulatedShippingCalculator(), gateway, new InlineChargeCloser(gateway), audit, new OrderEvents(),
             Options.Create(store), clock, Localizer(), NullLogger<OrderService>.Instance);
     }
 
@@ -62,6 +62,122 @@ public class OrderServiceTests(TestDatabase database) : IClassFixture<TestDataba
         Assert.Equal(3, await database.GetStockAsync(product.Id));
         await using var db = database.CreateDbContext();
         Assert.True(await db.AuditEntries.AnyAsync(a => a.Action == AuditActions.OrderCreated && a.EntityId == order.Id.ToString()));
+    }
+
+    [FactWithDatabase]
+    public async Task Shipping_provider_down_becomes_rule_message_and_keeps_stock()
+    {
+        var customer = await database.CreateCustomerAsync();
+        var product = await database.CreateProductAsync(stock: 5);
+
+        var ex = await Assert.ThrowsAsync<OrderRuleException>(() =>
+            Service(new FailingShipping()).CreateAsync(customer.Id, [new CartItem(product.Id, 1)], Address(), "pac"));
+
+        Assert.Equal("Could not calculate shipping right now. Try again in a few minutes.", ex.Message);
+        Assert.Equal(5, await database.GetStockAsync(product.Id));
+    }
+
+    [FactWithDatabase]
+    public async Task Changing_quantity_requotes_shipping()
+    {
+        var customer = await database.CreateCustomerAsync();
+        var product = await database.CreateProductAsync(stock: 20);   // 300 g cada
+        var service = Service();
+        var order = await service.CreateAsync(customer.Id, [new CartItem(product.Id, 1)], Address(), "pac");
+        Assert.Equal(20m, order.ShippingCost);
+
+        // 10 x 300 g = 3 kg: o PAC simulado vai a 20 + 5 x 2
+        await service.ChangeQuantityAsync(order.Id, product.Id, 10);
+
+        await using var db = database.CreateDbContext();
+        Assert.Equal(30m, (await db.Orders.SingleAsync(p => p.Id == order.Id)).ShippingCost);
+    }
+
+    [FactWithDatabase]
+    public async Task Shipping_provider_down_blocks_item_change_without_touching_stock()
+    {
+        var customer = await database.CreateCustomerAsync();
+        var product = await database.CreateProductAsync(stock: 20);
+        var order = await Service().CreateAsync(customer.Id, [new CartItem(product.Id, 1)], Address(), "pac");
+
+        await Assert.ThrowsAsync<OrderRuleException>(() => Service(new FailingShipping()).ChangeQuantityAsync(order.Id, product.Id, 5));
+
+        Assert.Equal(19, await database.GetStockAsync(product.Id));
+    }
+
+    [FactWithDatabase]
+    public async Task Higher_shipping_than_shown_does_not_create_the_order()
+    {
+        // PAC simulado de 300 g = R$ 20,00; a cliente tinha visto R$ 15,00
+        var customer = await database.CreateCustomerAsync();
+        var product = await database.CreateProductAsync(stock: 5);
+
+        var ex = await Assert.ThrowsAsync<ShippingPriceChangedException>(() =>
+            Service().CreateAsync(customer.Id, [new CartItem(product.Id, 1)], Address(), "pac", shownShippingAmount: 15m));
+
+        Assert.Equal("R$ 20,00", ex.Arguments.Single().ToString()!.Replace('\u00a0', ' '));
+        Assert.Equal(5, await database.GetStockAsync(product.Id));
+    }
+
+    [FactWithDatabase]
+    public async Task Lower_shipping_than_shown_creates_the_order_with_the_lower_value()
+    {
+        var customer = await database.CreateCustomerAsync();
+        var product = await database.CreateProductAsync(stock: 5);
+
+        var order = await Service().CreateAsync(customer.Id, [new CartItem(product.Id, 1)], Address(), "pac", shownShippingAmount: 25m);
+
+        Assert.Equal(20m, order.ShippingCost);
+    }
+
+    [FactWithDatabase]
+    public async Task Changing_to_an_address_the_shipping_method_does_not_serve_is_refused()
+    {
+        var customer = await database.CreateCustomerAsync();
+        var product = await database.CreateProductAsync(stock: 5);
+        var shipping = new PacOnlyIn("20000000");
+        var order = await Service(shipping).CreateAsync(customer.Id, [new CartItem(product.Id, 1)], Address(), "pac");
+
+        var far = Address();
+        far.PostalCode = "69900-000";
+        await Assert.ThrowsAsync<OrderRuleException>(() => Service(shipping).ChangeDeliveryAsync(order.Id, far, null));
+
+        // Nada mudou: nem o endereço, nem o frete (antes, o frete antigo era mantido com o CEP novo)
+        await using var db = database.CreateDbContext();
+        var stored = await db.Orders.SingleAsync(p => p.Id == order.Id);
+        Assert.Equal("20000000", stored.Address.PostalCode);
+        Assert.Equal(order.ShippingCost, stored.ShippingCost);
+    }
+
+    [FactWithDatabase]
+    public async Task Item_change_the_shipping_method_does_not_accept_is_refused_without_touching_stock()
+    {
+        var customer = await database.CreateCustomerAsync();
+        var product = await database.CreateProductAsync(stock: 20);
+        var shipping = new PacOnlyIn("20000000", maxUnits: 2);
+        var order = await Service(shipping).CreateAsync(customer.Id, [new CartItem(product.Id, 1)], Address(), "pac");
+
+        await Assert.ThrowsAsync<OrderRuleException>(() => Service(shipping).ChangeQuantityAsync(order.Id, product.Id, 10));
+
+        Assert.Equal(19, await database.GetStockAsync(product.Id));
+    }
+
+    // Imita uma transportadora de verdade: a modalidade só aparece para um CEP e até um número de unidades
+    private sealed class PacOnlyIn(string postalCode, int maxUnits = 100) : IShippingCalculator
+    {
+        public Task<IReadOnlyList<ShippingOption>> QuoteAsync(string destinationPostalCode, IReadOnlyList<ShippingPackage> packages, CancellationToken ct = default)
+        {
+            List<ShippingOption> options = [StudioPickupCalculator.Option];
+            if (PostalCode.Normalize(destinationPostalCode) == postalCode && packages.Sum(p => p.Quantity) <= maxUnits)
+                options.Add(new ShippingOption("pac", "PAC", 20m, 8));
+            return Task.FromResult<IReadOnlyList<ShippingOption>>(options);
+        }
+    }
+
+    private sealed class FailingShipping : IShippingCalculator
+    {
+        public Task<IReadOnlyList<ShippingOption>> QuoteAsync(string destinationPostalCode, IReadOnlyList<ShippingPackage> packages, CancellationToken ct = default) =>
+            throw new ShippingQuoteException("fora do ar");
     }
 
     [FactWithDatabase]
