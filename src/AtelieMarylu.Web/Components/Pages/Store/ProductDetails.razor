@@ -83,10 +83,7 @@ else
 
             @if (product.IsAvailableForSale)
             {
-                @if (product.Stock <= 2)
-                {
-                    <p class="tag mb-2">@L["Last {0} unit(s)", product.Stock]</p>
-                }
+                @* A etiqueta "Últimas unidades" fica dentro da ilha, para acompanhar o estoque conferido no clique *@
                 <AddToCart @rendermode="InteractiveServer" ProductId="product.Id" Stock="product.Stock" />
             }
             else

@@ -1,10 +1,24 @@
 @* "Ilha" interativa dentro da página de produto, que é estática *@
 @inject CartService Cart
+@inject ProductService Products
+@using AtelieMarylu.Domain.Carts
 
-<div class="d-flex gap-3 align-items-center flex-wrap mb-2">
-    <QuantityPicker @bind-Value="quantity" Max="@Math.Min(Stock, AtelieMarylu.Domain.Carts.Cart.MaxQuantityPerItem)" />
-    <button class="btn btn-primary btn-lg" @onclick="Add" disabled="@(!RendererInfo.IsInteractive)">@L["Add to cart"]</button>
-</div>
+@if (stock <= 0)
+{
+    @* tabindex="-1": recebe o foco quando o modal "Esgotado" fecha, porque o botão que o abriu sumiu *@
+    <div id="@soldOutId" class="alert alert-secondary" tabindex="-1">@L["Sold out for now. Message us on WhatsApp or Instagram to order one."]</div>
+}
+else
+{
+    @if (stock <= 2)
+    {
+        <p class="tag mb-2">@(stock == 1 ? L["Last unit"] : L["Last {0} units", stock])</p>
+    }
+    <div class="d-flex gap-3 align-items-center flex-wrap mb-2">
+        <QuantityPicker @bind-Value="quantity" Max="@Math.Min(stock, AtelieMarylu.Domain.Carts.Cart.MaxQuantityPerItem)" />
+        <button class="btn btn-primary btn-lg" @onclick="Add" disabled="@(!RendererInfo.IsInteractive || busy)">@L["Add to cart"]</button>
+    </div>
+}
 
 @if (added)
 {
@@ -17,16 +31,70 @@
     </div>
 }
 
+<AlertDialog @ref="dialog" />
+
 @code {
     [Parameter, EditorRequired] public int ProductId { get; set; }
+
+    // Estoque de quando a página abriu: só serve para a primeira tela. No clique, vale o do banco.
     [Parameter, EditorRequired] public int Stock { get; set; }
 
+    private readonly string soldOutId = $"sold-out-{Guid.NewGuid():N}";
+    private int stock;
     private int quantity = 1;
     private bool added;
+    private bool busy;
+    private AlertDialog dialog = default!;
 
+    protected override void OnInitialized() => stock = Stock;
+
+    // A página é estática: outra cliente pode ter comprado a última unidade depois que ela abriu.
+    // Por isso o estoque é conferido de novo aqui, e só entra no carrinho o que ele comporta.
+    // A garantia final continua no servidor: o pedido reconfere preço e estoque ao ser criado.
     private async Task Add()
     {
-        await Cart.AddAsync(ProductId, Math.Clamp(quantity, 1, Stock));
-        added = true;
+        if (busy) return;
+        busy = true;
+        added = false;
+        try
+        {
+            var requested = quantity;
+            stock = await Products.GetStockForSaleAsync(ProductId);
+            var (addedUnits, outcome) = await Cart.AddWithinStockAsync(ProductId, requested, stock);
+            // O seletor não pode ficar acima do estoque novo
+            quantity = Math.Clamp(quantity, 1, Math.Max(1, Math.Min(stock, AtelieMarylu.Domain.Carts.Cart.MaxQuantityPerItem)));
+            added = addedUnits > 0;
+
+            // A regra de qual aviso mostrar fica no domínio (Cart.AddWithinStock, testada); aqui é só o texto
+            switch (outcome)
+            {
+                case AddWithinStockOutcome.SoldOut:
+                    dialog.Show(L["Sold out"], L["The ready-made units of this product have run out. Message us on WhatsApp or Instagram to order one."],
+                        focusOnCloseId: soldOutId);
+                    break;
+                case AddWithinStockOutcome.CartHasAllStock:
+                    dialog.Show(L["Already in your cart"], L["All available units of this product are already in your cart."], L["View cart"], "cart");
+                    break;
+                case AddWithinStockOutcome.CartAboveStock:
+                    dialog.Show(L["Not enough units"], stock == 1
+                        ? L["Only 1 unit is left, and your cart has more than that. Adjust the quantity in your cart."]
+                        : L["Only {0} units are left, and your cart has more than that. Adjust the quantity in your cart.", stock],
+                        L["View cart"], "cart");
+                    break;
+                case AddWithinStockOutcome.Partial:
+                    dialog.Show(L["Not enough units"], addedUnits == 1
+                        ? L["We added the last available unit to your cart."]
+                        : L["We added the last {0} available units to your cart.", addedUnits]);
+                    break;
+                case AddWithinStockOutcome.LimitPerItem:
+                    dialog.Show(L["Limit per product"], L["Each order can have up to {0} units of each product.", AtelieMarylu.Domain.Carts.Cart.MaxQuantityPerItem],
+                        L["View cart"], "cart");
+                    break;
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 }

@@ -47,7 +47,7 @@ else
                             }
                             else if (p!.Stock < item.Quantity)
                             {
-                                <div class="text-danger small">@L["Only {0} unit(s) left.", p.Stock]</div>
+                                <div class="text-danger small">@(p.Stock == 1 ? L["Only 1 unit left."] : L["Only {0} units left.", p.Stock])</div>
                             }
                             else
                             {

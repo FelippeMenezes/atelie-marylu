@@ -1,0 +1,64 @@
+@* Aviso em modal no estilo SweetAlert, com o <dialog> nativo do HTML (sem biblioteca externa).
+   O navegador cuida do que é difícil de acertar à mão: prende o foco no aviso, escurece o fundo,
+   fecha com Esc e devolve o foco ao botão que abriu. Fechar não precisa de ida ao servidor:
+   o <form method="dialog"> fecha sozinho. *@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<dialog @ref="element" class="alert-dialog" aria-labelledby="@($"{id}-title")" aria-describedby="@($"{id}-text")">
+    <div class="alert-dialog-icon" aria-hidden="true">!</div>
+    <h2 id="@($"{id}-title")" class="h4">@title</h2>
+    <p id="@($"{id}-text")">@text</p>
+    <form method="dialog" class="d-flex gap-2 justify-content-center flex-wrap">
+        @if (actionUrl is not null)
+        {
+            <a href="@actionUrl" class="btn btn-outline-primary">@actionText</a>
+        }
+        <button class="btn btn-primary" autofocus>@L["Got it"]</button>
+    </form>
+</dialog>
+
+@code {
+    private readonly string id = $"alert-{Guid.NewGuid():N}";
+    private ElementReference element;
+    private IJSObjectReference? jsModule;
+    private string? title;
+    private string? text;
+    private string? actionText;
+    private string? actionUrl;
+    private string? focusOnCloseId;
+    private bool pendingShow;
+
+    // O texto entra na tela primeiro e o modal abre depois da renderização (OnAfterRenderAsync),
+    // para nunca aparecer por um instante com o texto do aviso anterior.
+    // focusOnCloseId: para onde levar o foco ao fechar, quando o botão que abriu o aviso some da tela
+    // (sem isso o foco cai no topo da página e quem usa leitor de tela se perde).
+    public void Show(string title, string text, string? actionText = null, string? actionUrl = null, string? focusOnCloseId = null)
+    {
+        (this.title, this.text, this.actionText, this.actionUrl, this.focusOnCloseId) = (title, text, actionText, actionUrl, focusOnCloseId);
+        pendingShow = true;
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!pendingShow) return;
+        pendingShow = false;
+        jsModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/store.js");
+        await jsModule.InvokeVoidAsync("showDialog", element, focusOnCloseId);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (jsModule is null) return;
+        try
+        {
+            await jsModule.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // O navegador já fechou a conexão; não há o que liberar do lado dele
+            jsModule = null;
+        }
+    }
+}

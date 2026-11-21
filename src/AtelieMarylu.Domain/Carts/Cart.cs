@@ -41,6 +41,35 @@ public class Cart
 
     public void Remove(int productId) => ChangeQuantity(productId, 0);
 
+    // Quantas unidades deste produto ainda podem entrar no carrinho, dado o estoque à venda agora.
+    // Conta o que já está no carrinho (inclusive o que outra aba pôs) e o limite por item (AML-0038).
+    // Nunca devolve negativo: o estoque pode ter caído abaixo do que a cliente já tem no carrinho.
+    public int RoomFor(int productId, int stock)
+    {
+        var inCart = _items.FirstOrDefault(i => i.ProductId == productId)?.Quantity ?? 0;
+        return Math.Max(0, Math.Min(stock, MaxQuantityPerItem) - inCart);
+    }
+
+    // Acrescenta só o que cabe (RoomFor) e diz o que limitou, para a tela mostrar a mensagem certa.
+    // A ordem dos testes importa: "esgotado" vem antes de tudo, e o limite por item só é o motivo
+    // quando o estoque, sozinho, deixaria entrar mais.
+    public AddWithinStockResult AddWithinStock(int productId, int requested, int stock)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(requested);
+        var inCart = _items.FirstOrDefault(i => i.ProductId == productId)?.Quantity ?? 0;
+        var added = Math.Min(requested, RoomFor(productId, stock));
+        Add(productId, added);
+
+        var outcome =
+            added == requested ? AddWithinStockOutcome.Added
+            : stock <= 0 ? AddWithinStockOutcome.SoldOut
+            : stock > MaxQuantityPerItem && inCart + requested > MaxQuantityPerItem ? AddWithinStockOutcome.LimitPerItem
+            : added > 0 ? AddWithinStockOutcome.Partial
+            : inCart > stock ? AddWithinStockOutcome.CartAboveStock
+            : AddWithinStockOutcome.CartHasAllStock;
+        return new AddWithinStockResult(added, outcome);
+    }
+
     // Tira do carrinho o que virou pedido: subtrai as quantidades pedidas e remove o que zerar.
     // O carrinho pode ter mudado em outra aba enquanto o checkout estava aberto: o que foi
     // acrescentado depois (outro produto ou mais unidades) não entrou no pedido e continua aqui.
