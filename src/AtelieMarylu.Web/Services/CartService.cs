@@ -53,6 +53,16 @@ public class CartService(ProtectedLocalStorage storage, ILogger<CartService> log
 
     public Task AddAsync(int productId, int quantity = 1) => ChangeAsync(c => c.Add(productId, quantity));
 
+    // Acrescenta só o que o estoque comporta e diz quantas unidades entraram e por quê.
+    // A conta é feita dentro da trava, depois de reler o storage: assim conta também o que
+    // outra aba pôs no carrinho entre a página abrir e o clique (AML-0038).
+    public async Task<AddWithinStockResult> AddWithinStockAsync(int productId, int quantity, int stock)
+    {
+        AddWithinStockResult result = default;
+        await ChangeAsync(c => result = c.AddWithinStock(productId, quantity, stock));
+        return result;
+    }
+
     public Task ChangeQuantityAsync(int productId, int quantity) => ChangeAsync(c => c.ChangeQuantity(productId, quantity));
 
     public Task RemoveAsync(int productId) => ChangeAsync(c => c.Remove(productId));

@@ -156,6 +156,33 @@ public class CartServiceTests
         Assert.Equal([new CartItem(2, 1)], tab.Current.Items);
     }
 
+    [Fact]
+    public async Task Adding_within_stock_counts_what_another_tab_put_in_the_cart()
+    {
+        var productPage = NewTab();
+        await productPage.LoadAsync(); // a página do produto abriu com o carrinho vazio
+
+        var otherTab = NewTab();
+        await otherTab.AddAsync(productId: 1, quantity: 2);
+
+        var result = await productPage.AddWithinStockAsync(productId: 1, quantity: 2, stock: 3);
+
+        Assert.Equal(new AddWithinStockResult(1, AddWithinStockOutcome.Partial), result);
+        Assert.Equal([new CartItem(1, 3)], productPage.Current.Items);
+    }
+
+    [Fact]
+    public async Task Adding_a_sold_out_product_leaves_the_cart_as_it_was()
+    {
+        var tab = NewTab();
+        await tab.AddAsync(productId: 2);
+
+        var result = await tab.AddWithinStockAsync(productId: 1, quantity: 1, stock: 0);
+
+        Assert.Equal(new AddWithinStockResult(0, AddWithinStockOutcome.SoldOut), result);
+        Assert.Equal([new CartItem(2, 1)], tab.Current.Items);
+    }
+
     // Imita o localStorage que o ProtectedLocalStorage chama por JS interop
     private sealed class FakeLocalStorage : IJSRuntime
     {

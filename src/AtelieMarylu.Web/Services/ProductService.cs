@@ -56,6 +56,17 @@ public class ProductService(IDbContextFactory<ApplicationDbContext> dbFactory, A
         return await db.Products.AsNoTracking().Include(p => p.Images).FirstOrDefaultAsync(p => p.Id == id && p.IsActive, ct);
     }
 
+    // Estoque à venda agora: 0 se o produto esgotou ou saiu da loja. A página de produto é estática e
+    // mostra o estoque de quando abriu; o "adicionar ao carrinho" confere de novo na hora do clique.
+    public async Task<int> GetStockForSaleAsync(int id, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Products.AsNoTracking()
+            .Where(p => p.Id == id && p.IsActive)
+            .Select(p => p.Stock)
+            .FirstOrDefaultAsync(ct);
+    }
+
     public async Task<Product?> GetAsync(int id, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);

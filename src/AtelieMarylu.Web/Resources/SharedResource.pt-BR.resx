@@ -278,7 +278,6 @@
   <data name="JPG, PNG or WEBP, up to 8 MB each, {0} photos at most." xml:space="preserve"><value>JPG, PNG ou WEBP, até 8 MB cada, no máximo {0} fotos.</value></data>
   <data name="Keep me signed in" xml:space="preserve"><value>Manter conectado</value></data>
   <data name="Last units" xml:space="preserve"><value>Últimas unidades</value></data>
-  <data name="Last {0} unit(s)" xml:space="preserve"><value>Últimas {0} unidade(s)</value></data>
   <data name="Length (cm)" xml:space="preserve"><value>Comprimento (cm)</value></data>
   <data name="Liked your piece? A review on Google helps our studio a lot." xml:space="preserve"><value>Gostou da sua peça? Uma avaliação no Google ajuda muito o nosso ateliê.</value></data>
   <data name="Limit of {0} photos." xml:space="preserve"><value>Limite de {0} fotos.</value></data>
@@ -321,7 +320,6 @@
   <data name="Only paid or in-preparation orders can be shipped." xml:space="preserve"><value>Só pedidos pagos ou em preparo podem ser enviados.</value></data>
   <data name="Only paid orders can go into preparation." xml:space="preserve"><value>Só pedidos pagos podem entrar em preparo.</value></data>
   <data name="Only shipped orders can be marked as delivered." xml:space="preserve"><value>Só pedidos enviados podem ser marcados como entregues.</value></data>
-  <data name="Only {0} unit(s) left." xml:space="preserve"><value>Só restam {0} unidade(s).</value></data>
   <data name="Open menu" xml:space="preserve"><value>Abrir menu</value></data>
   <data name="Open your bank app, choose" xml:space="preserve"><value>Abra o app do seu banco, escolha</value></data>
   <data name="or sign in with email and password" xml:space="preserve"><value>ou entre com e-mail e senha</value></data>
@@ -577,4 +575,19 @@
   <data name="Not available yet" xml:space="preserve"><value>Ainda não disponível</value></data>
   <data name="1 item" xml:space="preserve"><value>1 item</value></data>
   <data name="{0} items" xml:space="preserve"><value>{0} itens</value></data>
+  <data name="Last unit" xml:space="preserve"><value>Última unidade</value></data>
+  <data name="Last {0} units" xml:space="preserve"><value>Últimas {0} unidades</value></data>
+  <data name="Only 1 unit left." xml:space="preserve"><value>Só resta 1 unidade.</value></data>
+  <data name="Only {0} units left." xml:space="preserve"><value>Só restam {0} unidades.</value></data>
+  <data name="Got it" xml:space="preserve"><value>Entendi</value></data>
+  <data name="Already in your cart" xml:space="preserve"><value>Já está no seu carrinho</value></data>
+  <data name="All available units of this product are already in your cart." xml:space="preserve"><value>Todas as unidades disponíveis deste produto já estão no seu carrinho.</value></data>
+  <data name="Not enough units" xml:space="preserve"><value>Não havia unidades suficientes</value></data>
+  <data name="We added the last available unit to your cart." xml:space="preserve"><value>Colocamos no seu carrinho a última unidade disponível.</value></data>
+  <data name="We added the last {0} available units to your cart." xml:space="preserve"><value>Colocamos no seu carrinho as últimas {0} unidades disponíveis.</value></data>
+  <data name="The ready-made units of this product have run out. Message us on WhatsApp or Instagram to order one." xml:space="preserve"><value>Acabaram as unidades prontas deste produto no estoque. Fale com a gente pelo WhatsApp ou Instagram para encomendar.</value></data>
+  <data name="Only 1 unit is left, and your cart has more than that. Adjust the quantity in your cart." xml:space="preserve"><value>Só resta 1 unidade, e o seu carrinho tem mais do que isso. Ajuste a quantidade no carrinho.</value></data>
+  <data name="Only {0} units are left, and your cart has more than that. Adjust the quantity in your cart." xml:space="preserve"><value>Só restam {0} unidades, e o seu carrinho tem mais do que isso. Ajuste a quantidade no carrinho.</value></data>
+  <data name="Limit per product" xml:space="preserve"><value>Limite por produto</value></data>
+  <data name="Each order can have up to {0} units of each product." xml:space="preserve"><value>Cada pedido pode ter até {0} unidades de cada produto.</value></data>
 </root>

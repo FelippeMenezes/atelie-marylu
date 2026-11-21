@@ -96,4 +96,69 @@ public class CartTests
 
         Assert.Equal([new CartItem(2, 1)], cart.Items);
     }
+
+    [Fact]
+    public void RoomFor_product_not_in_cart_is_the_stock()
+    {
+        Assert.Equal(3, new Cart().RoomFor(1, stock: 3));
+    }
+
+    [Fact]
+    public void RoomFor_discounts_what_is_already_in_the_cart()
+    {
+        var cart = new Cart([new CartItem(1, 2)]);
+
+        Assert.Equal(1, cart.RoomFor(1, stock: 3));
+    }
+
+    [Fact]
+    public void RoomFor_sold_out_product_is_zero()
+    {
+        Assert.Equal(0, new Cart().RoomFor(1, stock: 0));
+    }
+
+    [Fact]
+    public void RoomFor_is_never_negative_when_stock_dropped_below_the_cart()
+    {
+        var cart = new Cart([new CartItem(1, 3)]); // outra cliente comprou depois que estas 3 entraram
+
+        Assert.Equal(0, cart.RoomFor(1, stock: 1));
+    }
+
+    [Fact]
+    public void RoomFor_respects_the_limit_per_item()
+    {
+        var cart = new Cart([new CartItem(1, Cart.MaxQuantityPerItem - 1)]);
+
+        Assert.Equal(1, cart.RoomFor(1, stock: 100));
+    }
+
+    [Fact]
+    public void RoomFor_only_looks_at_the_given_product()
+    {
+        var cart = new Cart([new CartItem(2, 5)]);
+
+        Assert.Equal(3, cart.RoomFor(1, stock: 3));
+    }
+
+    // Cart.AddWithinStock: quanto entrou e o motivo, que decide a mensagem da tela (AML-0038)
+    [Theory]
+    [InlineData(0, 2, 5, 2, AddWithinStockOutcome.Added)]
+    [InlineData(0, 1, 0, 0, AddWithinStockOutcome.SoldOut)]
+    [InlineData(2, 1, 0, 0, AddWithinStockOutcome.SoldOut)]          // esgotado vence "já está no carrinho"
+    [InlineData(1, 3, 3, 2, AddWithinStockOutcome.Partial)]
+    [InlineData(2, 1, 2, 0, AddWithinStockOutcome.CartHasAllStock)]
+    [InlineData(3, 1, 1, 0, AddWithinStockOutcome.CartAboveStock)]   // outra cliente comprou depois que estas 3 entraram
+    [InlineData(19, 5, 100, 1, AddWithinStockOutcome.LimitPerItem)]  // havia estoque: quem limitou foi o máximo por item
+    [InlineData(20, 1, 100, 0, AddWithinStockOutcome.LimitPerItem)]
+    [InlineData(18, 5, 20, 2, AddWithinStockOutcome.Partial)]        // estoque e limite iguais: é falta de estoque
+    public void AddWithinStock_says_how_many_went_in_and_why(int inCart, int requested, int stock, int expectedAdded, AddWithinStockOutcome expected)
+    {
+        var cart = new Cart(inCart > 0 ? [new CartItem(1, inCart)] : []);
+
+        var result = cart.AddWithinStock(1, requested, stock);
+
+        Assert.Equal(new AddWithinStockResult(expectedAdded, expected), result);
+        Assert.Equal(inCart + expectedAdded, cart.TotalUnits);
+    }
 }
