@@ -61,6 +61,10 @@ public class PurchaseFlowTests
         await Assertions.Expect(page.GetByAltText("QR code do PIX")).ToBeVisibleAsync();
         await page.GetByRole(AriaRole.Button, new() { Name = "Simular pagamento aprovado" }).ClickAsync();
         await Assertions.Expect(page.GetByText("Pagamento confirmado!")).ToBeVisibleAsync();
+
+        // 5. O que virou pedido saiu do carrinho (AML-0037)
+        await page.GotoAsync($"{Url}/cart");
+        await Assertions.Expect(page.GetByText("Seu carrinho está vazio.")).ToBeVisibleAsync();
     }
 
     [FactE2E]

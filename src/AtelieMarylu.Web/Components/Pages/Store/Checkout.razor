@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @attribute [Authorize]
 @using System.Security.Claims
+@using AtelieMarylu.Domain.Carts
 @using AtelieMarylu.Domain.Shipping
 @using AtelieMarylu.Web.Configuration
 @using Microsoft.Extensions.Options
@@ -16,8 +17,9 @@
 
 <h1>@L["Checkout"]</h1>
 
-@if (!ready)
+@if (!ready || createdOrderCode is not null)
 {
+    @* Também depois de criar o pedido: os itens já saíram do carrinho e a página vai para o pedido *@
     <div class="skeleton" style="height: 300px"></div>
 }
 else if (Cart.Current.IsEmpty)
@@ -146,6 +148,7 @@ else
     private string? errorMessage;
     private bool processing, ready, acceptedTerms;
     private string customerId = "";
+    private string? createdOrderCode;
 
     private decimal Subtotal => Cart.Current.Items.Sum(i => (products.GetValueOrDefault(i.ProductId)?.Price ?? 0) * i.Quantity);
     private decimal Discount => method == PaymentMethod.Pix
@@ -219,16 +222,23 @@ else
 
     private async Task FinishAsync()
     {
-        if (processing || shippingCode is null || !acceptedTerms) return;
+        if (processing || createdOrderCode is not null || shippingCode is null || !acceptedTerms) return;
         processing = true;
         errorMessage = null;
-        string? orderCode = null;
         try
         {
-            var order = await Orders.CreateAsync(customerId, Cart.Current.Items, address.ToAddress(), shippingCode);
-            orderCode = order.Code;
+            // Cópia dos itens: o pedido nasce do que a cliente estava vendo, não de uma lista que pode mudar no meio
+            var items = Cart.Current.Items.ToList();
+            var order = await Orders.CreateAsync(customerId, items, address.ToAddress(), shippingCode);
+            createdOrderCode = order.Code;
+
+            // Daqui em diante quem guarda os itens (e o estoque reservado) é o pedido. Tirar do carrinho
+            // antes de abrir o pagamento evita que uma falha no PagBank deixe o carrinho cheio e a cliente
+            // finalize de novo, criando um segundo pedido e segurando o estoque em dobro (AML-0037).
+            // Sai só o que entrou no pedido: o que foi acrescentado em outra aba continua no carrinho.
+            await TryRemoveOrderedFromCartAsync(items);
+
             await Orders.StartPaymentAsync(order.Id, method);
-            await Cart.ClearAsync();
         }
         catch (OrderRuleException ex)
         {
@@ -237,29 +247,47 @@ else
         catch (InvalidOperationException ex)
         {
             Logger.LogError(ex, "Falha ao finalizar pedido");
-            errorMessage = orderCode is null
-                ? L["Could not complete the order. Try again."]
-                : L["The order was created, but there was a problem starting the payment. Try paying from the order page."];
+            errorMessage = FailureMessage();
         }
         catch (PaymentGatewayException ex)
         {
             // Só acontece depois de o pedido existir: o cliente tenta pagar de novo pela página do pedido
             Logger.LogError(ex, "Falha ao iniciar o pagamento do pedido");
-            errorMessage = L["The order was created, but there was a problem starting the payment. Try paying from the order page."];
+            errorMessage = FailureMessage();
         }
         catch (TimeoutException ex)
         {
             Logger.LogError(ex, "Falha ao finalizar pedido");
-            errorMessage = orderCode is null
-                ? L["Could not complete the order. Try again."]
-                : L["The order was created, but there was a problem starting the payment. Try paying from the order page."];
+            errorMessage = FailureMessage();
         }
         finally
         {
             processing = false;
         }
 
-        if (orderCode is not null)
-            Navigation.NavigateTo($"my-orders/{orderCode}?new=1");
+        // Com o pedido criado, a página dele é o lugar certo para qualquer falha de pagamento:
+        // ela mostra "O pagamento não abriu" com "Tentar de novo" (AML-0035).
+        if (createdOrderCode is not null)
+            Navigation.NavigateTo($"my-orders/{createdOrderCode}?new=1");
+    }
+
+    private string FailureMessage() => createdOrderCode is null
+        ? L["Could not complete the order. Try again."]
+        : L["The order was created, but there was a problem starting the payment. Try paying from the order page."];
+
+    // Melhor esforço: o pedido já está gravado, então uma falha ao falar com o navegador não pode
+    // impedir o pagamento nem virar uma mensagem de erro que leve a cliente a finalizar de novo.
+    // No pior caso, os itens continuam no carrinho (o comportamento antigo). Só as falhas de JS interop são
+    // capturadas; qualquer outra coisa é bug e deve subir.
+    private async Task TryRemoveOrderedFromCartAsync(IReadOnlyList<CartItem> ordered)
+    {
+        try
+        {
+            await Cart.RemoveOrderedAsync(ordered);
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or JSException or TaskCanceledException)
+        {
+            Logger.LogWarning(ex, "Pedido {OrderCode} criado, mas os itens não puderam ser tirados do carrinho", createdOrderCode);
+        }
     }
 }
