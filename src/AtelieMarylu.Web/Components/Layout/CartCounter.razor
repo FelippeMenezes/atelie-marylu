@@ -3,7 +3,10 @@
 
 @if (Cart.IsLoaded && !Cart.Current.IsEmpty)
 {
-    <span class="badge" aria-label="@($"{Cart.Current.TotalUnits} itens")">@Cart.Current.TotalUnits</span>
+    @* O número é só visual; o leitor de tela lê o texto escondido ("Carrinho, 6 itens").
+       aria-label num <span> sem papel semântico é ignorado pela maioria dos leitores. *@
+    <span class="badge" aria-hidden="true">@Cart.Current.TotalUnits</span>
+    <span class="visually-hidden">@(Cart.Current.TotalUnits == 1 ? L["1 item"] : L["{0} items", Cart.Current.TotalUnits])</span>
 }
 
 @code {

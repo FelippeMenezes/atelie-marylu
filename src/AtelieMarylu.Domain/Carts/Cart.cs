@@ -41,5 +41,16 @@ public class Cart
 
     public void Remove(int productId) => ChangeQuantity(productId, 0);
 
-    public void Clear() => _items.Clear();
+    // Tira do carrinho o que virou pedido: subtrai as quantidades pedidas e remove o que zerar.
+    // O carrinho pode ter mudado em outra aba enquanto o checkout estava aberto: o que foi
+    // acrescentado depois (outro produto ou mais unidades) não entrou no pedido e continua aqui.
+    // O que a cliente já tinha tirado não volta (AML-0037).
+    public void RemoveOrdered(IEnumerable<CartItem> ordered)
+    {
+        foreach (var item in ordered)
+        {
+            var current = _items.FirstOrDefault(i => i.ProductId == item.ProductId)?.Quantity ?? 0;
+            ChangeQuantity(item.ProductId, current - item.Quantity);
+        }
+    }
 }
