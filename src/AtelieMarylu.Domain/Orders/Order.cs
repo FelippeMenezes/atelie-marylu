@@ -7,6 +7,7 @@ public class Order
 {
     private readonly List<OrderItem> _items = [];
     private readonly List<Payment> _payments = [];
+    private readonly List<CancellationRequest> _cancellationRequests = [];
 
     private Order() { } // EF Core
 
@@ -57,6 +58,10 @@ public class Order
 
     public IReadOnlyList<OrderItem> Items => _items;
     public IReadOnlyList<Payment> Payments => _payments;
+    public IReadOnlyList<CancellationRequest> CancellationRequests => _cancellationRequests;
+
+    // A solicitação da cliente que a equipe ainda não respondeu (no máximo uma por vez)
+    public CancellationRequest? PendingCancellationRequest => _cancellationRequests.FirstOrDefault(r => r.IsPending);
 
     public decimal Subtotal => _items.Sum(i => i.Subtotal);
     public decimal Total => Subtotal + ShippingCost;
@@ -208,7 +213,40 @@ public class Order
         Status = OrderStatus.Cancelled;
         CancelledAt = DateTime.UtcNow;
         CancellationReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
-        // Pagamento já aprovado precisa de estorno no provedor; isso entra na fase de pagamentos.
+        // Cancelar o pedido responde a solicitação da cliente que estiver aberta.
+        // Pagamento já aprovado continua precisando de estorno no provedor (o painel avisa).
+        PendingCancellationRequest?.Resolve(CancellationReason, CancelledAt.Value);
+    }
+
+    // A cliente pede, em "Meus pedidos", para cancelar um pedido pago ou desistir de um pedido recebido.
+    // Só registra o pedido: a equipe é avisada, combina a devolução da peça e faz o estorno no provedor.
+    // (Pedido ainda não pago não passa por aqui: o OrderService cancela na hora com Cancel.)
+    //
+    // Sem prazo depois da entrega, de propósito: a loja não guarda a data em que a cliente recebeu a peça
+    // ("Entregue" é marcado à mão), e o arrependimento de 7 dias conta do recebimento (CDC, art. 49).
+    // Recusar no código por um dado impreciso negaria um direito legítimo. Por isso o sistema sempre aceita
+    // e registra a solicitação, e a equipe avalia o prazo ao responder (é o padrão das lojas grandes).
+    // O utcNow fica na assinatura para quando houver data de entrega confiável (ex.: rastreio do Melhor Envio).
+    public bool CanRequestCancellation(DateTime utcNow) =>
+        Status is OrderStatus.Paid or OrderStatus.Preparing or OrderStatus.Shipped or OrderStatus.Delivered
+        && PendingCancellationRequest is null;
+
+    public CancellationRequest RequestCancellation(string? reason, DateTime utcNow)
+    {
+        if (!CanRequestCancellation(utcNow))
+            throw new OrderRuleException("This order can no longer receive a cancellation request.");
+        var request = new CancellationRequest(Status, reason, utcNow);
+        _cancellationRequests.Add(request);
+        return request;
+    }
+
+    // A equipe responde a solicitação sem cancelar o pedido (ex.: a peça já foi enviada e o estorno
+    // foi feito depois da devolução, ou a cliente desistiu de cancelar).
+    public void ResolveCancellationRequest(string? note, DateTime utcNow)
+    {
+        var request = PendingCancellationRequest
+            ?? throw new OrderRuleException("This order has no open cancellation request.");
+        request.Resolve(note, utcNow);
     }
 
     private void CancelPendingPayments()

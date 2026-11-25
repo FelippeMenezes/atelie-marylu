@@ -35,6 +35,41 @@ else if (order is not null)
 
     <Notice Message="@message" IsError="@isError" />
 
+    @* Solicitação feita pela cliente em "Meus pedidos" (AML-0040). A loja deve responder: o estorno é feito
+       no PagBank, e esta caixa diz o caminho conforme a peça já tenha saído ou não. *@
+    @if (order.PendingCancellationRequest is { } pending)
+    {
+        <section class="alert alert-warning" aria-labelledby="solicitacao-titulo">
+            <h2 class="h5" id="solicitacao-titulo">@L["The customer asked to cancel this order"]</h2>
+            <p class="mb-1">
+                @L["Protocol:"] <strong>@pending.Protocol</strong> · @pending.RequestedAt.FormatBrasilia() ·
+                @L["Order status at the request:"] <strong>@L[Order.Describe(pending.OrderStatusAtRequest)]</strong>
+            </p>
+            <p class="mb-2">@L["Reason:"] @(pending.Reason ?? L["(not informed)"])</p>
+            <p class="small mb-2">
+                @if (order.CanCancel)
+                {
+                    @L["Not shipped yet: cancel the order below (this also answers the request) and refund the payment on PagBank."]
+                }
+                else
+                {
+                    @L["Already shipped: arrange the return with the customer at no cost to the customer. After receiving the piece, refund the payment on PagBank and mark the request as answered."]
+                }
+            </p>
+            @if (canCancel)
+            {
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                    <input class="form-control form-control-sm w-auto" placeholder="@L["Note (optional)"]" @bind="resolutionNote"
+                           maxlength="@CancellationRequest.ResolutionNoteMaxLength" aria-label="@L["Note (optional)"]" />
+                    <button class="btn btn-outline-dark btn-sm" disabled="@processing"
+                            @onclick='() => RunActionAsync(() => Orders.ResolveCancellationRequestAsync(Id, resolutionNote), Permissions.OrdersCancel, L["Request marked as answered."])'>
+                        @L["Mark request as answered"]
+                    </button>
+                </div>
+            }
+        </section>
+    }
+
     @if (canEdit || canCancel)
     {
         <section class="panel-box mb-3">
@@ -194,12 +229,28 @@ else if (order is not null)
         }
     </section>
 
+    @if (order.CancellationRequests.Any(r => !r.IsPending))
+    {
+        <section class="panel-box mb-3">
+            <h2 class="h5">@L["Answered cancellation requests"]</h2>
+            @foreach (var request in order.CancellationRequests.Where(r => !r.IsPending).OrderByDescending(r => r.RequestedAt))
+            {
+                <div class="small py-1">
+                    <strong>@request.Protocol</strong> · @L["requested on {0}", request.RequestedAt.FormatBrasilia()] ·
+                    @L["answered on {0}", request.ResolvedAt!.Value.FormatBrasilia()]
+                    @if (request.Reason is not null) { <text> · @L["Reason:"] @request.Reason</text> }
+                    @if (request.ResolutionNote is not null) { <text> · @L["Note:"] @request.ResolutionNote</text> }
+                </div>
+            }
+        </section>
+    }
+
     <section class="panel-box mb-3">
         <h2 class="h5">@L["History"]</h2>
         @foreach (var entry in history)
         {
             <div class="small py-1 @(AuditActions.IsPaymentAlert(entry.Action) ? "text-danger fw-bold" : "")">
-                @entry.OccurredAt.FormatBrasilia() · <strong>@entry.Author</strong> · <code>@entry.Action</code> @entry.Details
+                @entry.OccurredAt.FormatBrasilia() · <strong>@entry.Author</strong> · <code>@entry.Action</code> @AuditDetailsTranslator.Translate(L, entry.Details)
             </div>
         }
     </section>
@@ -217,7 +268,7 @@ else if (order is not null)
     private AddressForm address = new();
     private string? notes;
     private bool loaded, processing, canEdit, canCancel, confirmCancellation;
-    private string? message, trackingCode, cancellationReason;
+    private string? message, trackingCode, cancellationReason, resolutionNote;
     private List<AuditEntry> history = [];
     private bool isError;
     private PaymentMethod manualMethod = PaymentMethod.Pix;
@@ -286,6 +337,7 @@ else if (order is not null)
             (message, isError) = (successMessage, false);
             newProductId = 0;
             newQuantity = 1;
+            resolutionNote = null;
         }
         catch (OrderRuleException ex)
         {

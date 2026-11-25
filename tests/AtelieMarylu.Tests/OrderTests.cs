@@ -261,6 +261,92 @@ public class OrderTests
         Assert.Equal(3, order.Items.First(i => i.ProductId == 1).Quantity);
     }
 
+    // Cancelamento pedido pela cliente (AML-0040)
+    private static Order PaidOrder()
+    {
+        var order = NewOrder();
+        order.ConfirmPayment(order.StartPayment(PaymentMethod.Pix, "simulado"));
+        return order;
+    }
+
+    [Fact]
+    public void Cancellation_request_is_accepted_in_every_paid_stage()
+    {
+        var paid = PaidOrder();
+        var preparing = PaidOrder();
+        preparing.StartPreparation();
+        var shipped = PaidOrder();
+        shipped.MarkShipped("BR123");
+        var delivered = PaidOrder();
+        delivered.MarkShipped(null);
+        delivered.MarkDelivered();
+
+        Assert.All([paid, preparing, shipped, delivered], o => Assert.True(o.CanRequestCancellation(Now)));
+    }
+
+    [Fact]
+    public void Delivered_order_accepts_request_long_after_delivery()
+    {
+        // A loja não sabe a data real do recebimento: quem avalia o prazo é a equipe, não o código
+        var order = PaidOrder();
+        order.MarkShipped(null);
+        order.MarkDelivered();
+
+        Assert.True(order.CanRequestCancellation(Now.AddYears(1)));
+    }
+
+    [Fact]
+    public void Unpaid_or_cancelled_order_does_not_accept_request()
+    {
+        var unpaid = NewOrder();
+        var cancelled = PaidOrder();
+        cancelled.Cancel();
+
+        Assert.False(unpaid.CanRequestCancellation(Now));
+        Assert.False(cancelled.CanRequestCancellation(Now));
+        Assert.Throws<OrderRuleException>(() => unpaid.RequestCancellation(null, Now));
+    }
+
+    [Fact]
+    public void Only_one_open_request_at_a_time_and_a_new_one_after_the_answer()
+    {
+        var order = PaidOrder();
+        var first = order.RequestCancellation("  tamanho errado  ", Now);
+
+        Assert.Equal("tamanho errado", first.Reason);
+        Assert.Equal(OrderStatus.Paid, first.OrderStatusAtRequest);
+        Assert.Matches("^CAN-[2-9A-HJ-NP-Z]{6}$", first.Protocol);
+        Assert.False(order.CanRequestCancellation(Now));
+        Assert.Throws<OrderRuleException>(() => order.RequestCancellation(null, Now));
+
+        order.ResolveCancellationRequest("Cliente desistiu", Now.AddHours(1));
+
+        Assert.True(order.CanRequestCancellation(Now.AddHours(2)));
+        order.RequestCancellation(null, Now.AddHours(2));
+        Assert.Equal(2, order.CancellationRequests.Count);
+    }
+
+    [Fact]
+    public void Reason_longer_than_limit_is_refused()
+    {
+        var order = PaidOrder();
+
+        Assert.Throws<OrderRuleException>(() => order.RequestCancellation(new string('a', CancellationRequest.ReasonMaxLength + 1), Now));
+        Assert.Empty(order.CancellationRequests);
+    }
+
+    [Fact]
+    public void Cancelling_answers_the_open_request()
+    {
+        var order = PaidOrder();
+        order.RequestCancellation(null, Now);
+
+        order.Cancel("Pedido da cliente");
+
+        Assert.Null(order.PendingCancellationRequest);
+        Assert.Equal("Pedido da cliente", order.CancellationRequests.Single().ResolutionNote);
+    }
+
     [Theory]
     [InlineData("Bolsa de Tecido Floral", "bolsa-de-tecido-floral")]
     [InlineData("Necessaire média (22 x 14)", "necessaire-media-22-x-14")]

@@ -1,0 +1,18 @@
+@* Aviso para a loja (AML-0040): uma cliente pediu para cancelar ou desistir de um pedido pago.
+   O motivo foi escrito pela cliente: o Razor codifica o texto, então ele não injeta HTML no e-mail. *@
+<EmailLayout Title="@L["New cancellation request"]" ButtonText="@L["Open the order on the panel"]" Link="@AdminUrl">
+    <p style="margin:0 0 16px;">@L["The customer asked to cancel order {0} on {1}.", OrderCode, ReceivedAt]</p>
+    <p style="margin:0 0 8px;">@L["Protocol:"] <strong>@Protocol</strong></p>
+    <p style="margin:0 0 8px;">@L["Order status at the request:"] <strong>@L[OrderStatus]</strong></p>
+    <p style="margin:0 0 16px;">@L["Reason:"] @(string.IsNullOrWhiteSpace(Reason) ? L["(not informed)"] : Reason)</p>
+    <p style="margin:0;">@L["Not shipped yet: cancel the order on the panel and refund on PagBank. Already shipped: arrange the return with the customer, refund on PagBank after receiving the piece and mark the request as answered."]</p>
+</EmailLayout>
+
+@code {
+    [Parameter, EditorRequired] public string OrderCode { get; set; } = "";
+    [Parameter, EditorRequired] public string? Protocol { get; set; }
+    [Parameter, EditorRequired] public string ReceivedAt { get; set; } = "";
+    [Parameter, EditorRequired] public string OrderStatus { get; set; } = "";
+    [Parameter] public string? Reason { get; set; }
+    [Parameter, EditorRequired] public string AdminUrl { get; set; } = "";
+}

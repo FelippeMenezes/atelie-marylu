@@ -7,6 +7,7 @@
 @using AtelieMarylu.Web.Configuration
 @inject OrderService Orders
 @inject OrderEvents Events
+@inject OrderEmailSender OrderEmails
 @inject IWebHostEnvironment Environment
 @inject ILogger<MyOrder> Logger
 @inject Microsoft.Extensions.Options.IOptions<ShopOptions> Store
@@ -36,7 +37,8 @@ else if (order is not null)
 
     <Notice Message="@message" IsError="@isError" />
 
-    @if (order.Status == OrderStatus.Paid)
+    @* Com cancelamento pedido, "vamos preparar seu pedido" contradiria a caixa do protocolo logo abaixo *@
+    @if (order.Status == OrderStatus.Paid && order.PendingCancellationRequest is null)
     {
         <div class="alert alert-success">@L["Payment confirmed! We'll prepare your order and let you know when it ships."]</div>
     }
@@ -121,6 +123,55 @@ else if (order is not null)
         </div>
     }
 
+    @* Cancelamento e desistência pelo próprio site (Decreto 7.962/2013, art. 5º, AML-0040). Não pago: cancela na hora.
+       Pago: vira uma solicitação para a equipe, que combina a devolução e faz o estorno. *@
+    @if (order.PendingCancellationRequest is { } pending)
+    {
+        <div class="alert alert-info" role="status">
+            <strong>@L["Cancellation request received."]</strong>
+            @L["Protocol {0}, sent on {1}. Our team will contact you to arrange the refund.", pending.Protocol, pending.RequestedAt.FormatBrasilia()]
+        </div>
+    }
+    else if (order.Status == OrderStatus.AwaitingPayment || order.CanRequestCancellation(Now))
+    {
+        var unpaid = order.Status == OrderStatus.AwaitingPayment;
+        <section class="panel-box mb-3" aria-labelledby="cancelar-titulo">
+            <h2 class="h5" id="cancelar-titulo">@(unpaid ? L["Cancel order"] : L["Cancel or return"])</h2>
+            <p class="small">
+                @if (unpaid)
+                {
+                    @L["The order has not been paid yet. Cancelling releases the pieces and nothing is charged."]
+                }
+                else if (order.Status is OrderStatus.Shipped or OrderStatus.Delivered)
+                {
+                    @L["You can withdraw from the purchase within 7 days of receiving it, without giving a reason. We arrange the return at no cost to you and refund the full amount, including shipping."]
+                    <a href="returns-policy">@L["See the exchanges and returns policy"]</a>
+                }
+                else
+                {
+                    @L["Your request goes to our team, who will cancel the order and refund the full amount through the same payment method."]
+                }
+            </p>
+            @if (!confirmingCancellation)
+            {
+                <button class="btn btn-outline-danger btn-sm" @onclick="() => confirmingCancellation = true">
+                    @(unpaid ? L["Cancel order"] : L["Request cancellation"])
+                </button>
+            }
+            else
+            {
+                <label for="cancelar-motivo" class="form-label small">@L["Reason (optional)"]</label>
+                <textarea id="cancelar-motivo" class="form-control" rows="3" maxlength="@CancellationRequest.ReasonMaxLength" @bind="cancellationReason"></textarea>
+                <div class="d-flex gap-2 mt-2 flex-wrap">
+                    <button class="btn btn-danger btn-sm" @onclick="RequestCancellationAsync" disabled="@processing">
+                        @(unpaid ? L["Yes, cancel the order"] : L["Send cancellation request"])
+                    </button>
+                    <button class="btn btn-link btn-sm" @onclick="() => confirmingCancellation = false" disabled="@processing">@L["Back"]</button>
+                </div>
+            }
+        </section>
+    }
+
     <OrderSummary Order="order" />
     <p class="small">@L["Questions about your order? Message us on WhatsApp or Instagram with the code"] <strong>@order.Code</strong>.</p>
     <a href="my-orders">@L["← Back to my orders"]</a>
@@ -132,8 +183,8 @@ else if (order is not null)
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
 
     private Order? order;
-    private bool loaded, processing, isError;
-    private string? message;
+    private bool loaded, processing, isError, confirmingCancellation;
+    private string? message, cancellationReason;
 
     // A última tentativa de pagamento (o Id cresce a cada uma; mais confiável que comparar horários)
     private Payment? LatestPayment => order?.Payments.MaxBy(p => p.Id);
@@ -179,6 +230,25 @@ else if (order is not null)
     {
         if (order is null || processing) return;
         await RunActionAsync(() => Orders.StartPaymentAsync(order.Id, method), null);
+    }
+
+    private async Task RequestCancellationAsync()
+    {
+        if (order is null || processing) return;
+        var customerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (customerId is null) return;
+        CancellationOutcome? outcome = null;
+        await RunActionAsync(async () =>
+        {
+            outcome = await Orders.RequestCancellationAsync(order.Code, customerId, cancellationReason);
+            // Confirmação por e-mail para a cliente e aviso para a loja. A solicitação já está gravada:
+            // uma falha de entrega fica só no log, e o protocolo continua na tela.
+            await OrderEmails.TrySendCancellationEmailsAsync(outcome);
+        }, null);
+        if (outcome is null) return;
+        (confirmingCancellation, cancellationReason) = (false, null);
+        // A solicitação já aparece na caixa com o protocolo: uma mensagem de sucesso em cima só repetiria o aviso
+        (message, isError) = (outcome.CancelledNow ? L["Order cancelled."].Value : null, false);
     }
 
     private async Task SimulateApprovalAsync(Payment payment)

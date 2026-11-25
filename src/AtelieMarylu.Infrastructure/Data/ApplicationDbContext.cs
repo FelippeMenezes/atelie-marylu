@@ -14,6 +14,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<CancellationRequest> CancellationRequests => Set<CancellationRequest>();
     public DbSet<ProcessedNotification> ProcessedNotifications => Set<ProcessedNotification>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 

@@ -598,4 +598,48 @@
   <data name="The shipping price changed to {0}. Check the new amount and confirm again." xml:space="preserve"><value>O frete mudou para {0}. Confira o novo valor e confirme de novo.</value></data>
   <data name="The shipping method &quot;{0}&quot; no longer serves this order (new address or package size). Cancel this order and create a new one with another shipping method." xml:space="preserve"><value>A forma de entrega "{0}" não atende mais este pedido (endereço novo ou tamanho do pacote). Cancele este pedido e crie outro com outra forma de entrega.</value></data>
   <data name="Do not ship yet: the payment has not been confirmed." xml:space="preserve"><value>Ainda não envie: o pagamento não foi confirmado.</value></data>
+  <data name="New cancellation request" xml:space="preserve"><value>Nova solicitação de cancelamento</value></data>
+  <data name="Open the order on the panel" xml:space="preserve"><value>Abrir o pedido no painel</value></data>
+  <data name="The customer asked to cancel order {0} on {1}." xml:space="preserve"><value>A cliente pediu o cancelamento do pedido {0} em {1}.</value></data>
+  <data name="Protocol:" xml:space="preserve"><value>Protocolo:</value></data>
+  <data name="Order status at the request:" xml:space="preserve"><value>Situação do pedido na solicitação:</value></data>
+  <data name="Reason:" xml:space="preserve"><value>Motivo:</value></data>
+  <data name="(not informed)" xml:space="preserve"><value>(não informado)</value></data>
+  <data name="Not shipped yet: cancel the order on the panel and refund on PagBank. Already shipped: arrange the return with the customer, refund on PagBank after receiving the piece and mark the request as answered." xml:space="preserve"><value>Ainda não enviado: cancele o pedido no painel e faça o estorno no PagBank. Já enviado: combine a devolução com a cliente, faça o estorno no PagBank depois de receber a peça e marque a solicitação como respondida.</value></data>
+  <data name="View order" xml:space="preserve"><value>Ver pedido</value></data>
+  <data name="Order {0} was cancelled on {1}, as you asked. Nothing was charged and you don&#x27;t need to do anything else." xml:space="preserve"><value>O pedido {0} foi cancelado em {1}, como você pediu. Nada foi cobrado e você não precisa fazer mais nada.</value></data>
+  <data name="We received your request to cancel order {0} on {1}." xml:space="preserve"><value>Recebemos em {1} o seu pedido de cancelamento do pedido {0}.</value></data>
+  <data name="Our team will contact you to arrange the return of the piece, if it has already been sent, and the refund. The refund goes back through the same payment method." xml:space="preserve"><value>Nossa equipe vai entrar em contato para combinar a devolução da peça, se ela já tiver sido enviada, e o reembolso. O reembolso é feito pelo mesmo meio de pagamento.</value></data>
+  <data name="If you did not make this request, reply to this email." xml:space="preserve"><value>Se não foi você quem fez esta solicitação, responda a este e-mail.</value></data>
+  <data name="Order cancelled" xml:space="preserve"><value>Pedido cancelado</value></data>
+  <data name="Cancellation request received" xml:space="preserve"><value>Solicitação de cancelamento recebida</value></data>
+  <data name="Cancellation request received." xml:space="preserve"><value>Solicitação de cancelamento recebida.</value></data>
+  <data name="Protocol {0}, sent on {1}. Our team will contact you to arrange the refund." xml:space="preserve"><value>Protocolo {0}, enviada em {1}. Nossa equipe vai entrar em contato para combinar o reembolso.</value></data>
+  <data name="Cancel or return" xml:space="preserve"><value>Cancelar ou devolver</value></data>
+  <data name="The order has not been paid yet. Cancelling releases the pieces and nothing is charged." xml:space="preserve"><value>O pedido ainda não foi pago. Ao cancelar, as peças são liberadas e nada é cobrado.</value></data>
+  <data name="You can withdraw from the purchase within 7 days of receiving it, without giving a reason. We arrange the return at no cost to you and refund the full amount, including shipping." xml:space="preserve"><value>Você pode desistir da compra em até 7 dias depois de recebê-la, sem precisar justificar. Combinamos a devolução sem custo para você e devolvemos o valor integral, incluindo o frete.</value></data>
+  <data name="See the exchanges and returns policy" xml:space="preserve"><value>Veja a política de trocas e devoluções</value></data>
+  <data name="Your request goes to our team, who will cancel the order and refund the full amount through the same payment method." xml:space="preserve"><value>Sua solicitação vai para a nossa equipe, que cancela o pedido e devolve o valor integral pelo mesmo meio de pagamento.</value></data>
+  <data name="Request cancellation" xml:space="preserve"><value>Solicitar cancelamento</value></data>
+  <data name="Yes, cancel the order" xml:space="preserve"><value>Sim, cancelar o pedido</value></data>
+  <data name="Send cancellation request" xml:space="preserve"><value>Enviar solicitação de cancelamento</value></data>
+  <data name="Cancellation requests awaiting an answer" xml:space="preserve"><value>Solicitações de cancelamento sem resposta</value></data>
+  <data name="Customers who asked to cancel or return a paid order. Answer each one and refund on PagBank." xml:space="preserve"><value>Clientes que pediram para cancelar ou devolver um pedido pago. Responda cada uma e faça o estorno no PagBank.</value></data>
+  <data name="The customer asked to cancel this order" xml:space="preserve"><value>A cliente pediu o cancelamento deste pedido</value></data>
+  <data name="Not shipped yet: cancel the order below (this also answers the request) and refund the payment on PagBank." xml:space="preserve"><value>Ainda não enviado: cancele o pedido abaixo (isso também responde a solicitação) e faça o estorno do pagamento no PagBank.</value></data>
+  <data name="Already shipped: arrange the return with the customer at no cost to the customer. After receiving the piece, refund the payment on PagBank and mark the request as answered." xml:space="preserve"><value>Já enviado: combine a devolução com a cliente, sem custo para ela. Depois de receber a peça, faça o estorno do pagamento no PagBank e marque a solicitação como respondida.</value></data>
+  <data name="Note (optional)" xml:space="preserve"><value>Observação (opcional)</value></data>
+  <data name="Request marked as answered." xml:space="preserve"><value>Solicitação marcada como respondida.</value></data>
+  <data name="Mark request as answered" xml:space="preserve"><value>Marcar solicitação como respondida</value></data>
+  <data name="Answered cancellation requests" xml:space="preserve"><value>Solicitações de cancelamento respondidas</value></data>
+  <data name="requested on {0}" xml:space="preserve"><value>pedida em {0}</value></data>
+  <data name="answered on {0}" xml:space="preserve"><value>respondida em {0}</value></data>
+  <data name="Note:" xml:space="preserve"><value>Observação:</value></data>
+  <data name="Order {0} cancelled · Ateliê Marylu" xml:space="preserve"><value>Pedido {0} cancelado · Ateliê Marylu</value></data>
+  <data name="Cancellation request received · Order {0}" xml:space="preserve"><value>Solicitação de cancelamento recebida · Pedido {0}</value></data>
+  <data name="Cancellation request · Order {0}" xml:space="preserve"><value>Solicitação de cancelamento · Pedido {0}</value></data>
+  <data name="The reason can have at most {0} characters." xml:space="preserve"><value>O motivo pode ter no máximo {0} caracteres.</value></data>
+  <data name="This cancellation request was already answered." xml:space="preserve"><value>Esta solicitação de cancelamento já foi respondida.</value></data>
+  <data name="This order can no longer receive a cancellation request." xml:space="preserve"><value>Este pedido não aceita mais solicitação de cancelamento.</value></data>
+  <data name="This order has no open cancellation request." xml:space="preserve"><value>Este pedido não tem solicitação de cancelamento aberta.</value></data>
 </root>

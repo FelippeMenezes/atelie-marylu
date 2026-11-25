@@ -12,6 +12,8 @@ public static class AuditActions
     public const string OrderPreparing = "order.preparing";
     public const string OrderShipped = "order.shipped";
     public const string OrderDelivered = "order.delivered";
+    public const string OrderCancellationRequested = "order.cancellation-requested";
+    public const string OrderCancellationResolved = "order.cancellation-resolved";
 
     public const string PaymentNotified = "payment.notified";
     public const string PaymentMismatch = "payment.mismatch";

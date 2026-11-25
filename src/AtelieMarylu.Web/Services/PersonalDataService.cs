@@ -13,13 +13,15 @@ public class PersonalDataService(UserManager<ApplicationUser> userManager, IDbCo
     public async Task<IReadOnlyList<object>> ExportOrdersAsync(string userId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var orders = await db.Orders.AsNoTracking().Include(p => p.Items)
+        // Poucos pedidos por cliente, cada um com poucos itens e solicitações: uma consulta só (como no OrderService)
+        var orders = await db.Orders.AsNoTracking().AsSingleQuery()
             .Where(p => p.CustomerId == userId)
             .OrderBy(p => p.CreatedAt)
             .Select(p => new
             {
                 p.Code, p.CreatedAt, Status = p.Status.ToString(), p.Address, p.ShippingName, p.ShippingCost, p.TrackingCode,
                 Items = p.Items.Select(i => new { i.ProductName, i.Quantity, i.UnitPrice }),
+                CancellationRequests = p.CancellationRequests.Select(r => new { r.Protocol, r.RequestedAt, r.Reason, r.ResolvedAt }),
             })
             .ToListAsync(ct);
         return orders;
@@ -33,6 +35,15 @@ public class PersonalDataService(UserManager<ApplicationUser> userManager, IDbCo
         {
             if (!await db.Orders.AnyAsync(p => p.CustomerId == user.Id))
                 return await userManager.DeleteAsync(user);
+        }
+
+        // O pedido fica (obrigação fiscal), mas o motivo escrito pela cliente no cancelamento não é dado fiscal
+        // e pode ter informação pessoal: sai junto com a conta
+        await using (var db = await dbFactory.CreateDbContextAsync())
+        {
+            await db.CancellationRequests
+                .Where(r => db.Orders.Any(o => o.Id == r.OrderId && o.CustomerId == user.Id))
+                .ExecuteUpdateAsync(s => s.SetProperty(r => r.Reason, (string?)null));
         }
 
         foreach (var login in await userManager.GetLoginsAsync(user))

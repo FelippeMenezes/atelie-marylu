@@ -35,15 +35,16 @@ public class OrderService(
     public async Task<Order?> GetAsync(int id, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Orders.AsNoTracking().Include(p => p.Items).Include(p => p.Payments).FirstOrDefaultAsync(p => p.Id == id, ct);
+        return await db.Orders.AsNoTracking().Include(p => p.Items).Include(p => p.Payments).Include(p => p.CancellationRequests)
+            .AsSingleQuery().FirstOrDefaultAsync(p => p.Id == id, ct);
     }
 
     // O filtro por CustomerId garante que ninguém veja o pedido de outra pessoa trocando o código na URL
     public async Task<Order?> GetForCustomerAsync(string code, string? customerId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Orders.AsNoTracking().Include(p => p.Items).Include(p => p.Payments)
-            .FirstOrDefaultAsync(p => p.Code == code && p.CustomerId == customerId, ct);
+        return await db.Orders.AsNoTracking().Include(p => p.Items).Include(p => p.Payments).Include(p => p.CancellationRequests)
+            .AsSingleQuery().FirstOrDefaultAsync(p => p.Code == code && p.CustomerId == customerId, ct);
     }
 
     public async Task<List<Order>> ListForCustomerAsync(string? customerId, CancellationToken ct = default)
@@ -338,6 +339,63 @@ public class OrderService(
             foreach (var item in order.Items)
                 await RestoreStockAsync(db, item.ProductId, item.Quantity, ct);
             return reason;
+        }, ct: ct);
+
+    // A cliente pede o cancelamento em "Meus pedidos" (AML-0040). Tudo numa transação, decidido pelo status
+    // do pedido carregado aqui dentro: se o webhook confirmar o pagamento ao mesmo tempo, a coluna xmin faz uma
+    // das gravações falhar, e um pedido recém-pago nunca é cancelado como se não tivesse dinheiro para devolver.
+    // - Não pago: cancela na hora e devolve o estoque (não há o que estornar).
+    // - Pago, em preparo, enviado ou entregue: só registra a solicitação; a equipe é avisada e faz o estorno.
+    public async Task<CancellationOutcome> RequestCancellationAsync(string code, string customerId, string? reason, CancellationToken ct = default)
+    {
+        var now = clock.GetUtcNow().UtcDateTime;
+        Order order;
+        List<OpenCharge> openBefore;
+        CancellationOutcome outcome;
+        await using (var db = await dbFactory.CreateDbContextAsync(ct))
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            // O filtro por CustomerId impede pedir o cancelamento do pedido de outra pessoa
+            var orderId = await db.Orders.Where(p => p.Code == code && p.CustomerId == customerId).Select(p => (int?)p.Id).FirstOrDefaultAsync(ct)
+                ?? throw new OrderRuleException("Order not found.");
+            order = await LoadOrderAsync(db, orderId, ct);
+            openBefore = OpenCharges(order);
+
+            if (order.Status == OrderStatus.AwaitingPayment)
+            {
+                // Texto gravado no pedido, como os outros motivos de cancelamento (dado do banco, sem tradução)
+                var cancellationReason = string.IsNullOrWhiteSpace(reason) ? "Cancelado pela cliente" : $"Cancelado pela cliente: {reason.Trim()}";
+                order.Cancel(cancellationReason.Length > 200 ? cancellationReason[..200] : cancellationReason);
+                foreach (var item in order.Items)
+                    await RestoreStockAsync(db, item.ProductId, item.Quantity, ct);
+                await audit.RecordAsync(db, AuditActions.OrderCancelled, AuditEntities.Order, order.Id, order.CancellationReason);
+                outcome = new CancellationOutcome(order.Id, order.Code, order.CustomerId, CancelledNow: true, Protocol: null, now, OrderStatus.AwaitingPayment, reason);
+            }
+            else
+            {
+                var request = order.RequestCancellation(reason, now);
+                // O motivo escrito pela cliente fica só na solicitação (sai na exportação da LGPD), não na auditoria
+                await audit.RecordAsync(db, AuditActions.OrderCancellationRequested, AuditEntities.Order, order.Id,
+                    $"{request.Protocol} · {Order.Describe(request.OrderStatusAtRequest)}");
+                outcome = new CancellationOutcome(order.Id, order.Code, order.CustomerId, CancelledNow: false, request.Protocol, now, request.OrderStatusAtRequest, request.Reason);
+            }
+
+            await SaveAsync(db, ct);
+            await transaction.CommitAsync(ct);
+        }
+
+        events.Notify(order.Id);
+        ScheduleClosingOfFinishedCharges(order, openBefore);
+        return outcome;
+    }
+
+    // A equipe responde a solicitação sem cancelar o pedido (o "Cancelar pedido" do painel já responde sozinho)
+    public Task ResolveCancellationRequestAsync(int orderId, string? note, CancellationToken ct = default) =>
+        ChangeAsync(orderId, AuditActions.OrderCancellationResolved, (order, _) =>
+        {
+            var protocol = order.PendingCancellationRequest?.Protocol;
+            order.ResolveCancellationRequest(note, clock.GetUtcNow().UtcDateTime);
+            return Task.FromResult<string?>(string.IsNullOrWhiteSpace(note) ? protocol : $"{protocol} · {note.Trim()}");
         }, ct: ct);
 
     // Se o provedor não responder na conciliação, o pedido espera até este tempo além do prazo. Depois expira
@@ -640,8 +698,14 @@ public class OrderService(
     private static List<CartItem> Snapshot(IEnumerable<CartItem> items) =>
         items.Where(i => i.Quantity > 0).OrderBy(i => i.ProductId).ToList();
 
+    // Um pedido com itens, pagamentos e solicitações de cancelamento numa consulta só (AsSingleQuery), de propósito.
+    // As três coleções viram um produto cartesiano (3 itens × 3 tentativas de pagamento × 1 solicitação = 9 linhas),
+    // pequeno para um pedido só. Dividir em uma consulta por coleção (AsSplitQuery) faria 4 idas ao banco, e cada
+    // uma poderia ver um momento diferente do pedido dentro da transação (Read Committed). Escrever a escolha
+    // também cala o aviso do EF, que só aparece quando ninguém decidiu.
     private static async Task<Order> LoadOrderAsync(ApplicationDbContext db, int orderId, CancellationToken ct) =>
-        await db.Orders.Include(p => p.Items).Include(p => p.Payments).FirstOrDefaultAsync(p => p.Id == orderId, ct)
+        await db.Orders.Include(p => p.Items).Include(p => p.Payments).Include(p => p.CancellationRequests)
+            .AsSingleQuery().FirstOrDefaultAsync(p => p.Id == orderId, ct)
             ?? throw new OrderRuleException("Order not found.");
 
     private static async Task<Dictionary<int, Product>> LoadProductsAsync(ApplicationDbContext db, IEnumerable<int> ids, CancellationToken ct)
