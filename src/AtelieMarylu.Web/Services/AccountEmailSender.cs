@@ -137,13 +137,6 @@ public sealed class AccountEmailSender(
     // codifica de novo ao escrever, então aqui se desfaz a primeira codificação (senão & viraria &amp;amp;).
     private static string Decode(string htmlEncodedLink) => WebUtility.HtmlDecode(htmlEncodedLink);
 
-    private async Task<string> RenderAsync<TComponent>(Dictionary<string, object?> parameters) where TComponent : IComponent
-    {
-        await using var renderer = new HtmlRenderer(services, loggerFactory);
-        return await renderer.Dispatcher.InvokeAsync(async () =>
-        {
-            var output = await renderer.RenderComponentAsync<TComponent>(ParameterView.FromDictionary(parameters));
-            return output.ToHtmlString();
-        });
-    }
+    private Task<string> RenderAsync<TComponent>(Dictionary<string, object?> parameters) where TComponent : IComponent =>
+        EmailHtml.RenderAsync<TComponent>(services, loggerFactory, parameters);
 }

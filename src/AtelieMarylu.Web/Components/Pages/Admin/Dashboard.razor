@@ -6,6 +6,23 @@
 <h1>@L["Admin panel"]</h1>
 
 <AuthorizeView Policy="@Permissions.OrdersView">
+    @* Só sai da lista quando alguém responde (cancelando o pedido ou marcando como respondida) *@
+    @if (cancellations.Count > 0)
+    {
+        <section class="alert alert-warning">
+            <h2 class="h5">@L["Cancellation requests awaiting an answer"]</h2>
+            <p class="small">@L["Customers who asked to cancel or return a paid order. Answer each one and refund on PagBank."]</p>
+            <ul class="mb-0">
+                @foreach (var c in cancellations)
+                {
+                    <li>
+                        <a href="admin/orders/@c.OrderId">@c.OrderCode</a> · @c.Protocol · @c.RequestedAt.FormatBrasilia() ·
+                        @L[Order.Describe(c.OrderStatusAtRequest)]
+                    </li>
+                }
+            </ul>
+        </section>
+    }
     @if (alerts.Count > 0)
     {
         <section class="alert alert-danger">
@@ -14,7 +31,7 @@
             <ul class="mb-0">
                 @foreach (var a in alerts)
                 {
-                    <li><a href="admin/orders/@a.EntityId">@a.OccurredAt.FormatBrasilia()</a>: @a.Details</li>
+                    <li><a href="admin/orders/@a.EntityId">@a.OccurredAt.FormatBrasilia()</a>: @AuditDetailsTranslator.Translate(L, a.Details)</li>
                 }
             </ul>
         </section>
@@ -49,11 +66,13 @@
 @code {
     private int paid, awaitingPayment, outOfStock;
     private IReadOnlyList<AuditEntry> alerts = [];
+    private IReadOnlyList<PendingCancellation> cancellations = [];
 
     protected override async Task OnInitializedAsync()
     {
         // São só contagens; cada tela de destino confere a permissão de novo
         var summary = await Painel.GetSummaryAsync();
-        (paid, awaitingPayment, outOfStock, alerts) = (summary.Paid, summary.AwaitingPayment, summary.OutOfStock, summary.Alerts);
+        (paid, awaitingPayment, outOfStock, alerts, cancellations) =
+            (summary.Paid, summary.AwaitingPayment, summary.OutOfStock, summary.Alerts, summary.PendingCancellations);
     }
 }

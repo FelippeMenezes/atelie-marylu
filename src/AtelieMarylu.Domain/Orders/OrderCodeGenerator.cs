@@ -8,11 +8,12 @@ public static class OrderCodeGenerator
     private const string Alphabet = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 
     // Código público do pedido (ex.: AML-7K3F9Q). Não revela quantos pedidos a loja já teve.
-    public static string Create()
+    // O prefixo muda para outros códigos mostrados à cliente, como o protocolo de cancelamento (CAN-7K3F9Q).
+    public static string Create(string prefix = "AML")
     {
         Span<char> code = stackalloc char[6];
         for (var i = 0; i < code.Length; i++)
             code[i] = Alphabet[RandomNumberGenerator.GetInt32(Alphabet.Length)];
-        return $"AML-{code}";
+        return $"{prefix}-{code}";
     }
 }

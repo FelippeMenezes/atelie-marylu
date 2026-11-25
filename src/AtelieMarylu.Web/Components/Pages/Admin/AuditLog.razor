@@ -35,7 +35,7 @@
                         else if (entry.Entity == AuditEntities.Product) { <a href="admin/products/@entry.EntityId">@L["Product {0}", entry.EntityId]</a> }
                         else { @($"{entry.Entity} {entry.EntityId}") }
                     </td>
-                    <td class="small">@entry.Details</td>
+                    <td class="small">@AuditDetailsTranslator.Translate(L, entry.Details)</td>
                 </tr>
             }
         </tbody>

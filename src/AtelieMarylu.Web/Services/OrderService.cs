@@ -7,6 +7,7 @@ using AtelieMarylu.Domain.Orders;
 using AtelieMarylu.Web.Configuration;
 using AtelieMarylu.Web.Localization;
 using AtelieMarylu.Infrastructure.Data;
+using AtelieMarylu.Infrastructure.Data.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
@@ -30,20 +31,23 @@ public class OrderService(
 {
     public const string ManualProvider = "manual";
     private const int ListLimit = 200;
+    // Texto gravado no pedido quando a própria cliente cancela um pedido não pago (dado do banco, sem tradução)
+    public const string CustomerCancellationReason = "Cancelado pela cliente";
     private const string ConcurrencyMessage = "O pedido foi alterado por outra pessoa ao mesmo tempo. Recarregue a página e tente de novo.";
 
     public async Task<Order?> GetAsync(int id, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Orders.AsNoTracking().Include(p => p.Items).Include(p => p.Payments).FirstOrDefaultAsync(p => p.Id == id, ct);
+        return await db.Orders.AsNoTracking().Include(p => p.Items).Include(p => p.Payments).Include(p => p.CancellationRequests)
+            .AsSingleQuery().FirstOrDefaultAsync(p => p.Id == id, ct);
     }
 
     // O filtro por CustomerId garante que ninguém veja o pedido de outra pessoa trocando o código na URL
     public async Task<Order?> GetForCustomerAsync(string code, string? customerId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Orders.AsNoTracking().Include(p => p.Items).Include(p => p.Payments)
-            .FirstOrDefaultAsync(p => p.Code == code && p.CustomerId == customerId, ct);
+        return await db.Orders.AsNoTracking().Include(p => p.Items).Include(p => p.Payments).Include(p => p.CancellationRequests)
+            .AsSingleQuery().FirstOrDefaultAsync(p => p.Code == code && p.CustomerId == customerId, ct);
     }
 
     public async Task<List<Order>> ListForCustomerAsync(string? customerId, CancellationToken ct = default)
@@ -340,6 +344,98 @@ public class OrderService(
             return reason;
         }, ct: ct);
 
+    // A cliente pede o cancelamento em "Meus pedidos" (AML-0040). Tudo numa transação, decidido pelo status
+    // do pedido carregado aqui dentro, nunca pelo que a tela mostrava.
+    // - Não pago: cancela na hora e devolve o estoque (não há o que estornar). Grava um texto fixo: o pedido fica
+    //   guardado por obrigação fiscal, e um texto livre da cliente sobreviveria à exclusão da conta (LGPD).
+    // - Pago, em preparo, enviado ou entregue: só registra a solicitação; a equipe é avisada e faz o estorno.
+    //
+    // Concorrência: nos dois casos a linha do pedido é gravada com a checagem do xmin. Sem isso, só inserir a
+    // solicitação não tocaria no pedido, e duas abas (ou a cliente e o admin cancelando) passariam juntas.
+    // O índice único parcial IX_CancellationRequests_OrderId_Open garante, no banco, uma solicitação aberta por pedido.
+    //
+    // Conflito de versão (ex.: o webhook confirmou o PIX enquanto a cliente cancelava): tenta de novo, como o
+    // ProcessNotificationAsync. A nova tentativa relê o pedido e decide de novo; o pedido recém-pago vira uma
+    // solicitação com protocolo, em vez de a cliente ver "alterado por outra pessoa", que é texto do painel.
+    public async Task<CancellationOutcome> RequestCancellationAsync(string code, string customerId, string? reason, CancellationToken ct = default)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await RequestCancellationOnceAsync(code, customerId, reason, ct);
+            }
+            catch (DbUpdateConcurrencyException) when (attempt < 3)
+            {
+                logger.LogInformation("Conflito ao pedir o cancelamento do pedido; tentando de novo (tentativa {Tentativa}).", attempt);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                throw new OrderRuleException("This order was changed at the same time. Reload the page and try again.");
+            }
+        }
+    }
+
+    private async Task<CancellationOutcome> RequestCancellationOnceAsync(string code, string customerId, string? reason, CancellationToken ct)
+    {
+        var now = clock.GetUtcNow().UtcDateTime;
+        Order order;
+        List<OpenCharge> openBefore;
+        CancellationOutcome outcome;
+        await using (var db = await dbFactory.CreateDbContextAsync(ct))
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            // O filtro por CustomerId impede pedir o cancelamento do pedido de outra pessoa
+            var orderId = await db.Orders.Where(p => p.Code == code && p.CustomerId == customerId).Select(p => (int?)p.Id).FirstOrDefaultAsync(ct)
+                ?? throw new OrderRuleException("Order not found.");
+            order = await LoadOrderAsync(db, orderId, ct);
+            openBefore = OpenCharges(order);
+            // Lido aqui para o e-mail de confirmação não precisar de outra ida ao banco depois da gravação
+            var customer = await db.Users.AsNoTracking().Where(u => u.Id == customerId)
+                .Select(u => new { u.Email, u.FullName }).FirstAsync(ct);
+
+            string? protocol = null;
+            var statusAtRequest = order.Status;
+            if (order.Status == OrderStatus.AwaitingPayment)
+            {
+                order.Cancel(CustomerCancellationReason);
+                foreach (var item in order.Items)
+                    await RestoreStockAsync(db, item.ProductId, item.Quantity, ct);
+                await audit.RecordAsync(db, AuditActions.OrderCancelled, AuditEntities.Order, order.Id, CustomerCancellationReason);
+            }
+            else
+            {
+                var request = order.RequestCancellation(reason, now);
+                // Grava o pedido (UPDATE ... WHERE xmin = <lido>) mesmo sem mudar nada nele: é o que faz a segunda
+                // transação concorrente falhar em vez de criar outra solicitação ou pedir num pedido já cancelado
+                db.Entry(order).Property(o => o.Status).IsModified = true;
+                // O motivo escrito pela cliente fica só na solicitação (sai na exportação da LGPD), não na auditoria
+                await audit.RecordAsync(db, AuditActions.OrderCancellationRequested, AuditEntities.Order, order.Id,
+                    $"{request.Protocol} · {Order.Describe(request.OrderStatusAtRequest)}");
+                protocol = request.Protocol;
+            }
+
+            // Deixa o conflito de versão subir para o RequestCancellationAsync tentar de novo
+            await SaveKeepingConflictsAsync(db, ct);
+            await transaction.CommitAsync(ct);
+            outcome = new CancellationOutcome(order.Id, order.Code, customer.Email, customer.FullName,
+                CancelledNow: protocol is null, protocol, now, statusAtRequest);
+        }
+
+        events.Notify(order.Id);
+        ScheduleClosingOfFinishedCharges(order, openBefore);
+        return outcome;
+    }
+
+    // A equipe responde a solicitação sem cancelar o pedido (o "Cancelar pedido" do painel já responde sozinho)
+    public Task ResolveCancellationRequestAsync(int orderId, string? note, CancellationToken ct = default) =>
+        ChangeAsync(orderId, AuditActions.OrderCancellationResolved, (order, _) =>
+        {
+            var protocol = order.PendingCancellationRequest?.Protocol;
+            order.ResolveCancellationRequest(note, clock.GetUtcNow().UtcDateTime);
+            return Task.FromResult<string?>(string.IsNullOrWhiteSpace(note) ? protocol : $"{protocol} · {note.Trim()}");
+        }, ct: ct);
+
     // Se o provedor não responder na conciliação, o pedido espera até este tempo além do prazo. Depois expira
     // assim mesmo, para um provedor fora do ar não segurar o estoque para sempre (um pagamento tardio vira alerta).
     public static readonly TimeSpan ReconciliationGrace = TimeSpan.FromHours(1);
@@ -583,11 +679,29 @@ public class OrderService(
     {
         try
         {
-            await db.SaveChangesAsync(ct);
+            await SaveKeepingConflictsAsync(db, ct);
         }
         catch (DbUpdateConcurrencyException)
         {
             throw new OrderRuleException(ConcurrencyMessage);
+        }
+    }
+
+    // Grava e traduz a violação do índice de solicitação aberta. O conflito de versão (DbUpdateConcurrencyException)
+    // continua subindo: quem chama decide se tenta de novo ou mostra a mensagem.
+    private static async Task SaveKeepingConflictsAsync(ApplicationDbContext db, CancellationToken ct)
+    {
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+        } unique && unique.ConstraintName == CancellationRequestConfiguration.OpenRequestIndex)
+        {
+            // Outra solicitação aberta foi gravada ao mesmo tempo (ex.: duas abas): a primeira vale
+            throw new OrderRuleException("This order can no longer receive a cancellation request.");
         }
     }
 
@@ -640,8 +754,14 @@ public class OrderService(
     private static List<CartItem> Snapshot(IEnumerable<CartItem> items) =>
         items.Where(i => i.Quantity > 0).OrderBy(i => i.ProductId).ToList();
 
+    // Um pedido com itens, pagamentos e solicitações de cancelamento numa consulta só (AsSingleQuery), de propósito.
+    // As três coleções viram um produto cartesiano (3 itens × 3 tentativas de pagamento × 1 solicitação = 9 linhas),
+    // pequeno para um pedido só. Dividir em uma consulta por coleção (AsSplitQuery) faria 4 idas ao banco, e cada
+    // uma poderia ver um momento diferente do pedido dentro da transação (Read Committed). Escrever a escolha
+    // também cala o aviso do EF, que só aparece quando ninguém decidiu.
     private static async Task<Order> LoadOrderAsync(ApplicationDbContext db, int orderId, CancellationToken ct) =>
-        await db.Orders.Include(p => p.Items).Include(p => p.Payments).FirstOrDefaultAsync(p => p.Id == orderId, ct)
+        await db.Orders.Include(p => p.Items).Include(p => p.Payments).Include(p => p.CancellationRequests)
+            .AsSingleQuery().FirstOrDefaultAsync(p => p.Id == orderId, ct)
             ?? throw new OrderRuleException("Order not found.");
 
     private static async Task<Dictionary<int, Product>> LoadProductsAsync(ApplicationDbContext db, IEnumerable<int> ids, CancellationToken ct)

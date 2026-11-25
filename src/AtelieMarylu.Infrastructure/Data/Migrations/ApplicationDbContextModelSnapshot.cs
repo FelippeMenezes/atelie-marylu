@@ -154,6 +154,57 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                     b.ToTable("ProductImages");
                 });
 
+            modelBuilder.Entity("AtelieMarylu.Domain.Orders.CancellationRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OrderStatusAtRequest")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Protocol")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ResolutionNote")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("Protocol")
+                        .IsUnique();
+
+                    b.HasIndex("ResolvedAt");
+
+                    b.HasIndex(new[] { "OrderId" }, "IX_CancellationRequests_OrderId_Open")
+                        .IsUnique()
+                        .HasFilter("\"ResolvedAt\" IS NULL");
+
+                    b.ToTable("CancellationRequests", (string)null);
+                });
+
             modelBuilder.Entity("AtelieMarylu.Domain.Orders.Order", b =>
                 {
                     b.Property<int>("Id")
@@ -607,6 +658,15 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("AtelieMarylu.Domain.Orders.CancellationRequest", b =>
+                {
+                    b.HasOne("AtelieMarylu.Domain.Orders.Order", null)
+                        .WithMany("CancellationRequests")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("AtelieMarylu.Domain.Orders.Order", b =>
                 {
                     b.HasOne("AtelieMarylu.Infrastructure.Data.ApplicationUser", null)
@@ -747,6 +807,8 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("AtelieMarylu.Domain.Orders.Order", b =>
                 {
+                    b.Navigation("CancellationRequests");
+
                     b.Navigation("Items");
 
                     b.Navigation("Payments");

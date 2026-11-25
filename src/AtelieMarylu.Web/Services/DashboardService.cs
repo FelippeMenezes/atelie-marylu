@@ -9,6 +9,7 @@ public class DashboardService(IDbContextFactory<ApplicationDbContext> dbFactory,
 {
     private const int AlertWindowDays = 30;
     private const int MaxAlerts = 20;
+    private const int MaxCancellationRequests = 50;
 
     public async Task<DashboardSummary> GetSummaryAsync(CancellationToken ct = default)
     {
@@ -21,6 +22,14 @@ public class DashboardService(IDbContextFactory<ApplicationDbContext> dbFactory,
             await db.Products.CountAsync(p => p.IsActive && p.Stock == 0, ct),
             await db.AuditEntries.AsNoTracking()
                 .Where(a => (a.Action == AuditActions.PaymentMismatch || a.Action == AuditActions.PaymentReversed) && a.OccurredAt >= since)
-                .OrderByDescending(a => a.OccurredAt).Take(MaxAlerts).ToListAsync(ct));
+                .OrderByDescending(a => a.OccurredAt).Take(MaxAlerts).ToListAsync(ct),
+            // Sem janela de tempo: uma solicitação só sai da lista quando alguém responde
+            // Ordena e corta antes de projetar: o EF não traduz para SQL um OrderBy sobre o construtor de um record
+            await db.CancellationRequests.AsNoTracking()
+                .Where(r => r.ResolvedAt == null)
+                .OrderBy(r => r.RequestedAt).Take(MaxCancellationRequests)
+                .Join(db.Orders, r => r.OrderId, o => o.Id,
+                    (r, o) => new PendingCancellation(o.Id, o.Code, r.Protocol, r.RequestedAt, r.OrderStatusAtRequest))
+                .ToListAsync(ct));
     }
 }

@@ -1,0 +1,19 @@
+@* Confirmação para a cliente (AML-0040): solicitação de cancelamento registrada para a equipe responder,
+   com protocolo, data e hora (Decreto 7.962/2013, art. 5º, §4º). O cancelamento de pedido não pago não manda e-mail. *@
+<EmailLayout Title="@L["Cancellation request received"]" ButtonText="@L["View order"]" Link="@OrderUrl">
+    <p style="margin:0 0 16px;">@Greeting</p>
+    <p style="margin:0 0 16px;">@L["We received your request to cancel order {0} on {1}.", OrderCode, ReceivedAt]</p>
+    <p style="margin:0 0 16px;">@L["Protocol:"] <strong>@Protocol</strong></p>
+    <p style="margin:0 0 16px;">@L["Our team will contact you to arrange the return of the piece, if it has already been sent, and the refund. The refund goes back through the same payment method."]</p>
+    <p style="margin:0;">@L["If you did not make this request, reply to this email."]</p>
+</EmailLayout>
+
+@code {
+    [Parameter] public string? Name { get; set; }
+    [Parameter, EditorRequired] public string OrderCode { get; set; } = "";
+    [Parameter, EditorRequired] public string Protocol { get; set; } = "";
+    [Parameter, EditorRequired] public string ReceivedAt { get; set; } = "";
+    [Parameter, EditorRequired] public string OrderUrl { get; set; } = "";
+
+    private string Greeting => string.IsNullOrWhiteSpace(Name) ? L["Hello!"] : L["Hello, {0}!", Name];
+}

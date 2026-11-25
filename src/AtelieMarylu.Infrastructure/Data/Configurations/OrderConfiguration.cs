@@ -22,6 +22,8 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasMany(x => x.Payments).WithOne().HasForeignKey(x => x.OrderId);
         builder.Navigation(x => x.Items).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Navigation(x => x.Payments).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.HasMany(x => x.CancellationRequests).WithOne().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(x => x.CancellationRequests).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Property(x => x.Code).HasMaxLength(12);
         builder.HasIndex(x => x.Code).IsUnique();
         builder.Property(x => x.ShippingCost).HasPrecision(10, 2);
@@ -41,5 +43,6 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Ignore(x => x.Subtotal);
         builder.Ignore(x => x.Total);
         builder.Ignore(x => x.PixDiscount);
+        builder.Ignore(x => x.PendingCancellationRequest);
     }
 }

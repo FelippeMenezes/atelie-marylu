@@ -237,6 +237,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CartService>();
         services.AddScoped<LastPostalCodeService>();
         services.AddScoped<OrderService>();
+        services.AddScoped<OrderEmailSender>();
         services.AddScoped<ProductService>();
         services.AddScoped<CustomerService>();
         services.AddScoped<DashboardService>();
