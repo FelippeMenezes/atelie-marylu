@@ -30,6 +30,8 @@ public class OrderService(
 {
     public const string ManualProvider = "manual";
     private const int ListLimit = 200;
+    // Texto gravado no pedido quando a própria cliente cancela um pedido não pago (dado do banco, sem tradução)
+    public const string CustomerCancellationReason = "Cancelado pela cliente";
     private const string ConcurrencyMessage = "O pedido foi alterado por outra pessoa ao mesmo tempo. Recarregue a página e tente de novo.";
 
     public async Task<Order?> GetAsync(int id, CancellationToken ct = default)
@@ -342,10 +344,14 @@ public class OrderService(
         }, ct: ct);
 
     // A cliente pede o cancelamento em "Meus pedidos" (AML-0040). Tudo numa transação, decidido pelo status
-    // do pedido carregado aqui dentro: se o webhook confirmar o pagamento ao mesmo tempo, a coluna xmin faz uma
-    // das gravações falhar, e um pedido recém-pago nunca é cancelado como se não tivesse dinheiro para devolver.
-    // - Não pago: cancela na hora e devolve o estoque (não há o que estornar).
+    // do pedido carregado aqui dentro, nunca pelo que a tela mostrava.
+    // - Não pago: cancela na hora e devolve o estoque (não há o que estornar). Grava um texto fixo: o pedido fica
+    //   guardado por obrigação fiscal, e um texto livre da cliente sobreviveria à exclusão da conta (LGPD).
     // - Pago, em preparo, enviado ou entregue: só registra a solicitação; a equipe é avisada e faz o estorno.
+    //
+    // Concorrência: nos dois casos a linha do pedido é gravada com a checagem do xmin. Sem isso, só inserir a
+    // solicitação não tocaria no pedido, e duas abas (ou a cliente e o admin cancelando) passariam juntas.
+    // O índice único parcial IX_CancellationRequests_OrderId_Open garante, no banco, uma solicitação aberta por pedido.
     public async Task<CancellationOutcome> RequestCancellationAsync(string code, string customerId, string? reason, CancellationToken ct = default)
     {
         var now = clock.GetUtcNow().UtcDateTime;
@@ -360,28 +366,36 @@ public class OrderService(
                 ?? throw new OrderRuleException("Order not found.");
             order = await LoadOrderAsync(db, orderId, ct);
             openBefore = OpenCharges(order);
+            // Lido aqui para o e-mail de confirmação não precisar de outra ida ao banco depois da gravação
+            var customer = await db.Users.AsNoTracking().Where(u => u.Id == customerId)
+                .Select(u => new { u.Email, u.FullName }).FirstAsync(ct);
 
+            string? protocol = null;
+            var statusAtRequest = order.Status;
+            string? savedReason = null;
             if (order.Status == OrderStatus.AwaitingPayment)
             {
-                // Texto gravado no pedido, como os outros motivos de cancelamento (dado do banco, sem tradução)
-                var cancellationReason = string.IsNullOrWhiteSpace(reason) ? "Cancelado pela cliente" : $"Cancelado pela cliente: {reason.Trim()}";
-                order.Cancel(cancellationReason.Length > 200 ? cancellationReason[..200] : cancellationReason);
+                order.Cancel(CustomerCancellationReason);
                 foreach (var item in order.Items)
                     await RestoreStockAsync(db, item.ProductId, item.Quantity, ct);
-                await audit.RecordAsync(db, AuditActions.OrderCancelled, AuditEntities.Order, order.Id, order.CancellationReason);
-                outcome = new CancellationOutcome(order.Id, order.Code, order.CustomerId, CancelledNow: true, Protocol: null, now, OrderStatus.AwaitingPayment, reason);
+                await audit.RecordAsync(db, AuditActions.OrderCancelled, AuditEntities.Order, order.Id, CustomerCancellationReason);
             }
             else
             {
                 var request = order.RequestCancellation(reason, now);
+                // Grava o pedido (UPDATE ... WHERE xmin = <lido>) mesmo sem mudar nada nele: é o que faz a segunda
+                // transação concorrente falhar em vez de criar outra solicitação ou pedir num pedido já cancelado
+                db.Entry(order).Property(o => o.Status).IsModified = true;
                 // O motivo escrito pela cliente fica só na solicitação (sai na exportação da LGPD), não na auditoria
                 await audit.RecordAsync(db, AuditActions.OrderCancellationRequested, AuditEntities.Order, order.Id,
                     $"{request.Protocol} · {Order.Describe(request.OrderStatusAtRequest)}");
-                outcome = new CancellationOutcome(order.Id, order.Code, order.CustomerId, CancelledNow: false, request.Protocol, now, request.OrderStatusAtRequest, request.Reason);
+                (protocol, savedReason) = (request.Protocol, request.Reason);
             }
 
             await SaveAsync(db, ct);
             await transaction.CommitAsync(ct);
+            outcome = new CancellationOutcome(order.Id, order.Code, customer.Email, customer.FullName,
+                CancelledNow: protocol is null, protocol, now, statusAtRequest, savedReason);
         }
 
         events.Notify(order.Id);
@@ -646,6 +660,15 @@ public class OrderService(
         catch (DbUpdateConcurrencyException)
         {
             throw new OrderRuleException(ConcurrencyMessage);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+            ConstraintName: "IX_CancellationRequests_OrderId_Open",
+        })
+        {
+            // Outra solicitação aberta foi gravada ao mesmo tempo (ex.: duas abas): a primeira vale
+            throw new OrderRuleException("This order can no longer receive a cancellation request.");
         }
     }
 

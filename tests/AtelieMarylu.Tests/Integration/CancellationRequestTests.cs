@@ -47,7 +47,7 @@ public class CancellationRequestTests(TestDatabase database) : IClassFixture<Tes
     }
 
     [FactWithDatabase]
-    public async Task Unpaid_order_is_cancelled_now_and_stock_returns()
+    public async Task Unpaid_order_is_cancelled_now_with_fixed_reason_and_stock_returns()
     {
         var service = Service();
         var (customerId, productId, order) = await CreateOrderAsync(service, paid: false);
@@ -60,8 +60,10 @@ public class CancellationRequestTests(TestDatabase database) : IClassFixture<Tes
         await using var db = database.CreateDbContext();
         var stored = await db.Orders.Include(o => o.CancellationRequests).SingleAsync(o => o.Id == order.Id);
         Assert.Equal(OrderStatus.Cancelled, stored.Status);
-        Assert.Equal("Cancelado pela cliente: mudei de ideia", stored.CancellationReason);
+        // Texto fixo: o motivo livre ficaria no pedido (guardado por obrigação fiscal) e na auditoria depois da exclusão da conta
+        Assert.Equal(OrderService.CustomerCancellationReason, stored.CancellationReason);
         Assert.Empty(stored.CancellationRequests);
+        Assert.False(await db.AuditEntries.AnyAsync(a => a.EntityId == order.Id.ToString() && a.Details!.Contains("ideia")));
     }
 
     [FactWithDatabase]
@@ -155,5 +157,54 @@ public class CancellationRequestTests(TestDatabase database) : IClassFixture<Tes
         await service.ResolveCancellationRequestAsync(order.Id, null);
 
         Assert.DoesNotContain((await dashboard.GetSummaryAsync()).PendingCancellations, p => p.OrderId == order.Id);
+    }
+
+    [FactWithDatabase]
+    public async Task Database_refuses_a_second_open_request_for_the_same_order()
+    {
+        // A regra "uma solicitação aberta por vez" também vale fora do código (ex.: duas gravações ao mesmo tempo)
+        var service = Service();
+        var (customerId, _, order) = await CreateOrderAsync(service, paid: true);
+        await service.RequestCancellationAsync(order.Code, customerId, null);
+
+        await using var db = database.CreateDbContext();
+        var ex = await Assert.ThrowsAsync<Npgsql.PostgresException>(() => db.Database.ExecuteSqlRawAsync(
+            """INSERT INTO "CancellationRequests" ("OrderId", "Protocol", "RequestedAt", "OrderStatusAtRequest") VALUES ({0}, 'CAN-TESTE2', now(), 'Paid')""",
+            order.Id));
+        Assert.Equal(Npgsql.PostgresErrorCodes.UniqueViolation, ex.SqlState);
+        Assert.Equal("IX_CancellationRequests_OrderId_Open", ex.ConstraintName);
+    }
+
+    [FactWithDatabase]
+    public async Task Outcome_brings_the_customer_contact_for_the_email()
+    {
+        var service = Service();
+        var (customerId, _, order) = await CreateOrderAsync(service, paid: true);
+
+        var outcome = await service.RequestCancellationAsync(order.Code, customerId, "  cor errada ");
+
+        await using var db = database.CreateDbContext();
+        var customer = await db.Users.SingleAsync(u => u.Id == customerId);
+        Assert.Equal(customer.Email, outcome.CustomerEmail);
+        Assert.Equal(customer.FullName, outcome.CustomerName);
+        Assert.Equal("cor errada", outcome.Reason);
+        Assert.Equal(OrderStatus.Paid, outcome.OrderStatusAtRequest);
+    }
+
+    [FactWithDatabase]
+    public async Task Request_based_on_a_stale_order_fails_the_version_check()
+    {
+        // Reproduz a corrida que o RequestCancellationAsync evita: a cliente carregou o pedido, o admin cancelou
+        // antes de ela gravar. Marcar o Status como alterado (sem mudar o valor) obriga o UPDATE com o xmin lido.
+        var service = Service();
+        var (_, _, order) = await CreateOrderAsync(service, paid: true);
+        await using var stale = database.CreateDbContext();
+        var loaded = await stale.Orders.Include(o => o.CancellationRequests).SingleAsync(o => o.Id == order.Id);
+
+        await service.CancelAsync(order.Id, "Cancelado pelo admin");
+
+        loaded.RequestCancellation(null, clock.Now.UtcDateTime);
+        stale.Entry(loaded).Property(o => o.Status).IsModified = true;
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => stale.SaveChangesAsync());
     }
 }

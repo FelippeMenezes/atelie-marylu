@@ -607,11 +607,9 @@
   <data name="(not informed)" xml:space="preserve"><value>(não informado)</value></data>
   <data name="Not shipped yet: cancel the order on the panel and refund on PagBank. Already shipped: arrange the return with the customer, refund on PagBank after receiving the piece and mark the request as answered." xml:space="preserve"><value>Ainda não enviado: cancele o pedido no painel e faça o estorno no PagBank. Já enviado: combine a devolução com a cliente, faça o estorno no PagBank depois de receber a peça e marque a solicitação como respondida.</value></data>
   <data name="View order" xml:space="preserve"><value>Ver pedido</value></data>
-  <data name="Order {0} was cancelled on {1}, as you asked. Nothing was charged and you don&#x27;t need to do anything else." xml:space="preserve"><value>O pedido {0} foi cancelado em {1}, como você pediu. Nada foi cobrado e você não precisa fazer mais nada.</value></data>
   <data name="We received your request to cancel order {0} on {1}." xml:space="preserve"><value>Recebemos em {1} o seu pedido de cancelamento do pedido {0}.</value></data>
   <data name="Our team will contact you to arrange the return of the piece, if it has already been sent, and the refund. The refund goes back through the same payment method." xml:space="preserve"><value>Nossa equipe vai entrar em contato para combinar a devolução da peça, se ela já tiver sido enviada, e o reembolso. O reembolso é feito pelo mesmo meio de pagamento.</value></data>
   <data name="If you did not make this request, reply to this email." xml:space="preserve"><value>Se não foi você quem fez esta solicitação, responda a este e-mail.</value></data>
-  <data name="Order cancelled" xml:space="preserve"><value>Pedido cancelado</value></data>
   <data name="Cancellation request received" xml:space="preserve"><value>Solicitação de cancelamento recebida</value></data>
   <data name="Cancellation request received." xml:space="preserve"><value>Solicitação de cancelamento recebida.</value></data>
   <data name="Protocol {0}, sent on {1}. Our team will contact you to arrange the refund." xml:space="preserve"><value>Protocolo {0}, enviada em {1}. Nossa equipe vai entrar em contato para combinar o reembolso.</value></data>
@@ -635,11 +633,11 @@
   <data name="requested on {0}" xml:space="preserve"><value>pedida em {0}</value></data>
   <data name="answered on {0}" xml:space="preserve"><value>respondida em {0}</value></data>
   <data name="Note:" xml:space="preserve"><value>Observação:</value></data>
-  <data name="Order {0} cancelled · Ateliê Marylu" xml:space="preserve"><value>Pedido {0} cancelado · Ateliê Marylu</value></data>
   <data name="Cancellation request received · Order {0}" xml:space="preserve"><value>Solicitação de cancelamento recebida · Pedido {0}</value></data>
   <data name="Cancellation request · Order {0}" xml:space="preserve"><value>Solicitação de cancelamento · Pedido {0}</value></data>
   <data name="The reason can have at most {0} characters." xml:space="preserve"><value>O motivo pode ter no máximo {0} caracteres.</value></data>
   <data name="This cancellation request was already answered." xml:space="preserve"><value>Esta solicitação de cancelamento já foi respondida.</value></data>
   <data name="This order can no longer receive a cancellation request." xml:space="preserve"><value>Este pedido não aceita mais solicitação de cancelamento.</value></data>
   <data name="This order has no open cancellation request." xml:space="preserve"><value>Este pedido não tem solicitação de cancelamento aberta.</value></data>
+  <data name="Want to withdraw, exchange or report a defect? Send a request and our team will contact you." xml:space="preserve"><value>Quer desistir, trocar ou avisar sobre um defeito? Envie uma solicitação e nossa equipe entra em contato.</value></data>
 </root>

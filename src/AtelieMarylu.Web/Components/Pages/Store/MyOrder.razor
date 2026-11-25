@@ -142,9 +142,16 @@ else if (order is not null)
                 {
                     @L["The order has not been paid yet. Cancelling releases the pieces and nothing is charged."]
                 }
-                else if (order.Status is OrderStatus.Shipped or OrderStatus.Delivered)
+                else if (order.Status == OrderStatus.Shipped)
                 {
                     @L["You can withdraw from the purchase within 7 days of receiving it, without giving a reason. We arrange the return at no cost to you and refund the full amount, including shipping."]
+                    <a href="returns-policy">@L["See the exchanges and returns policy"]</a>
+                }
+                else if (order.Status == OrderStatus.Delivered)
+                {
+                    @* A loja não guarda a data em que a cliente recebeu a peça: o texto não promete nem nega o prazo de 7 dias.
+                       A equipe avalia ao responder (desistência, troca ou defeito). *@
+                    @L["Want to withdraw, exchange or report a defect? Send a request and our team will contact you."]
                     <a href="returns-policy">@L["See the exchanges and returns policy"]</a>
                 }
                 else
@@ -160,8 +167,12 @@ else if (order is not null)
             }
             else
             {
-                <label for="cancelar-motivo" class="form-label small">@L["Reason (optional)"]</label>
-                <textarea id="cancelar-motivo" class="form-control" rows="3" maxlength="@CancellationRequest.ReasonMaxLength" @bind="cancellationReason"></textarea>
+                @* Motivo só na solicitação: no pedido não pago, um texto livre ficaria no pedido guardado por obrigação fiscal *@
+                @if (!unpaid)
+                {
+                    <label for="cancelar-motivo" class="form-label small">@L["Reason (optional)"]</label>
+                    <textarea id="cancelar-motivo" class="form-control" rows="3" maxlength="@CancellationRequest.ReasonMaxLength" @bind="cancellationReason"></textarea>
+                }
                 <div class="d-flex gap-2 mt-2 flex-wrap">
                     <button class="btn btn-danger btn-sm" @onclick="RequestCancellationAsync" disabled="@processing">
                         @(unpaid ? L["Yes, cancel the order"] : L["Send cancellation request"])
@@ -237,18 +248,16 @@ else if (order is not null)
         if (order is null || processing) return;
         var customerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (customerId is null) return;
+        var reason = order.Status == OrderStatus.AwaitingPayment ? null : cancellationReason;
         CancellationOutcome? outcome = null;
-        await RunActionAsync(async () =>
-        {
-            outcome = await Orders.RequestCancellationAsync(order.Code, customerId, cancellationReason);
-            // Confirmação por e-mail para a cliente e aviso para a loja. A solicitação já está gravada:
-            // uma falha de entrega fica só no log, e o protocolo continua na tela.
-            await OrderEmails.TrySendCancellationEmailsAsync(outcome);
-        }, null);
+        await RunActionAsync(async () => outcome = await Orders.RequestCancellationAsync(order.Code, customerId, reason), null);
         if (outcome is null) return;
         (confirmingCancellation, cancellationReason) = (false, null);
         // A solicitação já aparece na caixa com o protocolo: uma mensagem de sucesso em cima só repetiria o aviso
         (message, isError) = (outcome.CancelledNow ? L["Order cancelled."].Value : null, false);
+        // Fora do RunActionAsync: a solicitação já está gravada, e nada no envio pode virar "não foi possível
+        // concluir" na tela. O envio só lança EmailDeliveryException, que ele mesmo captura e registra no log.
+        await OrderEmails.TrySendCancellationEmailsAsync(outcome);
     }
 
     private async Task SimulateApprovalAsync(Payment payment)

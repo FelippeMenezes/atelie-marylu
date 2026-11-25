@@ -198,6 +198,10 @@ namespace AtelieMarylu.Infrastructure.Data.Migrations
 
                     b.HasIndex("ResolvedAt");
 
+                    b.HasIndex(new[] { "OrderId" }, "IX_CancellationRequests_OrderId_Open")
+                        .IsUnique()
+                        .HasFilter("\"ResolvedAt\" IS NULL");
+
                     b.ToTable("CancellationRequests", (string)null);
                 });
 
