@@ -396,7 +396,6 @@ public class OrderService(
 
             string? protocol = null;
             var statusAtRequest = order.Status;
-            string? savedReason = null;
             if (order.Status == OrderStatus.AwaitingPayment)
             {
                 order.Cancel(CustomerCancellationReason);
@@ -413,14 +412,14 @@ public class OrderService(
                 // O motivo escrito pela cliente fica só na solicitação (sai na exportação da LGPD), não na auditoria
                 await audit.RecordAsync(db, AuditActions.OrderCancellationRequested, AuditEntities.Order, order.Id,
                     $"{request.Protocol} · {Order.Describe(request.OrderStatusAtRequest)}");
-                (protocol, savedReason) = (request.Protocol, request.Reason);
+                protocol = request.Protocol;
             }
 
             // Deixa o conflito de versão subir para o RequestCancellationAsync tentar de novo
             await SaveKeepingConflictsAsync(db, ct);
             await transaction.CommitAsync(ct);
             outcome = new CancellationOutcome(order.Id, order.Code, customer.Email, customer.FullName,
-                CancelledNow: protocol is null, protocol, now, statusAtRequest, savedReason);
+                CancelledNow: protocol is null, protocol, now, statusAtRequest);
         }
 
         events.Notify(order.Id);

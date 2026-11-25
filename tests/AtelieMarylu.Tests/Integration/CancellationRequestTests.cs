@@ -188,7 +188,8 @@ public class CancellationRequestTests(TestDatabase database) : IClassFixture<Tes
         var customer = await db.Users.SingleAsync(u => u.Id == customerId);
         Assert.Equal(customer.Email, outcome.CustomerEmail);
         Assert.Equal(customer.FullName, outcome.CustomerName);
-        Assert.Equal("cor errada", outcome.Reason);
+        // O motivo fica só no banco: o resultado (que alimenta os e-mails) nem o carrega
+        Assert.Equal("cor errada", (await db.CancellationRequests.SingleAsync(r => r.OrderId == order.Id)).Reason);
         Assert.Equal(OrderStatus.Paid, outcome.OrderStatusAtRequest);
     }
 

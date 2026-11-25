@@ -18,7 +18,9 @@ namespace AtelieMarylu.Web.Services;
 //   (que também entrega o "esqueci minha senha"). A tela já confirma, e não há dinheiro para devolver.
 // - Cliente: confirmação imediata com protocolo, data e hora, como exige o Decreto 7.962/2013 (art. 5º, §4º).
 //   Sai no idioma em que ela usa o site. Repetir exige a equipe responder antes (uma solicitação aberta por vez).
-// - Loja: aviso para o Store:ContactEmail. Sai no idioma padrão da loja, não no da cliente.
+// - Loja: aviso para o Store:ContactEmail, só com identificadores (código, protocolo, situação e link do painel).
+//   O motivo da cliente nunca vai no e-mail: ele passa pelo ImprovMX e fica no Gmail, onde a exclusão da conta não
+//   alcança (minimização, LGPD art. 6º, III). Sai no idioma padrão da loja, não no da cliente.
 // - A solicitação já está gravada quando os e-mails saem: uma falha de entrega fica só no log, e o
 //   destaque no painel continua avisando a equipe. Nome e e-mail vêm no CancellationOutcome, sem consultar o banco.
 public sealed class OrderEmailSender(
@@ -77,7 +79,6 @@ public sealed class OrderEmailSender(
                 [nameof(CancellationRequestStaffMessage.Protocol)] = outcome.Protocol,
                 [nameof(CancellationRequestStaffMessage.ReceivedAt)] = outcome.At.FormatBrasilia(),
                 [nameof(CancellationRequestStaffMessage.OrderStatus)] = Order.Describe(outcome.OrderStatusAtRequest),
-                [nameof(CancellationRequestStaffMessage.Reason)] = outcome.Reason,
                 [nameof(CancellationRequestStaffMessage.AdminUrl)] = navigation.ToAbsoluteUri($"admin/orders/{outcome.OrderId}").AbsoluteUri,
             });
             await client.SendAsync(new EmailMessage(to, L["Cancellation request · Order {0}", outcome.OrderCode], html), ct);

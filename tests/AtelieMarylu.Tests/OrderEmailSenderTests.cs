@@ -12,10 +12,10 @@ namespace AtelieMarylu.Tests;
 // E-mails do cancelamento pedido pela cliente (AML-0040): quem recebe, em que idioma e sem injeção de HTML
 public class OrderEmailSenderTests
 {
-    private static CancellationOutcome Request(string? reason = "Comprei a cor errada") => new(
-        OrderId: 35, OrderCode: "AML-Z89784", CustomerEmail: "cliente@teste.local", CustomerName: "Maria",
+    private static CancellationOutcome Request(string customerName = "Maria") => new(
+        OrderId: 35, OrderCode: "AML-Z89784", CustomerEmail: "cliente@teste.local", CustomerName: customerName,
         CancelledNow: false, Protocol: "CAN-6AYBHB", At: new DateTime(2026, 11, 25, 10, 39, 0, DateTimeKind.Utc),
-        OrderStatusAtRequest: OrderStatus.Paid, Reason: reason);
+        OrderStatusAtRequest: OrderStatus.Paid);
 
     [Fact]
     public async Task Unpaid_order_cancelled_now_sends_no_email()
@@ -53,13 +53,27 @@ public class OrderEmailSenderTests
     }
 
     [Fact]
-    public async Task Reason_written_by_the_customer_cannot_inject_html()
+    public async Task Store_notice_carries_only_identifiers()
     {
-        var client = await SendAsync(Request(reason: "<a href=\"https://golpe.teste\">Clique</a>"));
+        // O e-mail da loja passa pelo ImprovMX e fica no Gmail, fora do alcance da exclusão da conta:
+        // nada de nome ou e-mail da cliente, só código, protocolo, situação e o link do painel
+        var client = await SendAsync(Request());
 
         var store = client.Sent.Single(m => m.To == "contato@loja.teste");
-        Assert.DoesNotContain("<a href=\"https://golpe.teste\"", store.Html);
-        Assert.Contains("&lt;a href=", store.Html);
+        Assert.DoesNotContain("Maria", store.Html);
+        Assert.DoesNotContain("cliente@teste.local", store.Html);
+        Assert.Contains("CAN-6AYBHB", store.Html);
+        Assert.Contains("AML-Z89784", store.Html);
+    }
+
+    [Fact]
+    public async Task Customer_name_cannot_inject_html()
+    {
+        var client = await SendAsync(Request(customerName: "<a href=\"https://golpe.teste\">Clique</a>"));
+
+        var customer = client.Sent.Single(m => m.To == "cliente@teste.local");
+        Assert.DoesNotContain("<a href=\"https://golpe.teste\"", customer.Html);
+        Assert.Contains("&lt;a href=", customer.Html);
     }
 
     [Fact]
