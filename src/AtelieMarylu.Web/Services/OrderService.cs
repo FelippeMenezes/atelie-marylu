@@ -7,6 +7,7 @@ using AtelieMarylu.Domain.Orders;
 using AtelieMarylu.Web.Configuration;
 using AtelieMarylu.Web.Localization;
 using AtelieMarylu.Infrastructure.Data;
+using AtelieMarylu.Infrastructure.Data.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
@@ -352,7 +353,30 @@ public class OrderService(
     // Concorrência: nos dois casos a linha do pedido é gravada com a checagem do xmin. Sem isso, só inserir a
     // solicitação não tocaria no pedido, e duas abas (ou a cliente e o admin cancelando) passariam juntas.
     // O índice único parcial IX_CancellationRequests_OrderId_Open garante, no banco, uma solicitação aberta por pedido.
+    //
+    // Conflito de versão (ex.: o webhook confirmou o PIX enquanto a cliente cancelava): tenta de novo, como o
+    // ProcessNotificationAsync. A nova tentativa relê o pedido e decide de novo; o pedido recém-pago vira uma
+    // solicitação com protocolo, em vez de a cliente ver "alterado por outra pessoa", que é texto do painel.
     public async Task<CancellationOutcome> RequestCancellationAsync(string code, string customerId, string? reason, CancellationToken ct = default)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await RequestCancellationOnceAsync(code, customerId, reason, ct);
+            }
+            catch (DbUpdateConcurrencyException) when (attempt < 3)
+            {
+                logger.LogInformation("Conflito ao pedir o cancelamento do pedido; tentando de novo (tentativa {Tentativa}).", attempt);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                throw new OrderRuleException("This order was changed at the same time. Reload the page and try again.");
+            }
+        }
+    }
+
+    private async Task<CancellationOutcome> RequestCancellationOnceAsync(string code, string customerId, string? reason, CancellationToken ct)
     {
         var now = clock.GetUtcNow().UtcDateTime;
         Order order;
@@ -392,7 +416,8 @@ public class OrderService(
                 (protocol, savedReason) = (request.Protocol, request.Reason);
             }
 
-            await SaveAsync(db, ct);
+            // Deixa o conflito de versão subir para o RequestCancellationAsync tentar de novo
+            await SaveKeepingConflictsAsync(db, ct);
             await transaction.CommitAsync(ct);
             outcome = new CancellationOutcome(order.Id, order.Code, customer.Email, customer.FullName,
                 CancelledNow: protocol is null, protocol, now, statusAtRequest, savedReason);
@@ -655,17 +680,26 @@ public class OrderService(
     {
         try
         {
-            await db.SaveChangesAsync(ct);
+            await SaveKeepingConflictsAsync(db, ct);
         }
         catch (DbUpdateConcurrencyException)
         {
             throw new OrderRuleException(ConcurrencyMessage);
         }
+    }
+
+    // Grava e traduz a violação do índice de solicitação aberta. O conflito de versão (DbUpdateConcurrencyException)
+    // continua subindo: quem chama decide se tenta de novo ou mostra a mensagem.
+    private static async Task SaveKeepingConflictsAsync(ApplicationDbContext db, CancellationToken ct)
+    {
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException
         {
             SqlState: PostgresErrorCodes.UniqueViolation,
-            ConstraintName: "IX_CancellationRequests_OrderId_Open",
-        })
+        } unique && unique.ConstraintName == CancellationRequestConfiguration.OpenRequestIndex)
         {
             // Outra solicitação aberta foi gravada ao mesmo tempo (ex.: duas abas): a primeira vale
             throw new OrderRuleException("This order can no longer receive a cancellation request.");

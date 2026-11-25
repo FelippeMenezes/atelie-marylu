@@ -6,6 +6,9 @@ namespace AtelieMarylu.Infrastructure.Data.Configurations;
 
 public class CancellationRequestConfiguration : IEntityTypeConfiguration<CancellationRequest>
 {
+    // O OrderService reconhece a violação deste índice pelo nome e a traduz em mensagem para a cliente
+    public const string OpenRequestIndex = "IX_CancellationRequests_OrderId_Open";
+
     public void Configure(EntityTypeBuilder<CancellationRequest> builder)
     {
         builder.ToTable("CancellationRequests");

@@ -640,4 +640,5 @@
   <data name="This order can no longer receive a cancellation request." xml:space="preserve"><value>Este pedido não aceita mais solicitação de cancelamento.</value></data>
   <data name="This order has no open cancellation request." xml:space="preserve"><value>Este pedido não tem solicitação de cancelamento aberta.</value></data>
   <data name="Want to withdraw, exchange or report a defect? Send a request and our team will contact you." xml:space="preserve"><value>Quer desistir, trocar ou avisar sobre um defeito? Envie uma solicitação e nossa equipe entra em contato.</value></data>
+  <data name="This order was changed at the same time. Reload the page and try again." xml:space="preserve"><value>Este pedido mudou ao mesmo tempo. Recarregue a página e tente de novo.</value></data>
 </root>

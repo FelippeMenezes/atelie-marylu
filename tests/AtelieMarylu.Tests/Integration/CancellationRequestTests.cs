@@ -3,6 +3,7 @@ using AtelieMarylu.Domain.Carts;
 using AtelieMarylu.Domain.Orders;
 using AtelieMarylu.Domain.Payments;
 using AtelieMarylu.Domain.Shipping;
+using AtelieMarylu.Infrastructure.Data;
 using AtelieMarylu.Infrastructure.Integrations;
 using AtelieMarylu.Web;
 using AtelieMarylu.Web.Configuration;
@@ -22,13 +23,13 @@ public class CancellationRequestTests(TestDatabase database) : IClassFixture<Tes
     private readonly FakeClock clock = new();
     private readonly ShopOptions store = new() { PaymentDeadlineMinutes = 120, MaxPendingOrdersPerCustomer = 3 };
 
-    private OrderService Service()
+    private OrderService Service(IDbContextFactory<ApplicationDbContext>? factory = null)
     {
         var audit = new AuditService(new CurrentUserService(new ServiceCollection().BuildServiceProvider(), new HttpContextAccessor()), database);
         var gateway = new SimulatedPaymentGateway();
         var localizer = new ServiceCollection().AddLogging().AddLocalization(o => o.ResourcesPath = "Resources").BuildServiceProvider()
             .GetRequiredService<IStringLocalizer<SharedResource>>();
-        return new OrderService(database, new SimulatedShippingCalculator(), gateway, new InlineChargeCloser(gateway), audit, new OrderEvents(),
+        return new OrderService(factory ?? database, new SimulatedShippingCalculator(), gateway, new InlineChargeCloser(gateway), audit, new OrderEvents(),
             Options.Create(store), clock, localizer, NullLogger<OrderService>.Instance);
     }
 
@@ -206,5 +207,63 @@ public class CancellationRequestTests(TestDatabase database) : IClassFixture<Tes
         loaded.RequestCancellation(null, clock.Now.UtcDateTime);
         stale.Entry(loaded).Property(o => o.Status).IsModified = true;
         await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => stale.SaveChangesAsync());
+    }
+
+    [FactWithDatabase]
+    public async Task Payment_confirmed_while_cancelling_turns_into_a_request_instead_of_an_error()
+    {
+        // A cliente clica "Cancelar" num pedido não pago, e o pagamento é confirmado no meio da gravação dela.
+        // A primeira tentativa bate no xmin; a segunda relê o pedido (já pago) e registra uma solicitação.
+        var setup = Service();
+        var (customerId, productId, order) = await CreateOrderAsync(setup, paid: false);
+        var interfering = new InterferingFactory(database, () => setup.RecordManualPaymentAsync(order.Id, PaymentMethod.Pix));
+
+        var outcome = await Service(interfering).RequestCancellationAsync(order.Code, customerId, null);
+
+        Assert.Equal(1, interfering.Interferences);
+        Assert.False(outcome.CancelledNow);
+        Assert.StartsWith("CAN-", outcome.Protocol);
+        Assert.Equal(OrderStatus.Paid, outcome.OrderStatusAtRequest);
+        var stored = await setup.GetAsync(order.Id);
+        Assert.Equal(OrderStatus.Paid, stored!.Status);
+        Assert.NotNull(stored.PendingCancellationRequest);
+        // O estoque não voltou: o cancelamento da primeira tentativa não foi gravado
+        Assert.Equal(3, await database.GetStockAsync(productId));
+    }
+
+    [FactWithDatabase]
+    public async Task Repeated_conflicts_end_in_a_translated_message()
+    {
+        var setup = Service();
+        var (customerId, _, order) = await CreateOrderAsync(setup, paid: true);
+        // Muda o pedido antes de toda gravação da cliente: as três tentativas batem no xmin
+        var interfering = new InterferingFactory(database, () => setup.ChangeDeliveryAsync(order.Id, Address(), $"nota {Guid.NewGuid()}"),
+            everyTime: true);
+
+        var ex = await Assert.ThrowsAsync<OrderRuleException>(() => Service(interfering).RequestCancellationAsync(order.Code, customerId, null));
+
+        Assert.Equal("This order was changed at the same time. Reload the page and try again.", ex.Message);
+        Assert.Equal(3, interfering.Interferences);
+        Assert.Null((await setup.GetAsync(order.Id))!.PendingCancellationRequest);
+    }
+
+    // Fábrica que, logo antes de a cliente gravar, altera o pedido por outro caminho (outra conexão, já confirmada):
+    // reproduz de forma determinística a corrida que em produção depende de milissegundos
+    private sealed class InterferingFactory(TestDatabase database, Func<Task> interfere, bool everyTime = false)
+        : IDbContextFactory<ApplicationDbContext>
+    {
+        public int Interferences { get; private set; }
+
+        public ApplicationDbContext CreateDbContext()
+        {
+            var db = database.CreateDbContext();
+            db.SavingChanges += (_, _) =>
+            {
+                if (!everyTime && Interferences > 0) return;
+                Interferences++;
+                interfere().GetAwaiter().GetResult();
+            };
+            return db;
+        }
     }
 }
