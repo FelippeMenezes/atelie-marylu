@@ -4,6 +4,10 @@ namespace AtelieMarylu.E2E;
 
 // Teste ponta a ponta num navegador de verdade. Precisa da loja rodando em desenvolvimento
 // (pagamento simulado) e dos navegadores do Playwright instalados. Veja o README.
+// Rode a loja com o Turnstile desligado: no navegador headless, nem as chaves de teste do Cloudflare
+// geram o token a tempo, e o cadastro volta com "confirme que não é um robô". As variáveis de ambiente
+// valem mais que o user-secrets, e nada muda nos arquivos:
+//   Turnstile__SiteKey= Turnstile__SecretKey= dotnet run --project src/AtelieMarylu.Web --launch-profile https
 //   E2E_URL=https://localhost:7050 dotnet test tests/AtelieMarylu.E2E
 public sealed class FactE2EAttribute : FactAttribute
 {
@@ -53,6 +57,9 @@ public class PurchaseFlowTests
         await page.GetByLabel("Cidade").FillAsync("Rio de Janeiro");
         await page.GetByLabel("UF").FillAsync("RJ");
         await page.GetByRole(AriaRole.Button, new() { Name = "Calcular frete" }).ClickAsync();
+        // Nada vem marcado no frete (AML-0039): sem escolher, o "Confirmar pedido" fica travado.
+        // A retirada no ateliê sempre aparece e não depende do Melhor Envio.
+        await page.GetByLabel("Retirada no ateliê").CheckAsync();
         await page.GetByLabel("Li e aceito").CheckAsync();
         await page.GetByRole(AriaRole.Button, new() { Name = "Confirmar pedido" }).ClickAsync();
 
@@ -62,7 +69,17 @@ public class PurchaseFlowTests
         await page.GetByRole(AriaRole.Button, new() { Name = "Simular pagamento aprovado" }).ClickAsync();
         await Assertions.Expect(page.GetByText("Pagamento confirmado!")).ToBeVisibleAsync();
 
-        // 5. O que virou pedido saiu do carrinho (AML-0037)
+        // 5. Cancelamento pelo site (AML-0040): o pedido pago vira solicitação com protocolo, sem cancelar sozinho
+        await page.GetByRole(AriaRole.Button, new() { Name = "Solicitar cancelamento" }).ClickAsync();
+        await page.GetByLabel("Motivo (opcional)").FillAsync("Teste ponta a ponta");
+        await page.GetByRole(AriaRole.Button, new() { Name = "Enviar solicitação de cancelamento" }).ClickAsync();
+        await Assertions.Expect(page.GetByText("Solicitação de cancelamento recebida.")).ToBeVisibleAsync();
+        await Assertions.Expect(page.GetByText("Protocolo CAN-")).ToBeVisibleAsync();
+        // "Vamos preparar seu pedido" contradiria a solicitação aberta
+        await Assertions.Expect(page.GetByText("Pagamento confirmado!")).ToBeHiddenAsync();
+        await Assertions.Expect(page.GetByRole(AriaRole.Button, new() { Name = "Solicitar cancelamento" })).ToBeHiddenAsync();
+
+        // 6. O que virou pedido saiu do carrinho (AML-0037)
         await page.GotoAsync($"{Url}/cart");
         await Assertions.Expect(page.GetByText("Seu carrinho está vazio.")).ToBeVisibleAsync();
     }
