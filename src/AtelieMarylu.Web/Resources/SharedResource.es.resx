@@ -164,6 +164,12 @@
   <data name="Delete account" xml:space="preserve"><value>Eliminar cuenta</value></data>
   <data name="Delete customer" xml:space="preserve"><value>Eliminar cliente</value></data>
   <data name="Delete customer permanently" xml:space="preserve"><value>Eliminar cliente definitivamente</value></data>
+  <data name="Could not delete. Try again." xml:space="preserve"><value>No se pudo eliminar. Inténtalo de nuevo.</value></data>
+  <data name="Delete product" xml:space="preserve"><value>Eliminar producto</value></data>
+  <data name="Delete product permanently" xml:space="preserve"><value>Eliminar producto definitivamente</value></data>
+  <data name="Delete {0} permanently?" xml:space="preserve"><value>¿Eliminar {0} definitivamente?</value></data>
+  <data name="Removes the product and its photos from the store. Products that are already in orders cannot be deleted: deactivate them instead. This cannot be undone." xml:space="preserve"><value>Quita el producto y sus fotos de la tienda. Un producto que ya está en algún pedido no se puede eliminar: en ese caso, desactívalo. No se puede deshacer.</value></data>
+  <data name="This product is in orders and cannot be deleted. Deactivate it to hide it from the store." xml:space="preserve"><value>Este producto está en pedidos y no se puede eliminar. Desactívalo para quitarlo de la tienda.</value></data>
   <data name="Delete data and close my account" xml:space="preserve"><value>Eliminar datos y cerrar mi cuenta</value></data>
   <data name="Delete personal data" xml:space="preserve"><value>Eliminar datos personales</value></data>
   <data name="Delete the group? Its members lose these permissions." xml:space="preserve"><value>¿Eliminar el grupo? Los miembros pierden estos permisos.</value></data>

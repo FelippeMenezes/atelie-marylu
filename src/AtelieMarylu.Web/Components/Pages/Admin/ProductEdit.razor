@@ -77,7 +77,7 @@ else
                     </div>
                 }
             </div>
-            <InputFile OnChange="UploadPhotosAsync" multiple accept="image/jpeg,image/png,image/webp" class="form-control" disabled="@uploading" />
+            <InputFile OnChange="UploadPhotosAsync" multiple accept="image/jpeg,image/png,image/webp" class="form-control" disabled="@(uploading || deleting)" />
             <div class="small text-secondary mt-1">@(uploading ? L["Processing photos..."] : L["JPG, PNG or WEBP, up to 8 MB each, {0} photos at most.", MaxPhotos])</div>
         </div>
 
@@ -110,7 +110,7 @@ else
         <Notice Message="@message" IsError="@isError" />
 
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary" disabled="@(saving || uploading)">@L["Save"]</button>
+            <button type="submit" class="btn btn-primary" disabled="@(saving || uploading || deleting)">@L["Save"]</button>
             <a href="admin/products" class="btn btn-outline-primary">@L["Back"]</a>
             @if (Id is not null && form.IsActive)
             {
@@ -118,6 +118,25 @@ else
             }
         </div>
     </EditForm>
+
+    @if (Id is not null)
+    {
+        <section class="panel-box mt-4 border-danger">
+            <h2 class="h5 text-danger">@L["Delete product"]</h2>
+            <p class="small text-secondary">@L["Removes the product and its photos from the store. Products that are already in orders cannot be deleted: deactivate them instead. This cannot be undone."]</p>
+            <Notice Message="@deleteMessage" IsError="true" />
+            @if (confirmingDelete)
+            {
+                <p class="fw-semibold">@L["Delete {0} permanently?", form.Name]</p>
+                <button type="button" class="btn btn-danger" @onclick="DeleteAsync" disabled="@(deleting || saving || uploading)">@L["Delete product permanently"]</button>
+                <button type="button" class="btn btn-outline-secondary" @onclick="() => (confirmingDelete, deleteMessage) = (false, null)" disabled="@deleting">@L["Cancel"]</button>
+            }
+            else
+            {
+                <button type="button" class="btn btn-outline-danger" @onclick="() => confirmingDelete = true" disabled="@(saving || uploading)">@L["Delete product"]</button>
+            }
+        </section>
+    }
 }
 
 @code {
@@ -131,8 +150,8 @@ else
     private readonly List<SavedImage> removedPhotos = [];
     private readonly List<SavedImage> newPhotos = [];
     private int stockWhenOpened;
-    private bool found, saving, uploading, isError;
-    private string? message;
+    private bool found, saving, uploading, isError, confirmingDelete, deleting;
+    private string? message, deleteMessage;
 
     protected override Task OnParametersSetAsync() => LoadAsync();
 
@@ -239,6 +258,60 @@ else
         {
             saving = false;
         }
+    }
+
+    private async Task DeleteAsync()
+    {
+        // O botão desabilitado não basta: no Blazor Server, um segundo clique pode chegar ao servidor
+        // antes de o navegador receber a tela com o botão desabilitado. Os eventos do circuito rodam
+        // um de cada vez até o primeiro await, então esta conferência barra a segunda chamada.
+        if (deleting || saving || uploading) return;
+        deleting = true;
+        deleteMessage = null;
+        IReadOnlyList<SavedImage>? deletedPhotos;
+        try
+        {
+            deletedPhotos = await ProductService.DeleteAsync(Id!.Value);
+        }
+        catch (ProductRuleException ex)
+        {
+            (deleteMessage, confirmingDelete, deleting) = (L[ex.Message], false, false);
+            return;
+        }
+        catch (System.Data.Common.DbException ex)   // banco fora do ar, tempo esgotado
+        {
+            Logger.LogError(ex, "Falha ao excluir o produto {ProdutoId}", Id);
+            (deleteMessage, deleting) = (L["Could not delete. Try again."], false);
+            return;
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)   // gravação recusada por outro motivo
+        {
+            Logger.LogError(ex, "Falha ao excluir o produto {ProdutoId}", Id);
+            (deleteMessage, deleting) = (L["Could not delete. Try again."], false);
+            return;
+        }
+
+        // Daqui em diante o banco já gravou (ou outra pessoa já tinha excluído): a exclusão deu certo.
+        // Arquivos só depois do commit: se o banco falhasse, o produto não ficaria sem foto.
+        // As fotos da tela (salvas, removidas ou recém-enviadas) também saem.
+        var files = (deletedPhotos ?? []).Concat(removedPhotos).Concat(newPhotos)
+            .SelectMany(f => new[] { f.Url, f.ThumbnailUrl }).Distinct().ToArray();
+        removedPhotos.Clear();
+        newPhotos.Clear();
+        try
+        {
+            Images.Delete(files);
+        }
+        // Arquivo que sobrou no disco não quebra nada; mostrar erro aqui faria a pessoa achar que a exclusão falhou
+        catch (IOException ex)
+        {
+            Logger.LogWarning(ex, "Produto {ProdutoId} excluído, mas sobraram fotos no disco", Id);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Logger.LogWarning(ex, "Produto {ProdutoId} excluído, mas sobraram fotos no disco (sem permissão)", Id);
+        }
+        Navigation.NavigateTo("admin/products");
     }
 
     // Fotos enviadas e nunca salvas não têm registro no banco: apaga ao sair da página
