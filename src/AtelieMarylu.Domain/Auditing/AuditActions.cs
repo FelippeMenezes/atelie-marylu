@@ -25,6 +25,7 @@ public static class AuditActions
 
     public const string ProductCreated = "product.created";
     public const string ProductEdited = "product.edited";
+    public const string ProductDeleted = "product.deleted";
 
     public const string AccessChanged = "access.changed";
     public const string PasswordReset = "user.password-reset";

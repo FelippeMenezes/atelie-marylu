@@ -32,6 +32,7 @@
                     <td><code>@entry.Action</code></td>
                     <td>
                         @if (entry.Entity == AuditEntities.Order) { <a href="admin/orders/@entry.EntityId">@L["Order {0}", entry.EntityId]</a> }
+                        else if (entry.Entity == AuditEntities.Product && entry.Action == AuditActions.ProductDeleted) { @L["Product {0}", entry.EntityId] }
                         else if (entry.Entity == AuditEntities.Product) { <a href="admin/products/@entry.EntityId">@L["Product {0}", entry.EntityId]</a> }
                         else { @($"{entry.Entity} {entry.EntityId}") }
                     </td>

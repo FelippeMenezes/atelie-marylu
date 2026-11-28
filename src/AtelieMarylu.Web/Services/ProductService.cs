@@ -1,8 +1,10 @@
 using AtelieMarylu.Domain.Payments;
 using AtelieMarylu.Domain.Auditing;
 using AtelieMarylu.Domain.Catalog;
+using AtelieMarylu.Domain.Orders;
 using AtelieMarylu.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace AtelieMarylu.Web.Services;
 
@@ -122,6 +124,54 @@ public class ProductService(IDbContextFactory<ApplicationDbContext> dbFactory, A
 
         return product.Id;
     }
+
+    // Exclui o produto de vez (linha, fotos no banco e registro na auditoria).
+    // Devolve as fotos para a tela apagar os arquivos depois do commit, ou null se o produto já não existe.
+    // Produto que já foi vendido não sai: o pedido precisa continuar apontando para ele (FK Restrict em OrderItems).
+    public async Task<IReadOnlyList<SavedImage>?> DeleteAsync(int id, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var product = await db.Products.Include(p => p.Images).FirstOrDefaultAsync(p => p.Id == id, ct);
+        if (product is null) return null;
+
+        // Regra: produto vendido fica, porque o pedido precisa dele (histórico fiscal de 5 anos).
+        // A conferência deixa a regra explícita aqui e evita usar a exceção do banco como caminho normal;
+        // a FK Restrict de OrderItems continua sendo a garantia final (veja o catch abaixo).
+        // AnyAsync vira um EXISTS no Postgres: para no primeiro item, sem contar todos.
+        if (await db.Set<OrderItem>().AnyAsync(i => i.ProductId == id, ct))
+            throw new ProductRuleException(SoldProductMessage);
+
+        var photos = product.Images.Select(i => new SavedImage(i.Url, i.ThumbnailUrl)).ToList();
+        db.Products.Remove(product);   // as ProductImages caem em cascata
+        await audit.RecordAsync(db, AuditActions.ProductDeleted, AuditEntities.Product, product.Id,
+            $"{product.Name} · {product.Price.ToBrl()} · estoque {product.Stock}");
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        // Outra exclusão do mesmo produto (duplo clique, outra aba, outro admin) gravou primeiro: o DELETE
+        // afetou 0 linhas. O resultado que a pessoa pediu já aconteceu, então a exclusão é idempotente:
+        // devolve "já não existe", sem segundo registro na auditoria (ele sai junto com o rollback).
+        catch (DbUpdateConcurrencyException)
+        {
+            return null;
+        }
+        // Corrida: um pedido com este produto foi criado entre a conferência acima e o DELETE.
+        // A FK do banco é a garantia final; aqui só trocamos o erro técnico pela mesma mensagem da regra.
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation })
+        {
+            throw new ProductRuleException(SoldProductMessage);
+        }
+        await transaction.CommitAsync(ct);
+
+        return photos;
+    }
+
+    // Usada pela regra e pela corrida no banco, para a loja ver sempre o mesmo texto
+    public const string SoldProductMessage = "This product is in orders and cannot be deleted. Deactivate it to hide it from the store.";
 
     // UPDATE com condição no próprio banco, como na baixa de estoque dos pedidos
     private static async Task<int> AdjustStockAsync(ApplicationDbContext db, int productId, int adjustment, CancellationToken ct)
