@@ -171,13 +171,10 @@ public class EmailOutboxDispatcher(
     }
 
     // Linhas encerradas antes do limite
+    // Uma linha se encerra de um jeito só (enviada, abandonada ou pulada): no máximo uma das três datas é preenchida.
+    // A primeira não nula é a data do encerramento; pendente não tem nenhuma, e "NULL < limite" é falso no SQL.
+    // Fica como expressão (sem bloco { }) porque o EF traduz o filtro para SQL: uma lambda com bloco não compila
+    // aqui (CS0834). E uma condição só, em vez de seis comparações, atende ao alerta "Complex condition" do CodeQL.
     private static IQueryable<OutboxEmail> Finished(ApplicationDbContext db, DateTime limit) =>
-        db.OutboxEmails.Where(e =>
-        {
-            var sentBeforeLimit = e.SentAt != null && e.SentAt < limit;
-            var failedBeforeLimit = e.FailedAt != null && e.FailedAt < limit;
-            var skippedBeforeLimit = e.SkippedAt != null && e.SkippedAt < limit;
-
-            return sentBeforeLimit || failedBeforeLimit || skippedBeforeLimit;
-        });
+        db.OutboxEmails.Where(e => (e.SentAt ?? e.FailedAt ?? e.SkippedAt) < limit);
 }
