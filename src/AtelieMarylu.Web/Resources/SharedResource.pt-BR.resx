@@ -30,7 +30,6 @@
   <data name="Try PIX again ({0})" xml:space="preserve"><value>Tentar o PIX de novo ({0})</value></data>
   <data name="We could not create an account with this email. If you already have an account, sign in or use &quot;Forgot your password?&quot;." xml:space="preserve"><value>Não foi possível criar uma conta com este e-mail. Se você já tem conta, entre ou use "Esqueceu sua senha?".</value></data>
   <data name="a password" xml:space="preserve"><value>uma senha</value></data>
-  <data name="Access" xml:space="preserve"><value>Acessos</value></data>
   <data name="Access denied" xml:space="preserve"><value>Acesso negado</value></data>
   <data name="Access saved." xml:space="preserve"><value>Acessos salvos.</value></data>
   <data name="Access · Admin" xml:space="preserve"><value>Acessos · Painel</value></data>
@@ -185,7 +184,6 @@
   <data name="District" xml:space="preserve"><value>Bairro</value></data>
   <data name="Don't want to wait? Create a new password and your account is unlocked right away." xml:space="preserve"><value>Não quer esperar? Crie uma nova senha e sua conta é desbloqueada na hora.</value></data>
   <data name="Download my data" xml:space="preserve"><value>Baixar meus dados</value></data>
-  <data name="Edit" xml:space="preserve"><value>Editar</value></data>
   <data name="Edit delivery" xml:space="preserve"><value>Editar entrega</value></data>
   <data name="Edit items" xml:space="preserve"><value>Editar itens</value></data>
   <data name="Edit orders and change status" xml:space="preserve"><value>Editar pedidos e mudar status</value></data>
@@ -517,7 +515,6 @@
   <data name="Users" xml:space="preserve"><value>Usuários</value></data>
   <data name="Users and access" xml:space="preserve"><value>Usuários e acessos</value></data>
   <data name="Users · Admin" xml:space="preserve"><value>Usuários · Painel</value></data>
-  <data name="View" xml:space="preserve"><value>Ver</value></data>
   <data name="View cart" xml:space="preserve"><value>Ver carrinho</value></data>
   <data name="View in store" xml:space="preserve"><value>Ver na loja</value></data>
   <data name="View orders" xml:space="preserve"><value>Ver pedidos</value></data>

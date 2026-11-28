@@ -367,6 +367,73 @@ img.product-photo {
     border: 1px solid var(--lilas);
 }
 
+/* Linha de tabela clicável (<tr class="row-link">). Cada célula é o contêiner do seu próprio link,
+   e não a <tr>: o Safari ignora position: relative em <tr> (WebKit bug 240961), e um link "esticado"
+   a partir da linha cobriria a tabela inteira (qualquer toque abriria o mesmo item). A célula principal
+   tem o link de verdade (.row-link-main); as outras recebem o <CellLink>, fora do Tab e do leitor de tela. */
+.row-link > td {
+    position: relative;
+}
+
+.row-link-main {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.row-link-main::after,
+.cell-link {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+.row-link-main::after {
+    content: "";
+}
+
+/* Destaque da linha só com mouse: no toque, o :hover "gruda" depois do clique e a linha ficaria marcada
+   ao voltar. O --bs-table-bg-state é a variável que o Bootstrap usa para pintar as células da tabela. */
+@media (hover: hover) {
+    .row-link:hover > * {
+        --bs-table-bg-state: rgba(168, 53, 122, .06);
+    }
+
+    .row-link:hover .row-link-main {
+        text-decoration: underline;
+    }
+}
+
+/* Teclado: o link principal mantém o próprio contorno de foco, e a linha toda ganha fundo */
+.row-link:has(.row-link-main:focus-visible) > * {
+    --bs-table-bg-state: rgba(168, 53, 122, .12);
+}
+
+/* Tabela que encolhe com a tela em vez de rolar para o lado. O valor do meio mistura rem e vw:
+   o vw acompanha a largura da tela, e o rem acompanha o tamanho de fonte escolhido no aparelho
+   (WCAG 1.4.4). Com só vw, quem aumentou a fonte no Android não veria diferença na tabela. */
+.table-fluid {
+    font-size: clamp(.72rem, .5rem + 1.2vw, 1rem);
+}
+
+.table-fluid-photo {
+    width: 56px;
+}
+
+@media (max-width: 575.98px) {
+    .table-fluid > :not(caption) > * > * {
+        padding: .4rem .3rem;
+    }
+
+    .table-fluid-photo {
+        width: 36px;
+    }
+
+    .table-fluid .tag {
+        font-size: .65rem;
+    }
+}
+
 .status {
     display: inline-block;
     padding: .15rem .6rem;

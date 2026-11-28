@@ -21,18 +21,20 @@ else if (customers.Count == 0)
 else
 {
     <div class="table-responsive panel-box p-0">
-        <table class="table align-middle m-0">
-            <thead><tr><th>@L["Name"]</th><th>@L["Email"]</th><th>@L["Phone"]</th><th>@L["Signed up"]</th><th class="text-end">@L["Orders"]</th><th></th></tr></thead>
+        @* A linha inteira abre a cliente (.row-link, regra em app.css) *@
+        <table class="table table-fluid align-middle m-0">
+            <thead><tr><th>@L["Name"]</th><th>@L["Email"]</th><th>@L["Phone"]</th><th>@L["Signed up"]</th><th class="text-end">@L["Orders"]</th></tr></thead>
             <tbody>
                 @foreach (var c in customers)
                 {
-                    <tr>
-                        <td>@c.Name</td>
-                        <td>@c.Email</td>
-                        <td>@c.Phone</td>
-                        <td>@c.CreatedAt.FormatBrasilia("dd/MM/yyyy")</td>
-                        <td class="text-end">@c.Orders</td>
-                        <td class="text-end"><a href="admin/customers/@c.Id">@L["View"]</a></td>
+                    var href = $"admin/customers/{c.Id}";
+                    <tr class="row-link">
+                        @* Sem nome, o link mostra o e-mail: um link sem texto não tem o que anunciar *@
+                        <td><a href="@href" class="row-link-main">@(string.IsNullOrWhiteSpace(c.Name) ? c.Email ?? "—" : c.Name)</a></td>
+                        <td class="text-break">@c.Email<CellLink Href="@href" /></td>
+                        <td class="text-nowrap">@c.Phone<CellLink Href="@href" /></td>
+                        <td>@c.CreatedAt.FormatBrasilia("dd/MM/yyyy")<CellLink Href="@href" /></td>
+                        <td class="text-end">@c.Orders<CellLink Href="@href" /></td>
                     </tr>
                 }
             </tbody>

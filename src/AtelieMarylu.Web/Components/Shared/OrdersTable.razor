@@ -1,6 +1,7 @@
 @using AtelieMarylu.Web.Configuration
+@* A linha inteira abre o pedido (.row-link, regra em app.css) *@
 <div class="table-responsive panel-box p-0">
-    <table class="table align-middle m-0">
+    <table class="table table-fluid align-middle m-0">
         <thead>
             <tr>
                 <th>@L["Order"]</th>
@@ -11,22 +12,21 @@
                 }
                 <th>@L["Status"]</th>
                 <th class="text-end">@L["Total"]</th>
-                <th></th>
             </tr>
         </thead>
         <tbody>
             @foreach (var p in Orders)
             {
-                <tr>
-                    <td>@p.Code</td>
-                    <td>@p.CreatedAt.FormatBrasilia()</td>
+                var href = $"{Link}/{(ByCode ? p.Code : p.Id.ToString())}";
+                <tr class="row-link">
+                    <td class="text-nowrap"><a href="@href" class="row-link-main">@p.Code</a></td>
+                    <td>@p.CreatedAt.FormatBrasilia()<CellLink Href="@href" /></td>
                     @if (CustomerNames is not null)
                     {
-                        <td>@CustomerNames.GetValueOrDefault(p.CustomerId)</td>
+                        <td>@CustomerNames.GetValueOrDefault(p.CustomerId)<CellLink Href="@href" /></td>
                     }
-                    <td><OrderStatusBadge Status="p.Status" /></td>
-                    <td class="text-end">@p.Total.ToBrl()</td>
-                    <td class="text-end"><a href="@Link/@(ByCode ? p.Code : p.Id.ToString())">@L["View"]</a></td>
+                    <td><OrderStatusBadge Status="p.Status" /><CellLink Href="@href" /></td>
+                    <td class="text-end text-nowrap">@p.Total.ToBrl()<CellLink Href="@href" /></td>
                 </tr>
             }
         </tbody>

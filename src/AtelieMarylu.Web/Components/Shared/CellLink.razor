@@ -1,0 +1,8 @@
+@* Link "fantasma" que cobre a célula inteira de uma linha clicável (.row-link): leva ao mesmo endereço
+   do link principal da linha (.row-link-main). Fica fora do Tab e do leitor de tela, porque a linha
+   já tem um link de verdade; repetir o anúncio em cada célula só atrapalharia. *@
+<a href="@Href" class="cell-link" tabindex="-1" aria-hidden="true"></a>
+
+@code {
+    [Parameter, EditorRequired] public string Href { get; set; } = "";
+}
