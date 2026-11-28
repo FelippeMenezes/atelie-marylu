@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AtelieMarylu.Domain.Orders;
+using AtelieMarylu.Domain.Text;
 using AtelieMarylu.Infrastructure.Data;
 using AtelieMarylu.Web.Configuration;
 using AtelieMarylu.Web.Localization;
@@ -24,8 +25,13 @@ public sealed class OrderEmails(IOptions<ShopOptions> store, EmailOutboxSignal s
     public const int MaxOrderReceivedPerDay = 5;
     public static readonly TimeSpan OrderReceivedWindow = TimeSpan.FromHours(24);
 
-    // Destinatário lido dentro da mesma transação (nome e e-mail atuais da conta)
-    public sealed record Customer(string? Email, string? FullName);
+    // Destinatário lido dentro da mesma transação (nome e e-mail atuais da conta). Para o e-mail segue só o primeiro
+    // nome, e só se o nome passar na regra de CustomerText (AML-0042); senão, "Olá!". Bônus de minimização: a
+    // outbox guarda menos dado pessoal.
+    public sealed record Customer(string? Email, string? FullName)
+    {
+        public string? SafeName => CustomerText.SafeFirstNameOrNull(FullName);
+    }
 
     // Acorda o worker. Chamar só DEPOIS do Commit: antes dele, o worker não enxerga as linhas novas.
     public void Wake() => signal.Wake();
@@ -43,7 +49,7 @@ public sealed class OrderEmails(IOptions<ShopOptions> store, EmailOutboxSignal s
             return;
         }
         Add(db, OutboxEmailKinds.OrderReceived, customer.Email, LanguageOf(order), order.Id,
-            OrderEmailData.From(order, customer.FullName, now));
+            OrderEmailData.From(order, customer.SafeName, now));
     }
 
     // "Pagamento confirmado". Sem limite: só acontece com dinheiro de verdade entrando (webhook ou registro manual).
@@ -52,7 +58,7 @@ public sealed class OrderEmails(IOptions<ShopOptions> store, EmailOutboxSignal s
         if (string.IsNullOrEmpty(customer.Email)) return;
         var now = clock.GetUtcNow().UtcDateTime;
         Add(db, OutboxEmailKinds.PaymentConfirmed, customer.Email, LanguageOf(order), order.Id,
-            OrderEmailData.From(order, customer.FullName, now, amountPaid));
+            OrderEmailData.From(order, customer.SafeName, now, amountPaid));
     }
 
     // Solicitação de cancelamento (AML-0040), as mesmas regras de antes:
@@ -62,7 +68,7 @@ public sealed class OrderEmails(IOptions<ShopOptions> store, EmailOutboxSignal s
     // O cancelamento de pedido não pago, feito na hora, não manda nada (mesmo risco de lotar a caixa de alguém).
     public void EnqueueCancellationRequest(ApplicationDbContext db, Order order, Customer customer, CancellationRequest request)
     {
-        var data = new CancellationEmailData(order.Id, order.Code, customer.FullName, request.Protocol, request.RequestedAt, request.OrderStatusAtRequest);
+        var data = new CancellationEmailData(order.Id, order.Code, customer.SafeName, request.Protocol, request.RequestedAt, request.OrderStatusAtRequest);
         // Idioma ATUAL do site, e não o do pedido (como nos outros e-mails), de propósito: é a confirmação de algo
         // que a cliente acabou de fazer nesta tela, e ela espera ler no idioma que está usando agora. Os outros
         // e-mails nascem de eventos fora da tela (webhook, painel), onde o único idioma conhecido é o do pedido.

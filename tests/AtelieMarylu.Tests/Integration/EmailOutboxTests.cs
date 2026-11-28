@@ -123,6 +123,22 @@ public class EmailOutboxTests(TestDatabase database) : IClassFixture<TestDatabas
     }
 
     [FactWithDatabase]
+    public async Task Unsafe_old_name_stays_out_of_the_order_emails()
+    {
+        // AML-0042: conta criada antes da regra, com golpe no nome. O e-mail sai com "Olá!", sem o nome.
+        var customer = await database.CreateCustomerAsync();
+        await using (var db = database.CreateDbContext())
+            await db.Users.Where(u => u.Id == customer.Id).ExecuteUpdateAsync(s => s.SetProperty(u => u.FullName, "Ligue 0800 123 4567"));
+        var product = await database.CreateProductAsync(stock: 5);
+
+        var order = await Service().CreateAsync(customer.Id, [new CartItem(product.Id, 1)], Address(), "pac");
+
+        var email = Assert.Single(await OutboxAsync(order.Id));
+        Assert.DoesNotContain("0800", email.Payload);
+        Assert.Null(System.Text.Json.JsonDocument.Parse(email.Payload!).RootElement.GetProperty("customerName").GetString());
+    }
+
+    [FactWithDatabase]
     public async Task Order_placed_by_the_staff_uses_the_store_language()
     {
         // O idioma do painel é o da funcionária, não o da cliente

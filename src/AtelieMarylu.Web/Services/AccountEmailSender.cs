@@ -1,3 +1,4 @@
+using AtelieMarylu.Domain.Text;
 using System.Globalization;
 using System.Net;
 using AtelieMarylu.Domain.Email;
@@ -16,6 +17,9 @@ namespace AtelieMarylu.Web.Services;
 // Monta os e-mails da conta (boas-vindas, redefinição de senha, troca de e-mail, aviso de cadastro repetido) e entrega ao IEmailClient (Resend ou log).
 // É o IEmailSender<ApplicationUser> que as telas do Identity usam.
 //
+// - A saudação usa só o primeiro nome, e só se o nome passar na regra de CustomerText (AML-0042); senão, sai sem
+//   nome. Assim nem uma conta antiga com link ou telefone no nome, nem uma frase escrita no lugar do nome, usam o
+//   domínio da loja para mandar golpe.
 // - O HTML vem de componentes Razor (Components/Emails), renderizados fora de uma tela pelo HtmlRenderer.
 //   O Razor codifica tudo o que escreve, então o nome do cliente não consegue injetar HTML no e-mail,
 //   e os textos são chaves L["..."] conferidas pelo LocalizationTests como os das telas.
@@ -33,7 +37,7 @@ public sealed class AccountEmailSender(
     {
         var html = await RenderAsync<ConfirmEmailMessage>(new()
         {
-            [nameof(ConfirmEmailMessage.Name)] = user.FullName,
+            [nameof(ConfirmEmailMessage.Name)] = CustomerText.SafeFirstNameOrNull(user.FullName),
             [nameof(ConfirmEmailMessage.Link)] = Decode(confirmationLink),
             [nameof(ConfirmEmailMessage.Hours)] = (int)AccountTokenLifespans.EmailConfirmation.TotalHours,
         });
@@ -44,7 +48,7 @@ public sealed class AccountEmailSender(
     {
         var html = await RenderAsync<ResetPasswordMessage>(new()
         {
-            [nameof(ResetPasswordMessage.Name)] = user.FullName,
+            [nameof(ResetPasswordMessage.Name)] = CustomerText.SafeFirstNameOrNull(user.FullName),
             [nameof(ResetPasswordMessage.Link)] = Decode(resetLink),
             [nameof(ResetPasswordMessage.Hours)] = (int)AccountTokenLifespans.PasswordReset.TotalHours,
         });
@@ -57,7 +61,7 @@ public sealed class AccountEmailSender(
     {
         var html = await RenderAsync<WelcomeMessage>(new()
         {
-            [nameof(WelcomeMessage.Name)] = user.FullName,
+            [nameof(WelcomeMessage.Name)] = CustomerText.SafeFirstNameOrNull(user.FullName),
             [nameof(WelcomeMessage.StoreUrl)] = storeUrl,
         });
         await client.SendAsync(new EmailMessage(email, L["Welcome to Ateliê Marylu"], html));
@@ -112,7 +116,7 @@ public sealed class AccountEmailSender(
         {
             var html = await RenderAsync<ExistingAccountMessage>(new()
             {
-                [nameof(ExistingAccountMessage.Name)] = user.FullName,
+                [nameof(ExistingAccountMessage.Name)] = CustomerText.SafeFirstNameOrNull(user.FullName),
                 [nameof(ExistingAccountMessage.ForgotPasswordUrl)] = forgotPasswordUrl,
             });
             await client.SendAsync(new EmailMessage(email, L["Someone tried to create an account with your email"], html));

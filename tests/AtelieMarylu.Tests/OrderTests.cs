@@ -262,6 +262,27 @@ public class OrderTests
     }
 
     // Cancelamento pedido pela cliente (AML-0040)
+    // AML-0042: o endereço vai nos e-mails do pedido. A entidade recusa link, e-mail e telefone, para qualquer
+    // caminho que crie ou edite o pedido (as telas validam antes, com a mesma regra).
+    [Theory]
+    [InlineData("Rua A acesse golpe.com", null)]
+    [InlineData("Rua A", "ligue 0800 123 4567")]
+    [InlineData("Rua A", "suporte@golpe")]
+    public void Address_with_link_email_or_phone_is_refused(string street, string? complement)
+    {
+        var address = new ShippingAddress
+        {
+            PostalCode = "20000000", Street = street, Number = "1", Complement = complement, District = "Centro", City = "Rio de Janeiro", State = "RJ",
+        };
+
+        var created = Assert.Throws<OrderRuleException>(() => new Order("c", [new OrderItem(1, "Bolsa", 10m, 1)], address,
+            new ShippingOption("pac", "PAC", 10m, 5), Now.AddHours(2)));
+        Assert.Equal("Remove links, emails and phone numbers from the address (the contact phone number goes in the account).", created.Message);
+
+        var changed = Assert.Throws<OrderRuleException>(() => NewOrder().ChangeAddress(address));
+        Assert.Equal("Remove links, emails and phone numbers from the address (the contact phone number goes in the account).", changed.Message);
+    }
+
     private static Order PaidOrder()
     {
         var order = NewOrder();

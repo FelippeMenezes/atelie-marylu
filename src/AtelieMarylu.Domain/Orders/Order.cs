@@ -18,6 +18,7 @@ public class Order
         CustomerId = customerId;
         _items.AddRange(items);
         if (_items.Count == 0) throw new OrderRuleException("The order must have at least one item.");
+        EnsureSafeForEmail(address);
         Address = address;
         SetShipping(shipping);
         PayBy = payBy;
@@ -81,6 +82,15 @@ public class Order
     public bool CanShip => Status is OrderStatus.Paid or OrderStatus.Preparing;
     public bool IsPaymentOverdue(DateTime utcNow) => Status == OrderStatus.AwaitingPayment && utcNow > PayBy;
 
+    // O endereço vai nos e-mails do pedido. Sem link, e-mail nem telefone nos campos de texto livre, ninguém usa o
+    // domínio da loja para mandar golpe a quem teve o e-mail cadastrado por outra pessoa (AML-0042). As telas já
+    // validam com a mesma regra (CustomerText); aqui é a garantia, para qualquer caminho que crie ou edite o pedido.
+    private static void EnsureSafeForEmail(ShippingAddress address)
+    {
+        if (!address.IsSafeForEmail())
+            throw new OrderRuleException("Remove links, emails and phone numbers from the address (the contact phone number goes in the account).");
+    }
+
     public void SetShipping(ShippingOption shipping)
     {
         if (!CanChangeItems) throw new OrderRuleException("Shipping can only be changed before payment.");
@@ -96,6 +106,7 @@ public class Order
     public void ChangeAddress(ShippingAddress address)
     {
         if (!CanChangeDelivery) throw new OrderRuleException("The address can no longer be changed.");
+        EnsureSafeForEmail(address);
         Address = address;
     }
 
