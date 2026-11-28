@@ -172,6 +172,12 @@ public class EmailOutboxDispatcher(
 
     // Linhas encerradas antes do limite
     private static IQueryable<OutboxEmail> Finished(ApplicationDbContext db, DateTime limit) =>
-        db.OutboxEmails.Where(e => (e.SentAt != null && e.SentAt < limit) || (e.FailedAt != null && e.FailedAt < limit)
-            || (e.SkippedAt != null && e.SkippedAt < limit));
+        db.OutboxEmails.Where(e =>
+        {
+            var sentBeforeLimit = e.SentAt != null && e.SentAt < limit;
+            var failedBeforeLimit = e.FailedAt != null && e.FailedAt < limit;
+            var skippedBeforeLimit = e.SkippedAt != null && e.SkippedAt < limit;
+
+            return sentBeforeLimit || failedBeforeLimit || skippedBeforeLimit;
+        });
 }
