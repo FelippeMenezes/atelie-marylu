@@ -18,17 +18,19 @@
 else
 {
     <div class="table-responsive panel-box p-0">
-        <table class="table align-middle m-0">
-            <thead><tr><th>@L["Name"]</th><th>@L["Email"]</th><th>@L["Profile"]</th><th>@L["Groups"]</th><th></th></tr></thead>
+        @* A linha inteira abre os acessos do usuário (.row-link, regra em app.css) *@
+        <table class="table table-fluid align-middle m-0">
+            <thead><tr><th>@L["Name"]</th><th>@L["Email"]</th><th>@L["Profile"]</th><th>@L["Groups"]</th></tr></thead>
             <tbody>
                 @foreach (var u in users)
                 {
-                    <tr>
-                        <td>@u.Name</td>
-                        <td>@u.Email</td>
-                        <td>@(u.IsAdmin ? "Admin" : u.IsEmployee ? L["Employee"] : L["Customer"])</td>
-                        <td>@string.Join(", ", u.Groups)</td>
-                        <td class="text-end"><a href="admin/users/@u.Id">@L["Access"]</a></td>
+                    var href = $"admin/users/{u.Id}";
+                    <tr class="row-link">
+                        @* Sem nome, o link mostra o e-mail: um link sem texto não tem o que anunciar *@
+                        <td><a href="@href" class="row-link-main">@(string.IsNullOrWhiteSpace(u.Name) ? u.Email : u.Name)</a></td>
+                        <td class="text-break">@u.Email<CellLink Href="@href" /></td>
+                        <td>@(u.IsAdmin ? "Admin" : u.IsEmployee ? L["Employee"] : L["Customer"])<CellLink Href="@href" /></td>
+                        <td>@string.Join(", ", u.Groups)<CellLink Href="@href" /></td>
                     </tr>
                 }
             </tbody>

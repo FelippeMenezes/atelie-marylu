@@ -9,21 +9,32 @@
     <a href="admin/products/new" class="btn btn-primary">@L["New product"]</a>
 </div>
 
+@* A linha inteira abre o produto (.row-link, regra em app.css). Em tela estreita, a .table-fluid
+   encolhe a letra, o espaçamento e a foto para todas as colunas caberem. *@
 <div class="table-responsive panel-box p-0">
-    <table class="table align-middle m-0">
+    <table class="table table-fluid align-middle m-0">
         <thead>
-            <tr><th></th><th>@L["Name"]</th><th class="text-end">@L["Price"]</th><th class="text-end">@L["Stock"]</th><th>@L["Status"]</th><th></th></tr>
+            <tr>
+                <th><span class="visually-hidden">@L["Photos"]</span></th>
+                <th>@L["Name"]</th>
+                <th class="text-end">@L["Price"]</th>
+                <th class="text-end">@L["Stock"]</th>
+                <th>@L["Status"]</th>
+            </tr>
         </thead>
         <tbody>
             @foreach (var p in products)
             {
-                <tr>
-                    <td style="width: 56px"><ProductPhoto Url="@p.Cover?.ThumbnailUrl" Name="@p.Name" Class="rounded-2" /></td>
-                    <td>@p.Name @if (p.ProductionDays is not null) { <span class="tag">@L["Made to order"]</span> }</td>
-                    <td class="text-end">@p.Price.ToBrl()</td>
-                    <td class="text-end @(p.Stock == 0 ? "text-danger fw-bold" : "")">@p.Stock</td>
-                    <td>@(p.IsActive ? L["Active"] : L["Inactive"])</td>
-                    <td class="text-end"><a href="admin/products/@p.Id">@L["Edit"]</a></td>
+                var href = $"admin/products/{p.Id}";
+                <tr class="row-link">
+                    <td class="table-fluid-photo"><ProductPhoto Url="@p.Cover?.ThumbnailUrl" Name="" Class="rounded-2" /><CellLink Href="@href" /></td>
+                    <td>
+                        <a href="@href" class="row-link-main">@p.Name</a>
+                        @if (p.ProductionDays is not null) { <span class="tag ms-1">@L["Made to order"]</span> }
+                    </td>
+                    <td class="text-end text-nowrap">@p.Price.ToBrl()<CellLink Href="@href" /></td>
+                    <td class="text-end @(p.Stock == 0 ? "text-danger fw-bold" : "")">@p.Stock<CellLink Href="@href" /></td>
+                    <td>@(p.IsActive ? L["Active"] : L["Inactive"])<CellLink Href="@href" /></td>
                 </tr>
             }
         </tbody>
