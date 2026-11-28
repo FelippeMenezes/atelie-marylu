@@ -66,12 +66,15 @@ else
                 {
                     var index = i;
                     var photo = photos[i];
-                    <div style="width: 130px">
+                    @* 140px: cabem os três botões de 44px (.btn-icon) *@
+                    <div style="width: 140px">
                         <ProductPhoto Url="@photo.ThumbnailUrl" Name="@form.Name" Class="rounded-3" />
+                        @* Travados enquanto salva: uma foto removida durante o "Salvar" podia ir gravada no banco e ter o arquivo apagado logo depois *@
                         <div class="d-flex justify-content-between mt-1">
-                            <button type="button" class="btn btn-link btn-sm p-0" disabled="@(index == 0)" @onclick="() => Move(index, -1)" aria-label="@L["Move left"]">◀</button>
-                            <button type="button" class="btn btn-link btn-sm p-0 text-danger" @onclick="() => Remove(index)">@L["Remove"]</button>
-                            <button type="button" class="btn btn-link btn-sm p-0" disabled="@(index == photos.Count - 1)" @onclick="() => Move(index, 1)" aria-label="@L["Move right"]">▶</button>
+                            <button type="button" class="btn btn-link btn-icon" disabled="@(index == 0 || PhotosLocked)" @onclick="() => Move(index, -1)" aria-label="@L["Move left"]">◀</button>
+                            <button type="button" class="btn btn-link btn-icon text-danger" disabled="@PhotosLocked" @onclick="() => Remove(index)"
+                                    aria-label="@L["Remove photo {0}", index + 1]" title="@L["Remove"]"><TrashIcon /></button>
+                            <button type="button" class="btn btn-link btn-icon" disabled="@(index == photos.Count - 1 || PhotosLocked)" @onclick="() => Move(index, 1)" aria-label="@L["Move right"]">▶</button>
                         </div>
                         @if (index == 0) { <div class="small text-center tag d-block">@L["Cover"]</div> }
                     </div>
@@ -114,7 +117,7 @@ else
             <a href="admin/products" class="btn btn-outline-primary">@L["Back"]</a>
             @if (Id is not null && form.IsActive)
             {
-                <a href="@($"product/{Id}")" target="_blank" class="btn btn-link ms-auto">@L["View in store"]</a>
+                <a href="@($"product/{Id}")" target="_blank" rel="noopener" class="btn btn-outline-primary ms-auto">@L["View in store"]</a>
             }
         </div>
     </EditForm>
@@ -151,6 +154,9 @@ else
     private readonly List<SavedImage> newPhotos = [];
     private int stockWhenOpened;
     private bool found, saving, uploading, isError, confirmingDelete, deleting;
+
+    // O SaveAsync recebe a própria lista de fotos e só a lê depois de esperar o banco: mexer nela no meio do caminho desencontra banco e disco
+    private bool PhotosLocked => saving || uploading || deleting;
     private string? message, deleteMessage;
 
     protected override Task OnParametersSetAsync() => LoadAsync();

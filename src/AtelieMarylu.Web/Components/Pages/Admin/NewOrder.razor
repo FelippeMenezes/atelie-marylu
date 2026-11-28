@@ -38,7 +38,8 @@
                 <span>@item.Quantity× @p.Name</span>
                 <span>
                     @((p.Price * item.Quantity).ToBrl())
-                    <button type="button" class="btn btn-link text-danger btn-sm" @onclick="() => { cart.Remove(item.ProductId); ClearShipping(); }">@L["Remove"]</button>
+                    <button type="button" class="btn btn-link text-danger btn-icon" @onclick="() => { cart.Remove(item.ProductId); ClearShipping(); }"
+                            aria-label="@L["Remove {0} from order", p.Name]" title="@L["Remove"]"><TrashIcon /></button>
                 </span>
             </div>
         }
