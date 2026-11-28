@@ -24,6 +24,7 @@ public class OrderService(
     IChargeCloser chargeCloser,
     AuditService audit,
     OrderEvents events,
+    OrderEmails emails,
     IOptions<ShopOptions> store,
     TimeProvider clock,
     IStringLocalizer<SharedResource> localizer,
@@ -144,7 +145,10 @@ public class OrderService(
             throw new ShippingPriceChangedException(option.Amount.ToBrl());
 
         var deadline = createdBy is null ? TimeSpan.FromMinutes(options.PaymentDeadlineMinutes) : TimeSpan.FromHours(options.AdminPaymentDeadlineHours);
-        var order = new Order(customerId, orderItems, address, option, now + deadline, options.PixDiscountPercent, createdBy);
+        // O idioma de quem está no site; no pedido lançado pelo painel, o da equipe não vale para a cliente (fica o padrão)
+        var language = createdBy is null ? OrderEmails.CurrentLanguage() : null;
+        var order = new Order(customerId, orderItems, address, option, now + deadline, options.PixDiscountPercent, createdBy, language);
+        bool newEmails;
 
         await using (var transaction = await db.Database.BeginTransactionAsync(ct))
         {
@@ -153,9 +157,13 @@ public class OrderService(
             db.Orders.Add(order);
             await db.SaveChangesAsync(ct);
             await audit.RecordAsync(db, AuditActions.OrderCreated, AuditEntities.Order, order.Id, $"{order.Code} · {order.Total.ToBrl()}");
+            // Na mesma transação: se o pedido não gravar, o e-mail também não existe (e vice-versa)
+            await emails.EnqueueOrderReceivedAsync(db, order, await LoadCustomerAsync(db, customerId, ct), ct);
+            newEmails = HasNewEmails(db);
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
         }
+        if (newEmails) emails.Wake();
 
         logger.LogInformation("Pedido {Codigo} criado para o cliente {ClienteId}.", order.Code, customerId);
         return order;
@@ -261,6 +269,8 @@ public class OrderService(
 
         var order = await LoadOrderAsync(db, orderId.Value, ct);
         var openBefore = OpenCharges(order);
+        var statusBefore = order.Status;
+        var approvedBefore = ApprovedPayments(order);
         var payment = order.Payments.First(p => p.ExternalId == notification.ExternalId);
         string? alert = null;
         var alertAction = AuditActions.PaymentMismatch;
@@ -316,10 +326,13 @@ public class OrderService(
 
         await audit.RecordAsync(db, alert is null ? AuditActions.PaymentNotified : alertAction, AuditEntities.Order, order.Id,
             alert ?? details ?? $"{notification.Status} via {gateway.Name} ({notification.ExternalId})", Author.Automated);
+        await EnqueuePaymentConfirmedIfPaidAsync(db, order, statusBefore, approvedBefore, ct);
+        var newEmails = HasNewEmails(db);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
         events.Notify(order.Id);
+        if (newEmails) emails.Wake();
         if (alert is not null) logger.LogError("ALERTA: {Alerta}", alert);
         ScheduleClosingOfFinishedCharges(order, openBefore);
         return true;
@@ -382,6 +395,7 @@ public class OrderService(
         Order order;
         List<OpenCharge> openBefore;
         CancellationOutcome outcome;
+        bool newEmails;
         await using (var db = await dbFactory.CreateDbContextAsync(ct))
         {
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -390,9 +404,6 @@ public class OrderService(
                 ?? throw new OrderRuleException("Order not found.");
             order = await LoadOrderAsync(db, orderId, ct);
             openBefore = OpenCharges(order);
-            // Lido aqui para o e-mail de confirmação não precisar de outra ida ao banco depois da gravação
-            var customer = await db.Users.AsNoTracking().Where(u => u.Id == customerId)
-                .Select(u => new { u.Email, u.FullName }).FirstAsync(ct);
 
             string? protocol = null;
             var statusAtRequest = order.Status;
@@ -412,17 +423,19 @@ public class OrderService(
                 // O motivo escrito pela cliente fica só na solicitação (sai na exportação da LGPD), não na auditoria
                 await audit.RecordAsync(db, AuditActions.OrderCancellationRequested, AuditEntities.Order, order.Id,
                     $"{request.Protocol} · {Order.Describe(request.OrderStatusAtRequest)}");
+                emails.EnqueueCancellationRequest(db, order, await LoadCustomerAsync(db, customerId, ct), request);
                 protocol = request.Protocol;
             }
 
+            newEmails = HasNewEmails(db);
             // Deixa o conflito de versão subir para o RequestCancellationAsync tentar de novo
             await SaveKeepingConflictsAsync(db, ct);
             await transaction.CommitAsync(ct);
-            outcome = new CancellationOutcome(order.Id, order.Code, customer.Email, customer.FullName,
-                CancelledNow: protocol is null, protocol, now, statusAtRequest);
+            outcome = new CancellationOutcome(order.Id, order.Code, CancelledNow: protocol is null, protocol, now, statusAtRequest);
         }
 
         events.Notify(order.Id);
+        if (newEmails) emails.Wake();
         ScheduleClosingOfFinishedCharges(order, openBefore);
         return outcome;
     }
@@ -631,25 +644,60 @@ public class OrderService(
     {
         Order order;
         List<OpenCharge> openBefore;
+        bool newEmails;
         await using (var db = await dbFactory.CreateDbContextAsync(ct))
         {
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
             order = await LoadOrderAsync(db, orderId, ct);
             openBefore = OpenCharges(order);
             var statusBefore = order.Status;
+            var approvedBefore = ApprovedPayments(order);
             var details = await change(order, db);
             if (details is null && order.Status == statusBefore && !db.ChangeTracker.HasChanges())
                 return false;
             await audit.RecordAsync(db, action, AuditEntities.Order, order.Id, details, author);
+            // Ex.: o registro de pagamento manual (Minizinha, PIX direto) também avisa a cliente
+            await EnqueuePaymentConfirmedIfPaidAsync(db, order, statusBefore, approvedBefore, ct);
+            newEmails = HasNewEmails(db);
             await SaveAsync(db, ct);
             await transaction.CommitAsync(ct);
         }
 
         events.Notify(orderId);
+        if (newEmails) emails.Wake();
         // Cancelar, editar itens ou frete, ou registrar pagamento manual cancela as cobranças pendentes
         ScheduleClosingOfFinishedCharges(order, openBefore);
         return true;
     }
+
+    // O e-mail de "pagamento confirmado" nasce da TRANSIÇÃO para Pago, não do aviso do provedor: um webhook repetido,
+    // a conciliação e o pagamento manual passam por aqui, mas só a primeira passagem de "aguardando" para "pago" grava.
+    //
+    // O valor é só o do pagamento que confirmou o pedido (aprovado nesta mudança), não a soma de todos os aprovados:
+    // um pagamento divergente anterior (valor diferente, que virou alerta e deixou o pedido aguardando) também fica
+    // "aprovado", e somá-lo mostraria à cliente um valor que não corresponde ao pedido.
+    private async Task EnqueuePaymentConfirmedIfPaidAsync(ApplicationDbContext db, Order order, OrderStatus statusBefore,
+        IReadOnlySet<Payment> approvedBefore, CancellationToken ct)
+    {
+        if (statusBefore != OrderStatus.AwaitingPayment || order.Status != OrderStatus.Paid) return;
+        var paid = order.Payments.Where(p => p.Status == PaymentStatus.Approved && !approvedBefore.Contains(p)).Sum(p => p.Amount);
+        emails.EnqueuePaymentConfirmed(db, order, await LoadCustomerAsync(db, order.CustomerId, ct), paid);
+    }
+
+    // Comparação por referência: o pagamento manual é criado dentro da mudança e ainda não tem Id (vale 0)
+    private static HashSet<Payment> ApprovedPayments(Order order) =>
+        new(order.Payments.Where(p => p.Status == PaymentStatus.Approved), ReferenceEqualityComparer.Instance);
+
+    // Esta mudança gravou algum e-mail na outbox? Conferido ANTES do SaveChanges (depois dele, as linhas deixam de
+    // estar "Added"). Só então vale acordar o worker: uma edição do painel sem e-mail não gera consulta à toa.
+    private static bool HasNewEmails(ApplicationDbContext db) =>
+        db.ChangeTracker.Entries<OutboxEmail>().Any(e => e.State == EntityState.Added);
+
+    // Nome e e-mail atuais da conta, lidos dentro da transação da mudança
+    private static async Task<OrderEmails.Customer> LoadCustomerAsync(ApplicationDbContext db, string customerId, CancellationToken ct) =>
+        await db.Users.AsNoTracking().Where(u => u.Id == customerId)
+            .Select(u => new OrderEmails.Customer(u.Email, u.FullName)).FirstOrDefaultAsync(ct)
+        ?? new OrderEmails.Customer(null, null);
 
     private sealed record OpenCharge(int PaymentId, string Reference);
 

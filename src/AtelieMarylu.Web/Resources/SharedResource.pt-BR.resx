@@ -642,4 +642,18 @@
   <data name="Want to withdraw, exchange or report a defect? Send a request and our team will contact you." xml:space="preserve"><value>Quer desistir, trocar ou avisar sobre um defeito? Envie uma solicitação e nossa equipe entra em contato.</value></data>
   <data name="This order was changed at the same time. Reload the page and try again." xml:space="preserve"><value>Este pedido mudou ao mesmo tempo. Recarregue a página e tente de novo.</value></data>
   <data name="The reason, if the customer wrote one, is on the order page in the panel." xml:space="preserve"><value>O motivo, se a cliente escreveu um, está na página do pedido no painel.</value></data>
+  <data name="Order {0} received" xml:space="preserve"><value>Pedido {0} recebido</value></data>
+  <data name="Payment confirmed · Order {0}" xml:space="preserve"><value>Pagamento confirmado · Pedido {0}</value></data>
+  <data name="We received your order" xml:space="preserve"><value>Recebemos o seu pedido</value></data>
+  <data name="View order and pay" xml:space="preserve"><value>Ver o pedido e pagar</value></data>
+  <data name="Order {0} was placed on {1}." xml:space="preserve"><value>O pedido {0} foi feito em {1}.</value></data>
+  <data name="Paying with PIX, the total is {0}." xml:space="preserve"><value>Pagando com PIX, o total fica {0}.</value></data>
+  <data name="Pay by {0}." xml:space="preserve"><value>Pague até {0}.</value></data>
+  <data name="After that, the order is cancelled automatically and the pieces go back on sale." xml:space="preserve"><value>Depois disso, o pedido é cancelado automaticamente e as peças voltam para a venda.</value></data>
+  <data name="The order is confirmed once the payment is approved. We will send you another email when that happens." xml:space="preserve"><value>O pedido é confirmado quando o pagamento for aprovado. Vamos mandar outro e-mail quando isso acontecer.</value></data>
+  <data name="Payment confirmed" xml:space="preserve"><value>Pagamento confirmado</value></data>
+  <data name="We received the payment for order {0}. Thank you!" xml:space="preserve"><value>Recebemos o pagamento do pedido {0}. Obrigada!</value></data>
+  <data name="Now we will prepare your order and contact you to arrange the pickup at the studio." xml:space="preserve"><value>Agora vamos preparar o seu pedido e entrar em contato para combinar a retirada no ateliê.</value></data>
+  <data name="Now we will prepare your order. You can follow each step on the order page." xml:space="preserve"><value>Agora vamos preparar o seu pedido. Você pode acompanhar cada etapa na página do pedido.</value></data>
+  <data name="Delivery address:" xml:space="preserve"><value>Endereço de entrega:</value></data>
 </root>

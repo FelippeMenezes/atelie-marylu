@@ -21,7 +21,7 @@ namespace AtelieMarylu.Tests.Integration;
 public class CancellationRequestTests(TestDatabase database) : IClassFixture<TestDatabase>
 {
     private readonly FakeClock clock = new();
-    private readonly ShopOptions store = new() { PaymentDeadlineMinutes = 120, MaxPendingOrdersPerCustomer = 3 };
+    private readonly ShopOptions store = new() { PaymentDeadlineMinutes = 120, MaxPendingOrdersPerCustomer = 3, ContactEmail = "contato@loja.teste" };
 
     private OrderService Service(IDbContextFactory<ApplicationDbContext>? factory = null)
     {
@@ -30,6 +30,7 @@ public class CancellationRequestTests(TestDatabase database) : IClassFixture<Tes
         var localizer = new ServiceCollection().AddLogging().AddLocalization(o => o.ResourcesPath = "Resources").BuildServiceProvider()
             .GetRequiredService<IStringLocalizer<SharedResource>>();
         return new OrderService(factory ?? database, new SimulatedShippingCalculator(), gateway, new InlineChargeCloser(gateway), audit, new OrderEvents(),
+            new OrderEmails(Options.Create(store), new EmailOutboxSignal(), clock, NullLogger<OrderEmails>.Instance),
             Options.Create(store), clock, localizer, NullLogger<OrderService>.Instance);
     }
 
@@ -177,7 +178,7 @@ public class CancellationRequestTests(TestDatabase database) : IClassFixture<Tes
     }
 
     [FactWithDatabase]
-    public async Task Outcome_brings_the_customer_contact_for_the_email()
+    public async Task Request_writes_both_emails_to_the_outbox_without_the_reason()
     {
         var service = Service();
         var (customerId, _, order) = await CreateOrderAsync(service, paid: true);
@@ -186,11 +187,30 @@ public class CancellationRequestTests(TestDatabase database) : IClassFixture<Tes
 
         await using var db = database.CreateDbContext();
         var customer = await db.Users.SingleAsync(u => u.Id == customerId);
-        Assert.Equal(customer.Email, outcome.CustomerEmail);
-        Assert.Equal(customer.FullName, outcome.CustomerName);
-        // O motivo fica só no banco: o resultado (que alimenta os e-mails) nem o carrega
+        var emails = await db.OutboxEmails.Where(e => e.OrderId == order.Id && e.Kind.StartsWith("cancellation.")).ToListAsync();
+        // Gravados na mesma transação da solicitação: a cliente com o nome, a loja só com identificadores
+        var toCustomer = Assert.Single(emails, e => e.Kind == OutboxEmailKinds.CancellationReceived);
+        Assert.Equal(customer.Email, toCustomer.Recipient);
+        Assert.Contains(outcome.Protocol!, toCustomer.Payload);
+        var toStore = Assert.Single(emails, e => e.Kind == OutboxEmailKinds.CancellationStaffNotice);
+        Assert.Equal(store.ContactEmail, toStore.Recipient);
+        Assert.DoesNotContain(customer.FullName, toStore.Payload);
+        // O motivo fica só no banco: nenhum e-mail o carrega
+        Assert.All(emails, e => Assert.DoesNotContain("cor errada", e.Payload));
         Assert.Equal("cor errada", (await db.CancellationRequests.SingleAsync(r => r.OrderId == order.Id)).Reason);
         Assert.Equal(OrderStatus.Paid, outcome.OrderStatusAtRequest);
+    }
+
+    [FactWithDatabase]
+    public async Task Unpaid_order_cancelled_now_writes_no_cancellation_email()
+    {
+        var service = Service();
+        var (customerId, _, order) = await CreateOrderAsync(service, paid: false);
+
+        await service.RequestCancellationAsync(order.Code, customerId, null);
+
+        await using var db = database.CreateDbContext();
+        Assert.False(await db.OutboxEmails.AnyAsync(e => e.OrderId == order.Id && e.Kind.StartsWith("cancellation.")));
     }
 
     [FactWithDatabase]

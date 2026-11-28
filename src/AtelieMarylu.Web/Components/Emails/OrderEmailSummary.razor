@@ -1,0 +1,40 @@
+@* Resumo do pedido dentro dos e-mails (itens, frete, total e entrega). Tabela com estilo inline, como o EmailLayout:
+   os programas de e-mail ignoram CSS externo. Os nomes vêm do pedido (texto da loja) e o Razor os codifica. *@
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border-collapse:collapse;font-size:15px;">
+    @foreach (var item in Order.Items)
+    {
+        <tr>
+            <td style="padding:6px 0;border-bottom:1px solid #efcfe3;">@item.Quantity × @item.Name</td>
+            <td align="right" style="padding:6px 0;border-bottom:1px solid #efcfe3;white-space:nowrap;">@item.Subtotal.ToBrl()</td>
+        </tr>
+    }
+    <tr>
+        <td style="padding:6px 0;">@L["Shipping ({0})", L[Order.ShippingName]]</td>
+        <td align="right" style="padding:6px 0;white-space:nowrap;">@Order.ShippingCost.ToBrl()</td>
+    </tr>
+    @if (Discount > 0)
+    {
+        @* Sem esta linha, itens + frete não fechariam com o total pago no PIX, e a cobrança pareceria errada
+           (CDC, art. 6º, III: informação clara sobre o preço) *@
+        <tr>
+            <td style="padding:6px 0;">@L["PIX discount"]</td>
+            <td align="right" style="padding:6px 0;white-space:nowrap;">−@Discount.ToBrl()</td>
+        </tr>
+    }
+    <tr>
+        <td style="padding:6px 0;font-weight:bold;">@L["Total"]</td>
+        <td align="right" style="padding:6px 0;font-weight:bold;white-space:nowrap;">@((Order.AmountPaid ?? Order.Total).ToBrl())</td>
+    </tr>
+</table>
+@if (Order.AddressLine is not null)
+{
+    <p style="margin:0 0 16px;font-size:14px;color:#6b5563;">@L["Delivery address:"]<br />@Order.AddressLine</p>
+}
+
+@code {
+    [Parameter, EditorRequired] public OrderEmailData Order { get; set; } = default!;
+
+    // Diferença entre o preço cheio e o que foi pago (o desconto PIX). Antes do pagamento (AmountPaid nulo), não há
+    // desconto aplicado: o "pedido recebido" mostra o total cheio e, numa frase à parte, o valor no PIX.
+    private decimal Discount => Order.AmountPaid is decimal paid && paid < Order.Total ? Order.Total - paid : 0;
+}
