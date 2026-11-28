@@ -93,3 +93,35 @@ public partial class LocalizationTests
         Assert.Equal(expected, SupportedLanguages.IsSupported(code));
     }
 }
+
+// Achado 8 da revisão do AML-0042: o LocalizationTests acima procura os L["..."] nas telas, mas não olha os .cs.
+// As mensagens dos atributos de validação ([Required(ErrorMessage = ...)], [PersonName]...) também são chaves de
+// tradução (o LocalizedDataAnnotationsValidator traduz pelo texto em inglês) e ficavam sem conferência.
+public class ValidationMessageTranslationTests
+{
+    [Theory]
+    [InlineData("pt-BR")]
+    [InlineData("es")]
+    public void Every_validation_message_has_a_translation(string language)
+    {
+        var folder = new DirectoryInfo(AppContext.BaseDirectory);
+        while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "AtelieMarylu.slnx")))
+            folder = folder.Parent;
+        var translations = System.Xml.Linq.XDocument.Load(Path.Join(folder!.FullName, "src", "AtelieMarylu.Web", "Resources", $"SharedResource.{language}.resx"))
+            .Root!.Elements("data").Select(d => d.Attribute("name")!.Value).ToHashSet();
+
+        const System.Reflection.BindingFlags all = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic
+            | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly;
+        var messages = typeof(AtelieMarylu.Web.SharedResource).Assembly.GetTypes()
+            .SelectMany(t => t.GetProperties(all))
+            .SelectMany(p => p.GetCustomAttributes(typeof(System.ComponentModel.DataAnnotations.ValidationAttribute), inherit: true)
+                .Cast<System.ComponentModel.DataAnnotations.ValidationAttribute>()
+                .Select(a => (Where: $"{p.DeclaringType!.Name}.{p.Name}", a.ErrorMessage)))
+            .Where(x => !string.IsNullOrEmpty(x.ErrorMessage))
+            .ToList();
+
+        Assert.NotEmpty(messages);
+        var missing = messages.Where(m => !translations.Contains(m.ErrorMessage!)).Select(m => $"{m.Where}: {m.ErrorMessage}").Distinct().ToList();
+        Assert.True(missing.Count == 0, $"Sem tradução em {language}:\n{string.Join("\n", missing)}");
+    }
+}

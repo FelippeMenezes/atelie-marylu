@@ -37,7 +37,34 @@ public class AccountEmailSenderTests
         var (_, html) = await SendResetAsync("pt-BR", "<a href=\"https://golpe.teste\">Clique</a>");
 
         Assert.DoesNotContain("<a href=\"https://golpe.teste\"", html);
-        Assert.Contains("&lt;a href=", html);
+        Assert.DoesNotContain("golpe.teste", html);
+    }
+
+    // AML-0042: a saudação usa só o primeiro nome. Nem um nome válido só com letras consegue virar frase.
+    [Theory]
+    [InlineData("Maria José da Silva", "Olá, Maria!")]
+    [InlineData("Seu pedido foi bloqueado procure o atendimento", "Olá, Seu!")]
+    public async Task Greeting_uses_the_first_name_only(string name, string greeting)
+    {
+        var (_, html) = await SendResetAsync("pt-BR", name);
+
+        Assert.Contains(greeting, Text(html));
+        Assert.DoesNotContain("bloqueado", html);
+        Assert.DoesNotContain("da Silva", html);
+    }
+
+    // AML-0042: conta criada antes da regra, com golpe no nome. O nome fica fora do e-mail e a saudação sai sem ele:
+    // o domínio da loja não carrega o texto de quem cadastrou o e-mail de outra pessoa.
+    [Theory]
+    [InlineData("Seu cartão foi bloqueado, ligue 0800 123 4567")]
+    [InlineData("Maria acesse golpe.com")]
+    public async Task Unsafe_name_is_left_out_of_the_email(string name)
+    {
+        var (_, html) = await SendResetAsync("pt-BR", name);
+
+        Assert.DoesNotContain("0800", html);
+        Assert.DoesNotContain("golpe", html);
+        Assert.Contains("Olá!", Text(html));
     }
 
     [Fact]

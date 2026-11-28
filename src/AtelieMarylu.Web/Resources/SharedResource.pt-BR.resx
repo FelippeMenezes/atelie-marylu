@@ -656,4 +656,6 @@
   <data name="Now we will prepare your order and contact you to arrange the pickup at the studio." xml:space="preserve"><value>Agora vamos preparar o seu pedido e entrar em contato para combinar a retirada no ateliê.</value></data>
   <data name="Now we will prepare your order. You can follow each step on the order page." xml:space="preserve"><value>Agora vamos preparar o seu pedido. Você pode acompanhar cada etapa na página do pedido.</value></data>
   <data name="Delivery address:" xml:space="preserve"><value>Endereço de entrega:</value></data>
+  <data name="Use only letters, spaces, apostrophes, periods and hyphens in the name (up to 80 characters). After a period, use a space or an initial, as in &quot;J. P. Souza&quot; or &quot;J.P. Souza&quot;." xml:space="preserve"><value>Use só letras, espaços, apóstrofo, ponto e hífen no nome (até 80 caracteres). Depois de um ponto, use espaço ou uma inicial, como em &quot;J. P. Souza&quot; ou &quot;J.P. Souza&quot;.</value></data>
+  <data name="Remove links, emails and phone numbers from the address (the contact phone number goes in the account)." xml:space="preserve"><value>Tire links, e-mails e telefone do endereço (o telefone de contato fica no cadastro da conta).</value></data>
 </root>

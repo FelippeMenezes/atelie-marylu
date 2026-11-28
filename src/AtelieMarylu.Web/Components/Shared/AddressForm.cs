@@ -1,10 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using AtelieMarylu.Domain.Orders;
 using AtelieMarylu.Infrastructure.Integrations;
+using AtelieMarylu.Domain.Text;
+using AtelieMarylu.Web.Validation;
 
 namespace AtelieMarylu.Web.Components.Shared;
 
 // Modelo de tela com as validações do formulário; vira ShippingAddress ao salvar.
+// [SafeAddressText]: sem link, e-mail nem telefone nos campos de texto livre, que vão nos e-mails do pedido (AML-0042).
 public class AddressForm
 {
     [Required(ErrorMessage = "Enter the postal code.")]
@@ -13,35 +16,42 @@ public class AddressForm
 
     [Required(ErrorMessage = "Enter the street.")]
     [StringLength(150)]
+    [SafeAddressText]
     public string Street { get; set; } = "";
 
     [Required(ErrorMessage = "Enter the number.")]
     [StringLength(20)]
+    [SafeAddressText]
     public string Number { get; set; } = "";
 
     [StringLength(80)]
+    [SafeAddressText]
     public string? Complement { get; set; }
 
     [Required(ErrorMessage = "Enter the district.")]
     [StringLength(80)]
+    [SafeAddressText]
     public string District { get; set; } = "";
 
     [Required(ErrorMessage = "Enter the city.")]
     [StringLength(80)]
+    [SafeAddressText]
     public string City { get; set; } = "";
 
     [Required(ErrorMessage = "Enter the state (UF).")]
     [RegularExpression("^[A-Za-z]{2}$", ErrorMessage = "Invalid state.")]
     public string State { get; set; } = "";
 
+    // Grava normalizado (NFC, sem espaços repetidos): o mesmo endereço digitado em teclados diferentes vira o
+    // mesmo texto, e é esse texto que a regra de CustomerText conferiu
     public ShippingAddress ToAddress() => new()
     {
         PostalCode = PostalCode.Trim(),
-        Street = Street.Trim(),
-        Number = Number.Trim(),
-        Complement = string.IsNullOrWhiteSpace(Complement) ? null : Complement.Trim(),
-        District = District.Trim(),
-        City = City.Trim(),
+        Street = CustomerText.Normalize(Street),
+        Number = CustomerText.Normalize(Number),
+        Complement = string.IsNullOrWhiteSpace(Complement) ? null : CustomerText.Normalize(Complement),
+        District = CustomerText.Normalize(District),
+        City = CustomerText.Normalize(City),
         State = State.Trim().ToUpperInvariant(),
     };
 

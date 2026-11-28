@@ -35,7 +35,9 @@ public sealed record OrderEmailData(
     {
         var isPickup = ShippingHandoverRules.For(order.ShippingCode) == ShippingHandover.CustomerPickup;
         var a = order.Address;
-        var addressLine = isPickup ? null
+        // Pedido antigo com link, e-mail ou telefone no endereço (antes da regra do AML-0042): o e-mail sai sem a
+        // linha do endereço, que continua na página do pedido. O pedido novo nem chega a ser criado assim.
+        var addressLine = isPickup || !a.IsSafeForEmail() ? null
             : $"{a.Street}, {a.Number}{(string.IsNullOrWhiteSpace(a.Complement) ? "" : $" - {a.Complement}")} · {a.District} · {a.City}/{a.State} · {FormatPostalCode(a.PostalCode)}";
         return new(order.Id, order.Code, customerName, at,
             order.Items.Select(i => new OrderEmailLine(i.ProductName, i.Quantity, i.Subtotal)).ToList(),

@@ -183,3 +183,22 @@ public class PublicBaseUrlTests
         Assert.Equal("https://loja.teste/my-orders/AML-X1", new ShopOptions { PublicBaseUrl = "https://loja.teste/" }.PublicUrl("my-orders/AML-X1"));
     }
 }
+
+// AML-0042: pedido antigo (de antes da regra) com golpe no endereço: o e-mail sai sem a linha do endereço
+public class OrderEmailDataTests
+{
+    [Fact]
+    public void Old_order_with_unsafe_address_has_no_address_line()
+    {
+        var order = new AtelieMarylu.Domain.Orders.Order("c", [new AtelieMarylu.Domain.Orders.OrderItem(1, "Bolsa", 10m, 1)],
+            new AtelieMarylu.Domain.Orders.ShippingAddress { PostalCode = "20000000", Street = "Rua A", Number = "1", District = "Centro", City = "Rio de Janeiro", State = "RJ" },
+            new AtelieMarylu.Domain.Shipping.ShippingOption("pac", "PAC", 10m, 5), DateTime.UtcNow.AddHours(1));
+        Assert.NotNull(OrderEmailData.From(order, "Maria", DateTime.UtcNow).AddressLine);
+
+        // Grava direto no objeto, como estaria no banco antes da regra (o ChangeAddress recusaria)
+        order.Address.Complement = "ligue 0800 123 4567";
+
+        Assert.Null(OrderEmailData.From(order, "Maria", DateTime.UtcNow).AddressLine);
+    }
+}
+

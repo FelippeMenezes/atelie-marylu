@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 @using AtelieMarylu.Infrastructure.Data
+@using AtelieMarylu.Domain.Text
 @using AtelieMarylu.Web.Validation
 @using AtelieMarylu.Domain.Security
 
@@ -151,8 +152,9 @@ else
             return;
         }
 
-        // Pessoa nova: mostra o formulário já com o nome que veio do Google
-        Input.FullName = info.Principal.FindFirstValue(ClaimTypes.Name) ?? "";
+        // Pessoa nova: mostra o formulário já com o nome que veio do Google. Ele não passa pela regra de quem digita,
+        // então é limpo (sem dígitos, emoji ou link) antes; se não sobrar um nome válido, a pessoa digita (AML-0042).
+        Input.FullName = CustomerText.CleanName(info.Principal.FindFirstValue(ClaimTypes.Name));
     }
 
     private async Task CreateAccountAsync()
@@ -161,7 +163,7 @@ else
 
         var user = new ApplicationUser
         {
-            FullName = Input.FullName.Trim(),
+            FullName = CustomerText.Normalize(Input.FullName),
             PhoneNumber = string.IsNullOrWhiteSpace(Input.Phone) ? null : Input.Phone.Trim(),
             // O Google já confirmou que o e-mail é da pessoa (veja IsEmailConfirmedByGoogle)
             EmailConfirmed = true,
@@ -202,8 +204,9 @@ else
 
     private sealed class InputModel
     {
+        // Vai nos e-mails da loja: sem dígitos, link nem telefone (AML-0042)
         [Required(ErrorMessage = "Enter the name.")]
-        [StringLength(150)]
+        [PersonName]
         [Display(Name = "Full name")]
         public string FullName { get; set; } = "";
 
