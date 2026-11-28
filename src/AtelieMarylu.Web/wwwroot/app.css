@@ -574,3 +574,92 @@ img.product-photo {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* Tesourinhas na caixa de frete (ShippingCalculator.razor + js/scissors.js). Caem só dentro da caixa,
+   balançando como folhas e abrindo e fechando como se estivessem cortando. Só transform e clip-path,
+   que o navegador anima sem recalcular o layout. Quem pede menos movimento no sistema não vê as tesouras. */
+.shipping-quote {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.scissors-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Durante o cálculo, a cotação antiga fica esmaecida: ela ainda não é do CEP que está no campo.
+   A cópia que as tesourinhas cortam começa com a mesma opacidade, para não piscar */
+.shipping-quote-results[aria-busy="true"] [data-quote-results],
+.scissors-ghost {
+    opacity: .45;
+}
+
+.shipping-quote-results [data-quote-results] {
+    transition: opacity .15s;
+}
+
+.scissors-ghost {
+    position: absolute;
+    margin: 0;
+}
+
+.scissor {
+    position: absolute;
+    top: 0;
+    left: var(--x);
+    width: var(--s);
+    height: var(--s);
+    color: var(--color);
+    animation: scissor-fall var(--fall) linear var(--delay) both;
+}
+
+.scissor-sway {
+    width: 100%;
+    height: 100%;
+    animation: scissor-sway var(--sway) ease-in-out var(--delay) infinite alternate;
+}
+
+.scissor svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.scissor .blade-a, .scissor .blade-b {
+    transform-box: view-box;
+    transform-origin: 12px 14px;
+}
+
+/* Cada tesoura corta no seu ritmo (--cut) e começa num ponto diferente do ciclo (--phase, negativo) */
+.scissor .blade-a { animation: scissor-cut-a var(--cut) ease-in-out var(--phase) infinite; }
+.scissor .blade-b { animation: scissor-cut-b var(--cut) ease-in-out var(--phase) infinite; }
+
+@keyframes scissor-fall {
+    from { transform: translateY(calc(-1 * var(--s) - 6px)); }
+    to { transform: translateY(calc(var(--h) + 6px)); }
+}
+
+@keyframes scissor-sway {
+    from { transform: translateX(calc(-1 * var(--amp))) rotate(calc(var(--tilt) - 28deg)); }
+    to { transform: translateX(var(--amp)) rotate(calc(var(--tilt) + 28deg)); }
+}
+
+/* Abre bem, fecha rápido até as lâminas se encontrarem, segura e abre de novo devagar */
+@keyframes scissor-cut-a {
+    0%, 100% { transform: rotate(-12deg); }
+    40%, 50% { transform: rotate(30deg); }
+}
+
+@keyframes scissor-cut-b {
+    0%, 100% { transform: rotate(12deg); }
+    40%, 50% { transform: rotate(-30deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .scissors-layer { display: none; }
+}
