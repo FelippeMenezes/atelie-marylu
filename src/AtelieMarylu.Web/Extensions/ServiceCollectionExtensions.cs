@@ -227,7 +227,9 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddStoreServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<ShopOptions>().Bind(configuration.GetSection(ShopOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
+        services.AddOptions<ShopOptions>().Bind(configuration.GetSection(ShopOptions.SectionName)).ValidateDataAnnotations()
+            .Validate(o => o.HasValidPublicBaseUrl, "Store:PublicBaseUrl precisa ser o endereço https da loja, sem caminho (ex.: https://www.ateliemarylu.com.br).")
+            .ValidateOnStart();
 
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<OrderEvents>();
@@ -237,7 +239,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CartService>();
         services.AddScoped<LastPostalCodeService>();
         services.AddScoped<OrderService>();
-        services.AddScoped<OrderEmailSender>();
         services.AddScoped<ProductService>();
         services.AddScoped<CustomerService>();
         services.AddScoped<DashboardService>();
@@ -250,6 +251,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ChargeClosingQueue>();
         services.AddSingleton<IChargeCloser>(sp => sp.GetRequiredService<ChargeClosingQueue>());
         services.AddHostedService<ChargeClosingService>();
+
+        // Outbox transacional dos e-mails de pedido (AML-0041): o OrderService grava, o dispatcher entrega
+        services.AddSingleton<EmailOutboxSignal>();
+        services.AddSingleton<OrderEmails>();
+        services.AddScoped<OrderEmailRenderer>();
+        services.AddHostedService<EmailOutboxDispatcher>();
 
         return services;
     }

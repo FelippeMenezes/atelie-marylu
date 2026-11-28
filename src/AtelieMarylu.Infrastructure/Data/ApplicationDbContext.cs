@@ -17,6 +17,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CancellationRequest> CancellationRequests => Set<CancellationRequest>();
     public DbSet<ProcessedNotification> ProcessedNotifications => Set<ProcessedNotification>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
+    public DbSet<OutboxEmail> OutboxEmails => Set<OutboxEmail>();
 
     // Chaves que criptografam cookies de login e o carrinho; no banco, sobrevivem a reinícios e deploys
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();

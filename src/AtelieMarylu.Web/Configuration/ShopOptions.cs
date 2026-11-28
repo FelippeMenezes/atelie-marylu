@@ -34,6 +34,17 @@ public class ShopOptions
     // Vazio esconde o convite de avaliação na página do pedido.
     public string GoogleReviewUrl { get; set; } = "";
 
+    // Endereço público da loja (ex.: https://www.ateliemarylu.com.br), para os links dos e-mails. Os e-mails da
+    // outbox são montados em segundo plano, fora de qualquer tela, onde não existe o NavigationManager para saber
+    // o endereço. Validado quando a aplicação sobe (AddStoreServices): https, sem caminho.
+    public string PublicBaseUrl { get; set; } = "";
+
+    public bool HasValidPublicBaseUrl =>
+        Uri.TryCreate(PublicBaseUrl, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps && uri.AbsolutePath == "/";
+
+    // Link absoluto para um caminho da loja (ex.: "my-orders/AML-X1"), sem barra dupla
+    public string PublicUrl(string path) => new Uri(new Uri(PublicBaseUrl), path).AbsoluteUri;
+
     public bool HasLegalData => !string.IsNullOrWhiteSpace(TaxDocument);
 
     // Só aceita https: o link vai num botão para a cliente, e um endereço mal digitado na configuração

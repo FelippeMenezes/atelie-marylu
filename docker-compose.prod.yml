@@ -50,6 +50,7 @@ services:
       Store__Phone: ${LOJA_TELEFONE:-}
       Store__WhatsApp: ${LOJA_WHATSAPP:-}
       Store__GoogleReviewUrl: ${LOJA_LINK_AVALIACAO_GOOGLE:-}
+      Store__PublicBaseUrl: ${LOJA_URL_PUBLICA:-https://www.ateliemarylu.com.br}
       GoogleLogin__ClientId: ${GOOGLE_CLIENT_ID:-}
       GoogleLogin__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
       Turnstile__SiteKey: ${TURNSTILE_SITE_KEY:-}

@@ -33,6 +33,34 @@ public class PersonalDataService(UserManager<ApplicationUser> userManager, IDbCo
 
         await using (var db = await dbFactory.CreateDbContextAsync())
         {
+            // E-mails da outbox para esta cliente: o dado pessoal sai já, a prova fica (a mesma regra da limpeza de
+            // 30 dias do EmailOutboxDispatcher). Os pedidos ficam por obrigação fiscal; a prova de que a loja mandou a
+            // confirmação exigida pelo Decreto 7.962 também é obrigação legal, e a LGPD permite guardá-la (art. 16, I),
+            // desde que sem dado pessoal. Dois critérios, porque ela pode ter trocado de e-mail depois de um pedido:
+            // os mandados ao e-mail atual e os de qualquer pedido dela. O aviso para a loja não tem dados dela e fica.
+            var email = user.Email ?? "";
+            var ofThisCustomer = db.OutboxEmails
+                .Where(e => (email != "" && e.Recipient == email)
+                    || (e.Kind != OutboxEmailKinds.CancellationStaffNotice
+                        && db.Orders.Any(o => o.Id == e.OrderId && o.CustomerId == user.Id)));
+
+            // 1) Pendentes: não faz sentido mandar e-mail para uma conta excluída. Viram "puladas", com o motivo.
+            await ofThisCustomer
+                .Where(e => e.SentAt == null && e.FailedAt == null && e.SkippedAt == null)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(e => e.SkippedAt, DateTime.UtcNow)
+                    .SetProperty(e => e.Recipient, (string?)null)
+                    .SetProperty(e => e.Payload, "{}")
+                    .SetProperty(e => e.LastError, "Skipped: account deleted"));
+
+            // 2) Encerradas: perdem destinatário, payload e erro; tipo, pedido e datas ficam como prova
+            await ofThisCustomer
+                .Where(e => e.Recipient != null)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(e => e.Recipient, (string?)null)
+                    .SetProperty(e => e.Payload, "{}")
+                    .SetProperty(e => e.LastError, (string?)null));
+
             if (!await db.Orders.AnyAsync(p => p.CustomerId == user.Id))
                 return await userManager.DeleteAsync(user);
         }

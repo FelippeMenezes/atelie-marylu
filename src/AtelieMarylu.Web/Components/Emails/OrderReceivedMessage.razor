@@ -1,0 +1,21 @@
+@using AtelieMarylu.Web.Configuration
+@* "Recebemos o seu pedido" (AML-0041): a confirmação imediata do Decreto 7.962/2013 (art. 4º, III).
+   Sai ao criar o pedido, ainda sem pagamento: diz o prazo e que o pedido só é confirmado depois do pagamento. *@
+<EmailLayout Title="@L["We received your order"]" ButtonText="@L["View order and pay"]" Link="@OrderUrl">
+    <p style="margin:0 0 16px;">@Greeting</p>
+    <p style="margin:0 0 16px;">@L["Order {0} was placed on {1}.", Order.OrderCode, Order.At.FormatBrasilia()]</p>
+    <OrderEmailSummary Order="Order" />
+    @if (Order.PixTotal < Order.Total)
+    {
+        <p style="margin:0 0 16px;">@L["Paying with PIX, the total is {0}.", Order.PixTotal.ToBrl()]</p>
+    }
+    <p style="margin:0 0 16px;"><strong>@L["Pay by {0}.", Order.PayBy.FormatBrasilia()]</strong> @L["After that, the order is cancelled automatically and the pieces go back on sale."]</p>
+    <p style="margin:0;">@L["The order is confirmed once the payment is approved. We will send you another email when that happens."]</p>
+</EmailLayout>
+
+@code {
+    [Parameter, EditorRequired] public OrderEmailData Order { get; set; } = default!;
+    [Parameter, EditorRequired] public string OrderUrl { get; set; } = "";
+
+    private string Greeting => string.IsNullOrWhiteSpace(Order.CustomerName) ? L["Hello!"] : L["Hello, {0}!", Order.CustomerName];
+}

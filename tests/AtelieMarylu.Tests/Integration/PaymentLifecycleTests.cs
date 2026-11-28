@@ -103,6 +103,7 @@ public class PaymentLifecycleTests(TestDatabase database) : IClassFixture<TestDa
         var localizer = new ServiceCollection().AddLogging().AddLocalization(o => o.ResourcesPath = "Resources").BuildServiceProvider()
             .GetRequiredService<IStringLocalizer<SharedResource>>();
         return new OrderService(database, new SimulatedShippingCalculator(), gateway, new InlineChargeCloser(gateway), audit, new OrderEvents(),
+            new OrderEmails(Options.Create(store), new EmailOutboxSignal(), clock, NullLogger<OrderEmails>.Instance),
             Options.Create(store), clock, localizer, NullLogger<OrderService>.Instance);
     }
 

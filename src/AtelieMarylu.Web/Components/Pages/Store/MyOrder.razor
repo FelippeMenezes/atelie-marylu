@@ -7,7 +7,6 @@
 @using AtelieMarylu.Web.Configuration
 @inject OrderService Orders
 @inject OrderEvents Events
-@inject OrderEmailSender OrderEmails
 @inject IWebHostEnvironment Environment
 @inject ILogger<MyOrder> Logger
 @inject Microsoft.Extensions.Options.IOptions<ShopOptions> Store
@@ -255,9 +254,7 @@ else if (order is not null)
         (confirmingCancellation, cancellationReason) = (false, null);
         // A solicitação já aparece na caixa com o protocolo: uma mensagem de sucesso em cima só repetiria o aviso
         (message, isError) = (outcome.CancelledNow ? L["Order cancelled."].Value : null, false);
-        // Fora do RunActionAsync: a solicitação já está gravada, e nada no envio pode virar "não foi possível
-        // concluir" na tela. O envio só lança EmailDeliveryException, que ele mesmo captura e registra no log.
-        await OrderEmails.TrySendCancellationEmailsAsync(outcome);
+        // Os e-mails de confirmação foram gravados na outbox junto com a solicitação e saem em segundo plano (AML-0041)
     }
 
     private async Task SimulateApprovalAsync(Payment payment)

@@ -12,7 +12,7 @@ public class Order
     private Order() { } // EF Core
 
     public Order(string customerId, IEnumerable<OrderItem> items, ShippingAddress address, ShippingOption shipping,
-        DateTime payBy, decimal pixDiscountPercent = 0, string? createdBy = null)
+        DateTime payBy, decimal pixDiscountPercent = 0, string? createdBy = null, string? language = null)
     {
         if (pixDiscountPercent is < 0 or >= 100) throw new OrderRuleException("Invalid PIX discount.");
         CustomerId = customerId;
@@ -23,6 +23,7 @@ public class Order
         PayBy = payBy;
         PixDiscountPercent = pixDiscountPercent;
         CreatedBy = createdBy;
+        Language = language;
     }
 
     public int Id { get; private set; }
@@ -49,6 +50,10 @@ public class Order
     public string? CreatedBy { get; private set; }
 
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
+
+    // Idioma em que a cliente fez o pedido (ex.: "es"). Os e-mails do pedido saem nele, inclusive os que nascem
+    // fora de uma tela (o webhook do pagamento não tem o cookie de idioma). Null = idioma padrão da loja.
+    public string? Language { get; private set; }
 
     // Sem pagamento até aqui, o pedido é cancelado e o estoque volta para a loja
     public DateTime PayBy { get; private set; }

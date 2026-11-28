@@ -1,0 +1,18 @@
+@using AtelieMarylu.Web.Configuration
+@* "Pagamento confirmado" (AML-0041). Sai quando o pedido passa a "Pago": pelo webhook do provedor, pela
+   conciliação ou pelo registro manual no painel. *@
+<EmailLayout Title="@L["Payment confirmed"]" ButtonText="@L["View order"]" Link="@OrderUrl">
+    <p style="margin:0 0 16px;">@Greeting</p>
+    <p style="margin:0 0 16px;">@L["We received the payment for order {0}. Thank you!", Order.OrderCode]</p>
+    <OrderEmailSummary Order="Order" />
+    <p style="margin:0;">@(Order.IsPickup
+        ? L["Now we will prepare your order and contact you to arrange the pickup at the studio."]
+        : L["Now we will prepare your order. You can follow each step on the order page."])</p>
+</EmailLayout>
+
+@code {
+    [Parameter, EditorRequired] public OrderEmailData Order { get; set; } = default!;
+    [Parameter, EditorRequired] public string OrderUrl { get; set; } = "";
+
+    private string Greeting => string.IsNullOrWhiteSpace(Order.CustomerName) ? L["Hello!"] : L["Hello, {0}!", Order.CustomerName];
+}

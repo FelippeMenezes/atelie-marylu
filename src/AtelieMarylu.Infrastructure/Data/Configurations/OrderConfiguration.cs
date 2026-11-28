@@ -31,6 +31,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
         builder.Property(x => x.Notes).HasMaxLength(500);
         builder.Property(x => x.CancellationReason).HasMaxLength(200);
+        builder.Property(x => x.Language).HasMaxLength(10);
         builder.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(x => x.CustomerId);
         builder.HasIndex(x => new { x.Status, x.PayBy });
