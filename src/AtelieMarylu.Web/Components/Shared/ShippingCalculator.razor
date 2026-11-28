@@ -4,27 +4,35 @@
 @inject OrderService Orders
 @inject LastPostalCodeService LastPostalCode
 @inject ILogger<ShippingCalculator> Logger
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
-<div class="panel-box">
+<div class="panel-box shipping-quote" @ref="box">
     <label class="form-label fw-bold" for="cep-frete">@L["Calculate shipping and delivery time"]</label>
     <div class="d-flex gap-2">
         <input id="cep-frete" class="form-control" style="max-width: 160px" placeholder="00000-000" inputmode="numeric" autocomplete="postal-code"
                @bind="postalCode" @bind:event="oninput" @onkeydown="OnKeyDown" />
         <button type="button" class="btn btn-outline-primary" @onclick="Calculate" disabled="@(calculating || !RendererInfo.IsInteractive)">@L["Calculate"]</button>
     </div>
-    @if (isError is not null)
-    {
-        <div class="text-danger small mt-2">@isError</div>
-    }
-    @if (options is not null)
-    {
-        <ul class="list-unstyled small mt-2 mb-0">
-            @foreach (var o in options)
-            {
-                <li>@L[o.Name]: <strong>@(o.Amount == 0 ? L["Free"] : o.Amount.ToBrl())</strong>@(o.DeliveryDays is int d ? L[" · up to {0} business days after shipping", d] : "")</li>
-            }
-        </ul>
-    }
+    @* Região sempre presente: o leitor de tela só anuncia mudanças dentro de um aria-live que já existia antes delas.
+       Enquanto calcula, aria-busy segura o anúncio e o CSS esmaece a cotação antiga (ela não é do CEP do campo) *@
+    <div class="shipping-quote-results" aria-live="polite" aria-busy="@(calculating ? "true" : "false")">
+        @if (isError is not null)
+        {
+            <div class="text-danger small mt-2">@isError</div>
+        }
+        @if (options is not null)
+        {
+            <ul class="list-unstyled small mt-2 mb-0" data-quote-results>
+                @foreach (var o in options)
+                {
+                    <li>@L[o.Name]: <strong>@(o.Amount == 0 ? L["Free"] : o.Amount.ToBrl())</strong>@(o.DeliveryDays is int d ? L[" · up to {0} business days after shipping", d] : "")</li>
+                }
+            </ul>
+        }
+    </div>
+    @* Camada das tesourinhas: o Blazor sempre a renderiza vazia, e só o js/scissors.js põe elementos nela *@
+    <div class="scissors-layer" data-scissors aria-hidden="true"></div>
 </div>
 
 @code {
@@ -34,17 +42,34 @@
 
     private string? postalCode, isError;
     private IReadOnlyList<ShippingOption>? options;
-    private bool calculating;
+    private bool calculating, pendingReveal;
+    // Cada consulta ganha um número, e só a mais recente pode mexer na tela: se a cliente cotar o CEP A e logo
+    // depois o B, e a resposta de A chegar por último, ela é descartada (senão a tela mostraria o preço de A com B no campo)
+    private int quoteVersion;
+    private string? calculatingPostalCode;
+    private ElementReference box;
+    private IJSObjectReference? scissorsModule;
 
-    // Começa com o último CEP cotado (em qualquer produto, no carrinho ou no checkout), se a cliente ainda não digitou outro
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || !string.IsNullOrEmpty(postalCode)) return;
-        if (await LastPostalCode.GetAsync() is { } last)
+        // A cotação nova já está na tela: as tesourinhas passam e a revelam
+        if (pendingReveal)
+        {
+            pendingReveal = false;
+            await RunScissorsAsync("reveal");
+        }
+
+        if (!firstRender) return;
+
+        // Começa com o último CEP cotado (em qualquer produto, no carrinho ou no checkout), se a cliente ainda não digitou outro
+        if (string.IsNullOrEmpty(postalCode) && await LastPostalCode.GetAsync() is { } last)
         {
             postalCode = $"{last[..5]}-{last[5..]}";
             StateHasChanged();
         }
+
+        // Baixa o módulo do efeito enquanto a cliente digita, para a primeira cotação não esperar por ele
+        await LoadScissorsAsync();
     }
 
     // O campo atualiza a cada tecla (oninput): com o padrão (onchange), o valor só chega quando o campo perde o foco,
@@ -53,32 +78,100 @@
 
     private async Task Calculate()
     {
-        isError = null;
-        options = null;
-        if (PostalCode.Normalize(postalCode) is not { } normalized) { isError = L["Enter a valid postal code."]; return; }
-        var items = Items ?? (ProductId is int id ? [new CartItem(id, 1)] : []);
-        if (items.Count == 0) return;
+        var normalized = PostalCode.Normalize(postalCode);
+        // O botão fica desabilitado durante o cálculo, mas o Enter não: repetir o mesmo CEP não gera outra
+        // chamada à transportadora. Um CEP diferente pode, e a consulta nova passa na frente da antiga.
+        if (calculating && normalized == calculatingPostalCode) return;
 
+        var version = ++quoteVersion;
+        bool IsStale() => version != quoteVersion;
+
+        isError = null;
+        var items = Items ?? (ProductId is int id ? [new CartItem(id, 1)] : []);
+        if (normalized is null || items.Count == 0)
+        {
+            // Uma consulta em andamento deixa de valer (o número mudou), então o "calculando" acaba aqui
+            calculating = false;
+            options = null;
+            if (normalized is null) isError = L["Enter a valid postal code."];
+            return;
+        }
+
+        // A cotação anterior continua na tela enquanto a nova é calculada: as tesourinhas trocam uma pela outra
+        IReadOnlyList<ShippingOption> quoted;
         calculating = true;
+        calculatingPostalCode = normalized;
         try
         {
-            options = await Orders.QuoteShippingAsync(normalized, items);
+            quoted = await Orders.QuoteShippingAsync(normalized, items);
+            if (IsStale()) return;
             // O checkout abre com este CEP (AML-0039)
             await LastPostalCode.SaveAsync(normalized);
         }
         catch (OrderRuleException ex)
         {
             // Falha do provedor de frete (já registrada no log pelo OrderService)
+            if (IsStale()) return;
+            options = null;
             isError = L.Translate(ex);
+            return;
         }
         catch (InvalidOperationException ex)
         {
             Logger.LogWarning(ex, "Falha ao simular frete");
+            if (IsStale()) return;
+            options = null;
             isError = L["Could not calculate right now. Try again."];
+            return;
         }
         finally
         {
-            calculating = false;
+            // Só a consulta mais recente encerra o "calculando"; uma velha não pode reabilitar o botão
+            if (!IsStale()) calculating = false;
+        }
+        if (IsStale()) return;
+
+        // Guarda uma cópia da cotação antiga antes de a tela trocar (sem render no meio: o Blazor
+        // só renderiza de novo quando este método terminar). Sem cotação antiga, não há o que copiar.
+        if (options is not null)
+        {
+            await RunScissorsAsync("snapshot");
+            if (IsStale()) return;
+        }
+        options = quoted;
+        pendingReveal = true;
+    }
+
+    // O efeito é só enfeite: se o JS falhar, a cotação aparece normalmente, sem tesouras
+    private Task LoadScissorsAsync() => RunScissorsAsync(function: null);
+
+    private async Task RunScissorsAsync(string? function)
+    {
+        try
+        {
+            scissorsModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/scissors.js");
+            if (function is not null) await scissorsModule.InvokeVoidAsync(function, box);
+        }
+        catch (JSException ex)
+        {
+            Logger.LogDebug(ex, "Efeito das tesourinhas falhou ({Function})", function ?? "import");
+        }
+        catch (JSDisconnectedException)
+        {
+            // A cliente saiu da página no meio do cálculo
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (scissorsModule is null) return;
+        try
+        {
+            await scissorsModule.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // O navegador já fechou a conexão; não há o que liberar do lado dele
         }
     }
 }
