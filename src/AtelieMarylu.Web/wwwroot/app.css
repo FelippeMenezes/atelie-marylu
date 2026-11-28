@@ -260,6 +260,16 @@ a, .btn-link {
     box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem var(--rosa);
 }
 
+/* Botão só com ícone: área de toque de 44px, a recomendação de Apple e Google para o dedo no celular */
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0;
+}
+
 /* Vitrine */
 .storefront {
     display: grid;

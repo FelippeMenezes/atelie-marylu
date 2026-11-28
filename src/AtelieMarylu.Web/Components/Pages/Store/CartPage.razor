@@ -6,7 +6,11 @@
 
 <PageTitle>@L["Cart · Ateliê Marylu"]</PageTitle>
 
-<h1>@L["Cart"]</h1>
+@* tabindex="-1": o título recebe o foco quando um item sai, porque o botão clicado some da tela *@
+<h1 tabindex="-1" @ref="heading">@L["Cart"]</h1>
+
+@* Fica fora dos @if para já existir antes da mudança: o leitor de tela só anuncia o que muda numa região que já estava na página *@
+<div role="status" class="visually-hidden">@removedMessage</div>
 
 @if (!ready)
 {
@@ -57,7 +61,12 @@ else
                         <QuantityPicker Value="item.Quantity" Max="@Math.Max(1, Math.Min(p?.Stock ?? 1, AtelieMarylu.Domain.Carts.Cart.MaxQuantityPerItem))"
                                     Disabled="!available" ValueChanged="q => Cart.ChangeQuantityAsync(item.ProductId, q)" />
                         <strong style="min-width: 90px" class="text-end">@(((p?.Price ?? 0) * item.Quantity).ToBrl())</strong>
-                        <button class="btn btn-link text-danger btn-sm" @onclick="() => Cart.RemoveAsync(item.ProductId)">@L["Remove"]</button>
+                        @* Só o ícone na tela: o aria-label diz ao leitor de tela qual item sai, e o title mostra a dica ao passar o mouse *@
+                        @{ string name = p?.Name ?? L["Product unavailable"]; }
+                        <button type="button" class="btn btn-link text-danger btn-icon" @onclick="() => RemoveAsync(item.ProductId, name)"
+                                aria-label="@L["Remove {0} from cart", name]" title="@L["Remove"]">
+                            <TrashIcon />
+                        </button>
                     </div>
                 }
                 <div class="d-flex justify-content-end pt-3 fs-5">
@@ -88,6 +97,8 @@ else
 @code {
     private Dictionary<int, Product> products = [];
     private bool ready;
+    private ElementReference heading;
+    private string? removedMessage;
 
     private decimal Subtotal => Cart.Current.Items.Sum(i => (products.GetValueOrDefault(i.ProductId)?.Price ?? 0) * i.Quantity);
 
@@ -103,6 +114,14 @@ else
         products = await ProductService.GetByIdsAsync(Cart.Current.Items.Select(i => i.ProductId), includeImages: true);
         ready = true;
         StateHasChanged();
+    }
+
+    // Sem isso, o foco do teclado cai no topo da página quando o botão clicado some, e quem usa leitor de tela não sabe o que aconteceu
+    private async Task RemoveAsync(int productId, string name)
+    {
+        await Cart.RemoveAsync(productId);
+        removedMessage = L["Removed from cart: {0}.", name];
+        await heading.FocusAsync();
     }
 
     private void OnCartChanged() => InvokeAsync(StateHasChanged);

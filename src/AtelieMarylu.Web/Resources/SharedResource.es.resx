@@ -415,6 +415,10 @@
   <data name="Rejected" xml:space="preserve"><value>Rechazado</value></data>
   <data name="Reload" xml:space="preserve"><value>Recargar</value></data>
   <data name="Remove" xml:space="preserve"><value>Quitar</value></data>
+  <data name="Remove {0} from cart" xml:space="preserve"><value>Quitar {0} del carrito</value></data>
+  <data name="Remove {0} from order" xml:space="preserve"><value>Quitar {0} del pedido</value></data>
+  <data name="Remove photo {0}" xml:space="preserve"><value>Quitar foto {0}</value></data>
+  <data name="Removed from cart: {0}." xml:space="preserve"><value>Quitado del carrito: {0}.</value></data>
   <data name="Remove this person's admin access before deleting the account." xml:space="preserve"><value>Quita el acceso al panel de esta persona antes de eliminar la cuenta.</value></data>
   <data name="Reset password" xml:space="preserve"><value>Restablecer contraseña</value></data>
   <data name="Resume" xml:space="preserve"><value>Reanudar</value></data>
