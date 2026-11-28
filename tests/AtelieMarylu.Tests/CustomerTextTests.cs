@@ -74,9 +74,9 @@ public class CustomerTextTests
     [Fact]
     public void Cleaned_google_name_never_has_a_link_or_digits()
     {
-        foreach (var raw in new[] { "Ana https://golpe.com", "Ligue 0800 123 4567", "Ana@golpe.com", "www.golpe.com", "Ana golpe.ru" })
+        foreach (var cleaned in new[] { "Ana https://golpe.com", "Ligue 0800 123 4567", "Ana@golpe.com", "www.golpe.com", "Ana golpe.ru" }
+                     .Select(CustomerText.CleanName))
         {
-            var cleaned = CustomerText.CleanName(raw);
             Assert.DoesNotContain("://", cleaned);
             Assert.DoesNotContain("@", cleaned);
             Assert.DoesNotContain(cleaned, char.IsDigit);

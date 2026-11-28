@@ -105,7 +105,7 @@ public class ValidationMessageTranslationTests
     public void Every_validation_message_has_a_translation(string language)
     {
         var folder = new DirectoryInfo(AppContext.BaseDirectory);
-        while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "AtelieMarylu.slnx")))
+        while (folder is not null && !File.Exists(Path.Join(folder.FullName, "AtelieMarylu.slnx")))
             folder = folder.Parent;
         var translations = System.Xml.Linq.XDocument.Load(Path.Join(folder!.FullName, "src", "AtelieMarylu.Web", "Resources", $"SharedResource.{language}.resx"))
             .Root!.Elements("data").Select(d => d.Attribute("name")!.Value).ToHashSet();

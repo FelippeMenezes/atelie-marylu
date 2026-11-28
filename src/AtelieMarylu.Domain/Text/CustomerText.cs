@@ -139,9 +139,8 @@ public static partial class CustomerText
     private static string WithoutAccents(string word)
     {
         var plain = new StringBuilder();
-        foreach (var c in word.Normalize(NormalizationForm.FormD))
-            if (char.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-                plain.Append(char.ToLowerInvariant(c));
+        foreach (var c in word.Normalize(NormalizationForm.FormD).Where(c => char.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark))
+            plain.Append(char.ToLowerInvariant(c));
         return plain.ToString();
     }
 }
